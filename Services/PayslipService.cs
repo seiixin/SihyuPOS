@@ -1,14 +1,22 @@
-﻿using HillsCafeManagement.Models;
+using SihyuPOSPayroll.Helpers;
+using SihyuPOSPayroll.Models;
 using MySql.Data.MySqlClient;
 using System;
 using System.Collections.Generic;
 using System.Data;
 
-namespace HillsCafeManagement.Services
+namespace SihyuPOSPayroll.Services
 {
     public class PayslipService
     {
-        private readonly string _connectionString = "server=localhost;user=root;password=;database=hillscafe_db;";
+        private readonly string _connectionString;
+
+        public PayslipService(string? connectionString = null)
+        {
+            _connectionString = string.IsNullOrWhiteSpace(connectionString)
+                ? ConfigurationHelper.GetConnectionString()
+                : connectionString!;
+        }
         private const int CommandTimeoutSeconds = 15;
 
         // ------------------------------------------------------------
@@ -17,13 +25,16 @@ namespace HillsCafeManagement.Services
         // Or run the equivalent SQL once manually and NEVER call this.
         // ------------------------------------------------------------
         private static bool _schemaChecked = false;
-        public static void EnsureSchemaAtStartup(string connectionString = "server=localhost;user=root;password=;database=hillscafe_db;")
+        public static void EnsureSchemaAtStartup(string? connectionString = null)
         {
             if (_schemaChecked) return;
 
             try
             {
-                using var conn = new MySqlConnection(connectionString);
+                string cs = string.IsNullOrWhiteSpace(connectionString)
+                    ? ConfigurationHelper.GetConnectionString()
+                    : connectionString!;
+                using var conn = new MySqlConnection(cs);
                 conn.Open();
 
                 var existing = new HashSet<string>(StringComparer.OrdinalIgnoreCase);

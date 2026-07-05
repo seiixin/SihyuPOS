@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="HillsCafeManagement.Views.Admin.Receipts.Receipts"
+<UserControl x:Class="SihyuPOSPayroll.Views.Admin.Receipts.Receipts"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              Background="#2A2B40">
@@ -11,7 +11,7 @@
         </Grid.RowDefinitions>
 
         <!-- Title -->
-        <TextBlock Text="🧾 Receipts"
+        <TextBlock Text="?? Receipts"
                    FontSize="28"
                    FontWeight="Bold"
                    Foreground="White"
@@ -154,7 +154,7 @@
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                                 <!-- IMPORTANT: pass the ReceiptId (int) to the VM -->
-                                <Button Content="🖨 Print"
+                                <Button Content="?? Print"
                                         Command="{Binding DataContext.PrintCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                         CommandParameter="{Binding ReceiptId}"
                                         Background="#F59E0B"

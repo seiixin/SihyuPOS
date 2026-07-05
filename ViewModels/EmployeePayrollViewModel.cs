@@ -1,15 +1,15 @@
-﻿#nullable enable
+#nullable enable
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
-using HillsCafeManagement.Helpers;
-using HillsCafeManagement.Models;
-using HillsCafeManagement.Services;
+using SihyuPOSPayroll.Helpers;
+using SihyuPOSPayroll.Models;
+using SihyuPOSPayroll.Services;
 
-namespace HillsCafeManagement.ViewModels
+namespace SihyuPOSPayroll.ViewModels
 {
     public sealed class EmployeePayrollRecordsViewModel : INotifyPropertyChanged
     {

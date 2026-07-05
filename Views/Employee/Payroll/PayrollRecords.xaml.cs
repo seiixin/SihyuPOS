@@ -1,7 +1,7 @@
-﻿using System.Windows.Controls;
-using HillsCafeManagement.ViewModels;
+using System.Windows.Controls;
+using SihyuPOSPayroll.ViewModels;
 
-namespace HillsCafeManagement.Views.Employee.Payroll
+namespace SihyuPOSPayroll.Views.Employee.Payroll
 {
     public partial class PayrollRecords : UserControl
     {
@@ -11,7 +11,7 @@ namespace HillsCafeManagement.Views.Employee.Payroll
             DataContext = new EmployeePayrollRecordsViewModel();
         }
 
-        // ✅ Overload used by Sidebar: new PayrollRecords(_employeeId)
+        // ? Overload used by Sidebar: new PayrollRecords(_employeeId)
         public PayrollRecords(int employeeId) : this()
         {
             if (DataContext is EmployeePayrollRecordsViewModel vm)

@@ -1,10 +1,10 @@
-﻿#nullable enable
+#nullable enable
 using System;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
-namespace HillsCafeManagement.Models
+namespace SihyuPOSPayroll.Models
 {
     public class WorkScheduleModel : INotifyPropertyChanged
     {
@@ -77,7 +77,7 @@ namespace HillsCafeManagement.Models
         private string BuildDaysText()
         {
             // Common presets
-            if (Mon && Tue && Wed && Thu && Fri && !Sat && !Sun) return "Mon–Fri";
+            if (Mon && Tue && Wed && Thu && Fri && !Sat && !Sun) return "Mon�Fri";
             if (Mon && Wed && Fri && !Tue && !Thu && !Sat && !Sun) return "MWF";
             if (!Mon && Tue && !Wed && Thu && !Fri && !Sat && !Sun) return "TTh";
             if (Mon && Tue && Wed && Thu && Fri && Sat && Sun) return "Daily";

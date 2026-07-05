@@ -1,14 +1,14 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;              // MessageBox
 using System.Windows.Input;        // ICommand
-using HillsCafeManagement.Helpers; // RelayCommand
-using HillsCafeManagement.Models;
-using HillsCafeManagement.Services;
+using SihyuPOSPayroll.Helpers; // RelayCommand
+using SihyuPOSPayroll.Models;
+using SihyuPOSPayroll.Services;
 
-namespace HillsCafeManagement.ViewModels
+namespace SihyuPOSPayroll.ViewModels
 {
     public class OrdersViewModel : BaseViewModel
     {
@@ -27,7 +27,7 @@ namespace HillsCafeManagement.ViewModels
         public OrderModel? EditingOrder { get; set; }
         public ObservableCollection<OrderItemModel> EditingItems { get; set; } = new();
 
-        // ----- READ-ONLY info (ℹ️) -----
+        // ----- READ-ONLY info (??) -----
         public OrderModel? InfoOrder { get; set; }
         public ObservableCollection<OrderItemModel> InfoItems { get; set; } = new();
 

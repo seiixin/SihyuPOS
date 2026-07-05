@@ -1,14 +1,14 @@
-ï»¿using System;
+using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
-using HillsCafeManagement.Models;
-using HillsCafeManagement.Services;
+using SihyuPOSPayroll.Models;
+using SihyuPOSPayroll.Services;
 
-namespace HillsCafeManagement.ViewModels
+namespace SihyuPOSPayroll.ViewModels
 {
     public class EmployeePayslipViewModel : BaseViewModel
     {
@@ -95,7 +95,7 @@ namespace HillsCafeManagement.ViewModels
             try
             {
                 IsBusy = true;
-                StatusMessage = "Refreshingâ€¦";
+                StatusMessage = "Refreshing…";
 
                 // Fetch in background so UI stays responsive
                 var payslipsTask = Task.Run(() => _service.GetEmployeePayslips(EmployeeId), ct);
@@ -183,7 +183,7 @@ namespace HillsCafeManagement.ViewModels
             try
             {
                 IsBusy = true;
-                StatusMessage = "Submitting requestâ€¦";
+                StatusMessage = "Submitting request…";
 
                 // Prevent duplicate Pending for same employee (and same payroll if specified)
                 var hasPendingDuplicate = MyRequests.Any(r =>

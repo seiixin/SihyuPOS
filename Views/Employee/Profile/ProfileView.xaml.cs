@@ -1,14 +1,14 @@
-﻿using System;
+using System;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 
-using HillsCafeManagement.ViewModels;
+using SihyuPOSPayroll.ViewModels;
 // If you want to new-up the service explicitly here, you can alias like this:
 // using IEmployeeService = HillsCafeManagement.Services.IEmployeeService;
 // using EmployeeService  = HillsCafeManagement.Services.EmployeeService;
 
-namespace HillsCafeManagement.Views.Employee.Profile
+namespace SihyuPOSPayroll.Views.Employee.Profile
 {
     public partial class ProfileView : UserControl
     {

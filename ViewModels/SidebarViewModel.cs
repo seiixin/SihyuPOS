@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
@@ -8,34 +8,34 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
-using HillsCafeManagement.Models;
-using HillsCafeManagement.Views.Admin.Attendance;
-using HillsCafeManagement.Views.Admin.Dashboard;
-using HillsCafeManagement.Views.Admin.Employees;
-using HillsCafeManagement.Views.Admin.Inventory;
-using HillsCafeManagement.Views.Admin.Menu;
-using HillsCafeManagement.Views.Admin.Orders;
-using HillsCafeManagement.Views.Admin.Payroll;
-using HillsCafeManagement.Views.Admin.Payslip_Requests;
-using HillsCafeManagement.Views.Admin.Receipts;
-using HillsCafeManagement.Views.Admin.Sales;
-using HillsCafeManagement.Views.Admin.Tables;
-using HillsCafeManagement.Views.Admin.Users;
-using HillsCafeManagement.Views.Cashier.Inventory;
-using HillsCafeManagement.Views.Cashier.Orders;
-using HillsCafeManagement.Views.Cashier.POS;
-using HillsCafeManagement.Views.Cashier.Receipts;
-using HillsCafeManagement.Views.Cashier.Tables;
-using HillsCafeManagement.Views.Employee.Attendance;
-using HillsCafeManagement.Views.Employee.Payslip;
-using HillsCafeManagement.Views.Employee.Profile;
-using HillsCafeManagement.Views.Employee.Payroll; // ✅ NEW (PayrollRecords)
+using SihyuPOSPayroll.Models;
+using SihyuPOSPayroll.Views.Admin.Attendance;
+using SihyuPOSPayroll.Views.Admin.Dashboard;
+using SihyuPOSPayroll.Views.Admin.Employees;
+using SihyuPOSPayroll.Views.Admin.Inventory;
+using SihyuPOSPayroll.Views.Admin.Menu;
+using SihyuPOSPayroll.Views.Admin.Orders;
+using SihyuPOSPayroll.Views.Admin.Payroll;
+using SihyuPOSPayroll.Views.Admin.Payslip_Requests;
+using SihyuPOSPayroll.Views.Admin.Receipts;
+using SihyuPOSPayroll.Views.Admin.Sales;
+using SihyuPOSPayroll.Views.Admin.Tables;
+using SihyuPOSPayroll.Views.Admin.Users;
+using SihyuPOSPayroll.Views.Cashier.Inventory;
+using SihyuPOSPayroll.Views.Cashier.Orders;
+using SihyuPOSPayroll.Views.Cashier.POS;
+using SihyuPOSPayroll.Views.Cashier.Receipts;
+using SihyuPOSPayroll.Views.Cashier.Tables;
+using SihyuPOSPayroll.Views.Employee.Attendance;
+using SihyuPOSPayroll.Views.Employee.Payslip;
+using SihyuPOSPayroll.Views.Employee.Profile;
+using SihyuPOSPayroll.Views.Employee.Payroll; // ? NEW (PayrollRecords)
 
 // alias the service types (same technique as your EmployeeProfileViewModel)
 using IEmployeeService = HillsCafeManagement.Services.IEmployeeService;
 using EmployeeService = HillsCafeManagement.Services.EmployeeService;
 
-namespace HillsCafeManagement.ViewModels
+namespace SihyuPOSPayroll.ViewModels
 {
     public class SidebarViewModel : INotifyPropertyChanged
     {
@@ -258,7 +258,7 @@ namespace HillsCafeManagement.ViewModels
                 default:
                     MenuItems.Add("Attendance");
                     MenuItems.Add("Payslip");
-                    MenuItems.Add("Payroll Records");   // ✅ NEW
+                    MenuItems.Add("Payroll Records");   // ? NEW
                     MenuItems.Add("Profile");
                     MenuItems.Add("Logout");
                     break;
@@ -352,7 +352,7 @@ namespace HillsCafeManagement.ViewModels
                     if (IsEmployee) CurrentView = new PayslipView();
                     break;
 
-                case "payroll records":                 // ✅ NEW
+                case "payroll records":                 // ? NEW
                     if (IsEmployee) CurrentView = new PayrollRecords(_employeeId);
                     break;
 

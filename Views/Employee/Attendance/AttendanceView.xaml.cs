@@ -1,7 +1,7 @@
-﻿using System.Windows.Controls;
-using HillsCafeManagement.ViewModels;
+using System.Windows.Controls;
+using SihyuPOSPayroll.ViewModels;
 
-namespace HillsCafeManagement.Views.Employee.Attendance
+namespace SihyuPOSPayroll.Views.Employee.Attendance
 {
     public partial class AttendanceView : UserControl
     {

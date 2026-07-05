@@ -1,4 +1,4 @@
-﻿// Services/PayrollService.cs
+// Services/PayrollService.cs
 // - Uses AttendanceService.GetWorkedDaysCount(...) as the single source of truth
 // - GenerateForPeriod(...) relies on BOTH time_in AND time_out to count a worked day
 // - GrossSalary = ratePerDay * TotalDaysWorked (optional behavior kept)
@@ -6,9 +6,10 @@
 using System;
 using System.Collections.Generic;
 using MySql.Data.MySqlClient;
-using HillsCafeManagement.Models;
+using SihyuPOSPayroll.Helpers;
+using SihyuPOSPayroll.Models;
 
-namespace HillsCafeManagement.Services
+namespace SihyuPOSPayroll.Services
 {
     public class PayrollService
     {
@@ -19,7 +20,7 @@ namespace HillsCafeManagement.Services
         public PayrollService(string? connectionString = null)
         {
             _connectionString = string.IsNullOrWhiteSpace(connectionString)
-                ? "server=localhost;user=root;password=;database=hillscafe_db;"
+                ? ConfigurationHelper.GetConnectionString()
                 : connectionString!;
             _attendanceService = new AttendanceService(_connectionString);
         }

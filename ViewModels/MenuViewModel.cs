@@ -1,13 +1,13 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Input;
-using HillsCafeManagement.Models;
-using HillsCafeManagement.Services;
-using HillsCafeManagement.Helpers;
+using SihyuPOSPayroll.Models;
+using SihyuPOSPayroll.Services;
+using SihyuPOSPayroll.Helpers;
 
-namespace HillsCafeManagement.ViewModels
+namespace SihyuPOSPayroll.ViewModels
 {
     public class MenuViewModel : BaseViewModel
     {

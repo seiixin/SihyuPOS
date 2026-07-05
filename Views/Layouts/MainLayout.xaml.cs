@@ -1,7 +1,7 @@
-﻿using System.Windows;
+using System.Windows;
 using System.Windows.Controls;
 
-namespace HillsCafeManagement.Views.Layouts
+namespace SihyuPOSPayroll.Views.Layouts
 {
     /// <summary>
     /// Interaction logic for MainLayout.xaml

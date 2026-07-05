@@ -1,12 +1,13 @@
-﻿#nullable enable
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using HillsCafeManagement.Models;
+using SihyuPOSPayroll.Helpers;
+using SihyuPOSPayroll.Models;
 using MySql.Data.MySqlClient;
 
-namespace HillsCafeManagement.Services
+namespace SihyuPOSPayroll.Services
 {
     public class WorkScheduleService
     {
@@ -16,7 +17,7 @@ namespace HillsCafeManagement.Services
         public WorkScheduleService(string? connectionString = null)
         {
             _cs = string.IsNullOrWhiteSpace(connectionString)
-                ? "server=localhost;user=root;password=;database=hillscafe_db;"
+                ? ConfigurationHelper.GetConnectionString()
                 : connectionString!;
         }
 

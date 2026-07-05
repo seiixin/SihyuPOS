@@ -1,10 +1,11 @@
-﻿using HillsCafeManagement.Models;
+using SihyuPOSPayroll.Helpers;
+using SihyuPOSPayroll.Models;
 using MySql.Data.MySqlClient;
 using System;
 using System.Collections.Generic;
 using System.Data;
 
-namespace HillsCafeManagement.Services
+namespace SihyuPOSPayroll.Services
 {
     public class MenuService
     {
@@ -12,7 +13,7 @@ namespace HillsCafeManagement.Services
 
         public MenuService()
         {
-            _connectionString = "server=localhost;user=root;password=;database=hillscafe_db;";
+            _connectionString = ConfigurationHelper.GetConnectionString();
         }
 
         public List<MenuModel> GetAllMenuItems()

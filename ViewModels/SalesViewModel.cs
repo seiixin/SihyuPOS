@@ -1,6 +1,6 @@
-Ôªøusing HillsCafeManagement.Helpers; // RelayCommand
-using HillsCafeManagement.Models;
-using HillsCafeManagement.Services;
+using SihyuPOSPayroll.Helpers; // RelayCommand
+using SihyuPOSPayroll.Models;
+using SihyuPOSPayroll.Services;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -11,7 +11,7 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 
-namespace HillsCafeManagement.ViewModels
+namespace SihyuPOSPayroll.ViewModels
 {
     public class SalesViewModel : BaseViewModel
     {
@@ -86,7 +86,7 @@ namespace HillsCafeManagement.ViewModels
             }
         }
 
-        // Uses Windows' ‚ÄúMicrosoft Print to PDF‚Äù printer.
+        // Uses Windows' ìMicrosoft Print to PDFî printer.
         private void ExportPdf()
         {
             try
@@ -98,7 +98,7 @@ namespace HillsCafeManagement.ViewModels
                     FontSize = 12
                 };
 
-                doc.Blocks.Add(new Paragraph(new Run($"Sales Report ‚Äî {SelectedPeriod}"))
+                doc.Blocks.Add(new Paragraph(new Run($"Sales Report ó {SelectedPeriod}"))
                 {
                     FontSize = 18,
                     FontWeight = FontWeights.Bold

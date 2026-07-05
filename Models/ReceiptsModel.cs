@@ -1,4 +1,4 @@
-﻿    namespace HillsCafeManagement.Models
+    namespace SihyuPOSPayroll.Models
     {
         public class ReceiptsModel
         {

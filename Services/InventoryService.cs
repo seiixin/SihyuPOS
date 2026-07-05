@@ -1,15 +1,21 @@
-﻿using System;
+using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Data;
 using MySql.Data.MySqlClient;
-using HillsCafeManagement.Models;
+using SihyuPOSPayroll.Models;
+using SihyuPOSPayroll.Helpers;
 
-namespace HillsCafeManagement.Services
+namespace SihyuPOSPayroll.Services
 {
     public class InventoryService
     {
-        private readonly string connectionString = "server=localhost;user=root;password=;database=hillscafe_db;";
+        private readonly string connectionString;
+
+        public InventoryService()
+        {
+            connectionString = ConfigurationHelper.GetConnectionString();
+        }
 
         public ObservableCollection<InventoryItem> GetAllItems()
         {

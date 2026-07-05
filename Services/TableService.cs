@@ -1,9 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
+using SihyuPOSPayroll.Helpers;
 using MySql.Data.MySqlClient;
 
-namespace HillsCafeManagement.Services
+namespace SihyuPOSPayroll.Services
 {
     public class TableModel
     {
@@ -15,7 +16,7 @@ namespace HillsCafeManagement.Services
 
     public static class TableService
     {
-        private const string ConnectionString = "server=localhost;user=root;password=;database=hillscafe_db;";
+        private static string GetConnectionString() => ConfigurationHelper.GetConnectionString();
 
         /// <summary>
         /// Fetch all café tables with derived status ("Available"/"Occupied").
@@ -25,7 +26,7 @@ namespace HillsCafeManagement.Services
         {
             var tables = new List<TableModel>();
 
-            using var conn = new MySqlConnection(ConnectionString);
+            using var conn = new MySqlConnection(GetConnectionString());
             conn.Open();
 
             var sql = @"
@@ -68,7 +69,7 @@ namespace HillsCafeManagement.Services
         /// </summary>
         public static void SetAvailabilityManual(int tableId, bool available)
         {
-            using var conn = new MySqlConnection(ConnectionString);
+            using var conn = new MySqlConnection(GetConnectionString());
             conn.Open();
 
             var sql = "UPDATE cafe_tables SET is_available = @avail WHERE id = @id;";

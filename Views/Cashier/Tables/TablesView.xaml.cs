@@ -1,7 +1,7 @@
-﻿using System.Windows.Controls;
-using HillsCafeManagement.ViewModels;
+using System.Windows.Controls;
+using SihyuPOSPayroll.ViewModels;
 
-namespace HillsCafeManagement.Views.Cashier.Tables
+namespace SihyuPOSPayroll.Views.Cashier.Tables
 {
     public partial class TablesView : UserControl
     {

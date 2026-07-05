@@ -1,9 +1,9 @@
-﻿using System.Windows;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace HillsCafeManagement.Views.Components
+namespace SihyuPOSPayroll.Views.Components
 {
     public partial class Sidebar : UserControl
     {

@@ -1,9 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using HillsCafeManagement.Models;
+using SihyuPOSPayroll.Models;
 
-namespace HillsCafeManagement.Helpers
+namespace SihyuPOSPayroll.Helpers
 {
     public static class PayrollCalculationHelper
     {

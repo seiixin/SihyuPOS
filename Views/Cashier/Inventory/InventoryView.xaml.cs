@@ -1,8 +1,8 @@
-﻿using System.Windows;
+using System.Windows;
 using System.Windows.Controls;
-using HillsCafeManagement.ViewModels;
+using SihyuPOSPayroll.ViewModels;
 
-namespace HillsCafeManagement.Views.Cashier.Inventory
+namespace SihyuPOSPayroll.Views.Cashier.Inventory
 {
     public partial class InventoryView : UserControl
     {

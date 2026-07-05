@@ -1,5 +1,5 @@
-﻿using HillsCafeManagement.Helpers;
-using HillsCafeManagement.Services;
+using SihyuPOSPayroll.Helpers;
+using SihyuPOSPayroll.Services;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -11,7 +11,7 @@ using System.Windows.Input;
 // Alias the service model so there's no ambiguity with any other TableModel
 using TableDto = HillsCafeManagement.Services.TableModel;
 
-namespace HillsCafeManagement.ViewModels
+namespace SihyuPOSPayroll.ViewModels
 {
     public class TableViewModel : INotifyPropertyChanged
     {

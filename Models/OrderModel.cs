@@ -1,8 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace HillsCafeManagement.Models
+namespace SihyuPOSPayroll.Models
 {
     // Enums kept in same file (no extra files needed)
     public enum PaymentStatus

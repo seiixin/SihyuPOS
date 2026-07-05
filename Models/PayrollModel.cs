@@ -1,6 +1,6 @@
-﻿using System;
+using System;
 
-namespace HillsCafeManagement.Models
+namespace SihyuPOSPayroll.Models
 {
     public class PayrollModel
     {

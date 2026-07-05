@@ -1,7 +1,7 @@
-﻿#nullable enable
+#nullable enable
 using System;
 
-namespace HillsCafeManagement.Models
+namespace SihyuPOSPayroll.Models
 {
     /// <summary>
     /// DB-mapped attendance row (raw logs).
@@ -10,7 +10,7 @@ namespace HillsCafeManagement.Models
     {
         public int Id { get; set; }
 
-        /// <summary>FK → employees.id</summary>
+        /// <summary>FK ? employees.id</summary>
         public int EmployeeId { get; set; }
 
         /// <summary>
@@ -18,10 +18,10 @@ namespace HillsCafeManagement.Models
         /// </summary>
         public DateTime Date { get; set; }
 
-        /// <summary>MySQL TIME → C# TimeSpan</summary>
+        /// <summary>MySQL TIME ? C# TimeSpan</summary>
         public TimeSpan? TimeIn { get; set; }
 
-        /// <summary>MySQL TIME → C# TimeSpan</summary>
+        /// <summary>MySQL TIME ? C# TimeSpan</summary>
         public TimeSpan? TimeOut { get; set; }
 
         /// <summary>
@@ -81,7 +81,7 @@ namespace HillsCafeManagement.Models
         /// - "Day Off"   when IsWorkday == false
         /// - "Present"   only when BOTH TimeIn and TimeOut exist
         /// - "No Record" when IsWorkday == true and both logs are missing
-        /// - "—"         for any other partial/in-progress case or unknown workday
+        /// - "�"         for any other partial/in-progress case or unknown workday
         /// </summary>
         public string DisplayStatus
         {
@@ -92,7 +92,7 @@ namespace HillsCafeManagement.Models
                 var hasOut = TimeOut.HasValue;
                 if (hasIn && hasOut) return "Present";
                 if (IsWorkday == true && !hasIn && !hasOut) return "No Record";
-                return "—";
+                return "�";
             }
         }
     }
@@ -103,7 +103,7 @@ namespace HillsCafeManagement.Models
     /// </summary>
     public sealed class AttendanceDayModel
     {
-        /// <summary>FK → employees.id</summary>
+        /// <summary>FK ? employees.id</summary>
         public int EmployeeId { get; set; }
 
         public string? EmployeeName { get; set; }
@@ -143,7 +143,7 @@ namespace HillsCafeManagement.Models
                 var hasOut = TimeOut.HasValue;
                 if (hasIn && hasOut) return "Present";
                 if (!hasIn && !hasOut) return "No Record";
-                return "—";
+                return "�";
             }
         }
     }

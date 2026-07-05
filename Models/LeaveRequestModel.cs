@@ -1,8 +1,8 @@
-﻿#nullable enable
+#nullable enable
 using System;
 using System.ComponentModel;
 
-namespace HillsCafeManagement.Models
+namespace SihyuPOSPayroll.Models
 {
     public enum LeaveStatus
     {
@@ -32,7 +32,7 @@ namespace HillsCafeManagement.Models
 
         public int Id { get; set; }
 
-        /// <summary>FK → employees.id</summary>
+        /// <summary>FK ? employees.id</summary>
         public int EmployeeId
         {
             get => _employeeId;

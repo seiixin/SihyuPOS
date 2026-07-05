@@ -1,4 +1,4 @@
-ï»¿<UserControl x:Class="HillsCafeManagement.Views.Employee.Profile.ProfileView"
+<UserControl x:Class="SihyuPOSPayroll.Views.Employee.Profile.ProfileView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              Background="#2A2B40">
@@ -68,68 +68,68 @@
                     <StackPanel Grid.Column="0" VerticalAlignment="Top">
                         <TextBlock Text="Full Name:" FontWeight="SemiBold" />
                         <TextBox x:Name="tbFullName" Style="{StaticResource ReadOnlyTextBox}"
-                                 Text="{Binding Employee.FullName, Mode=OneWay, TargetNullValue=â€”, FallbackValue=â€”}"/>
+                                 Text="{Binding Employee.FullName, Mode=OneWay, TargetNullValue=—, FallbackValue=—}"/>
 
                         <TextBlock Text="Age:" FontWeight="SemiBold" />
                         <TextBox x:Name="tbAge" Style="{StaticResource ReadOnlyTextBox}"
-                                 Text="{Binding Employee.Age, Mode=OneWay, TargetNullValue=â€”, FallbackValue=â€”}"/>
+                                 Text="{Binding Employee.Age, Mode=OneWay, TargetNullValue=—, FallbackValue=—}"/>
 
                         <TextBlock Text="Sex:" FontWeight="SemiBold" />
                         <TextBox x:Name="tbSex" Style="{StaticResource ReadOnlyTextBox}"
-                                 Text="{Binding Employee.Sex, Mode=OneWay, TargetNullValue=â€”, FallbackValue=â€”}"/>
+                                 Text="{Binding Employee.Sex, Mode=OneWay, TargetNullValue=—, FallbackValue=—}"/>
 
                         <TextBlock Text="Address:" FontWeight="SemiBold" />
                         <TextBox x:Name="tbAddress" Style="{StaticResource ReadOnlyTextBox}"
-                                 Text="{Binding Employee.Address, Mode=OneWay, TargetNullValue=â€”, FallbackValue=â€”}"/>
+                                 Text="{Binding Employee.Address, Mode=OneWay, TargetNullValue=—, FallbackValue=—}"/>
 
                         <TextBlock Text="Birthday:" FontWeight="SemiBold" />
                         <TextBox x:Name="tbBirthday" Style="{StaticResource ReadOnlyTextBox}"
                                  Text="{Binding Employee.Birthday, Mode=OneWay,
                                                 StringFormat={}{0:yyyy-MM-dd},
-                                                TargetNullValue=â€”, FallbackValue=â€”}"/>
+                                                TargetNullValue=—, FallbackValue=—}"/>
 
                         <TextBlock Text="Contact Number:" FontWeight="SemiBold" />
                         <TextBox x:Name="tbContact" Style="{StaticResource ReadOnlyTextBox}"
-                                 Text="{Binding Employee.ContactNumber, Mode=OneWay, TargetNullValue=â€”, FallbackValue=â€”}"/>
+                                 Text="{Binding Employee.ContactNumber, Mode=OneWay, TargetNullValue=—, FallbackValue=—}"/>
 
                         <TextBlock Text="Position:" FontWeight="SemiBold" />
                         <TextBox x:Name="tbPosition" Style="{StaticResource ReadOnlyTextBox}"
-                                 Text="{Binding Employee.Position, Mode=OneWay, TargetNullValue=â€”, FallbackValue=â€”}"/>
+                                 Text="{Binding Employee.Position, Mode=OneWay, TargetNullValue=—, FallbackValue=—}"/>
 
                         <TextBlock Text="Salary Per Day:" FontWeight="SemiBold" />
                         <TextBox x:Name="tbSalary" Style="{StaticResource ReadOnlyTextBox}"
                                  Text="{Binding Employee.SalaryPerDay, Mode=OneWay,
                                                 StringFormat={}{0:0.##},
-                                                TargetNullValue=â€”, FallbackValue=â€”}"/>
+                                                TargetNullValue=—, FallbackValue=—}"/>
                     </StackPanel>
 
                     <!-- Right column -->
                     <StackPanel Grid.Column="2" VerticalAlignment="Top">
                         <TextBlock Text="SSS Number:" FontWeight="SemiBold" />
                         <TextBox x:Name="tbSSS" Style="{StaticResource ReadOnlyTextBox}"
-                                 Text="{Binding Employee.SssNumber, Mode=OneWay, TargetNullValue=â€”, FallbackValue=â€”}"/>
+                                 Text="{Binding Employee.SssNumber, Mode=OneWay, TargetNullValue=—, FallbackValue=—}"/>
 
                         <TextBlock Text="PhilHealth Number:" FontWeight="SemiBold" />
                         <TextBox x:Name="tbPhilhealth" Style="{StaticResource ReadOnlyTextBox}"
-                                 Text="{Binding Employee.PhilhealthNumber, Mode=OneWay, TargetNullValue=â€”, FallbackValue=â€”}"/>
+                                 Text="{Binding Employee.PhilhealthNumber, Mode=OneWay, TargetNullValue=—, FallbackValue=—}"/>
 
                         <TextBlock Text="Pag-IBIG Number:" FontWeight="SemiBold" />
                         <TextBox x:Name="tbPagibig" Style="{StaticResource ReadOnlyTextBox}"
-                                 Text="{Binding Employee.PagibigNumber, Mode=OneWay, TargetNullValue=â€”, FallbackValue=â€”}"/>
+                                 Text="{Binding Employee.PagibigNumber, Mode=OneWay, TargetNullValue=—, FallbackValue=—}"/>
 
                         <TextBlock Text="Email:" FontWeight="SemiBold" />
                         <TextBox x:Name="tbEmail" Style="{StaticResource ReadOnlyTextBox}"
-                                 Text="{Binding Employee.UserAccount.Email, Mode=OneWay, TargetNullValue=â€”, FallbackValue=â€”}"/>
+                                 Text="{Binding Employee.UserAccount.Email, Mode=OneWay, TargetNullValue=—, FallbackValue=—}"/>
 
                         <TextBlock Text="Emergency Contact:" FontWeight="SemiBold" />
                         <TextBox x:Name="tbEmergency" Style="{StaticResource ReadOnlyTextBox}"
-                                 Text="{Binding Employee.EmergencyContact, Mode=OneWay, TargetNullValue=â€”, FallbackValue=â€”}"/>
+                                 Text="{Binding Employee.EmergencyContact, Mode=OneWay, TargetNullValue=—, FallbackValue=—}"/>
 
                         <TextBlock Text="Date Hired:" FontWeight="SemiBold" />
                         <TextBox x:Name="tbHired" Style="{StaticResource ReadOnlyTextBox}"
                                  Text="{Binding Employee.DateHired, Mode=OneWay,
                                                 StringFormat={}{0:yyyy-MM-dd},
-                                                TargetNullValue=â€”, FallbackValue=â€”}"/>
+                                                TargetNullValue=—, FallbackValue=—}"/>
                     </StackPanel>
                 </Grid>
             </Grid>

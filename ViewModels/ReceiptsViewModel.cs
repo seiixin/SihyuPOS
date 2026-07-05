@@ -1,6 +1,6 @@
-ï»¿using HillsCafeManagement.Helpers;
-using HillsCafeManagement.Models;
-using HillsCafeManagement.Services;
+using SihyuPOSPayroll.Helpers;
+using SihyuPOSPayroll.Models;
+using SihyuPOSPayroll.Services;
 using Microsoft.Win32;
 using System;
 using System.Collections.ObjectModel;
@@ -15,7 +15,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
-namespace HillsCafeManagement.ViewModels
+namespace SihyuPOSPayroll.ViewModels
 {
     public class ReceiptsViewModel : INotifyPropertyChanged
     {
@@ -192,7 +192,7 @@ namespace HillsCafeManagement.ViewModels
                     return;
                 }
 
-                // Info popup (optional â€” keep if you want)
+                // Info popup (optional — keep if you want)
                 var h = details.Header;
                 var info =
                     $"Receipt ID : {h.ReceiptId}\n" +
@@ -293,7 +293,7 @@ namespace HillsCafeManagement.ViewModels
 
             var title = new TextBlock
             {
-                Text = "Hills CafÃ© â€” Receipt",
+                Text = "Hills Café — Receipt",
                 FontSize = 24,
                 FontWeight = FontWeights.Bold,
                 Margin = new Thickness(0, 0, 0, 16)
@@ -389,7 +389,7 @@ namespace HillsCafeManagement.ViewModels
                 TextAlignment = TextAlignment.Left
             };
 
-            var title = new Paragraph(new Bold(new Run("Hills CafÃ© â€” Receipt")))
+            var title = new Paragraph(new Bold(new Run("Hills Café — Receipt")))
             { FontSize = 18, TextAlignment = TextAlignment.Center, Margin = new Thickness(0, 0, 0, 10) };
             fd.Blocks.Add(title);
 

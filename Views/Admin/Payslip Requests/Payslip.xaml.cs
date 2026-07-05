@@ -1,11 +1,11 @@
-﻿using HillsCafeManagement.ViewModels;
+using SihyuPOSPayroll.ViewModels;
 using System;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 
-namespace HillsCafeManagement.Views.Admin.Payslip_Requests
+namespace SihyuPOSPayroll.Views.Admin.Payslip_Requests
 {
     public partial class Payslip : UserControl
     {

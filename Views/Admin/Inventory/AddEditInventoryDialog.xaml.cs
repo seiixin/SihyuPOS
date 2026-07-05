@@ -1,11 +1,11 @@
-﻿using System;
+using System;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using HillsCafeManagement.Models;
+using SihyuPOSPayroll.Models;
 
-namespace HillsCafeManagement.Views.Admin.Inventory
+namespace SihyuPOSPayroll.Views.Admin.Inventory
 {
     public partial class AddEditInventoryDialog : UserControl
     {

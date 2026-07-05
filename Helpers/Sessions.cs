@@ -1,10 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HillsCafeManagement.Helpers
+namespace SihyuPOSPayroll.Helpers
 {
     public static class Session
     {

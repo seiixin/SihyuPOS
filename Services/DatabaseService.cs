@@ -1,24 +1,38 @@
-﻿#nullable enable
-using HillsCafeManagement.Models;
+#nullable enable
+using SihyuPOSPayroll.Helpers;
+using SihyuPOSPayroll.Models;
 using MySql.Data.MySqlClient;
 using System;
 using System.Collections.Generic;
+using BCrypt.Net;
 
-namespace HillsCafeManagement.Services
+namespace SihyuPOSPayroll.Services
 {
     /// <summary>
     /// Consolidated DB access. Authentication enforces users.is_active = 1.
     /// </summary>
     public class DatabaseService
     {
-        private readonly string _connectionString = "server=localhost;user=root;password=;database=hillscafe_db;";
+        private readonly string _connectionString;
+
+        public DatabaseService()
+        {
+            _connectionString = ConfigurationHelper.GetConnectionString();
+        }
 
         #region Authentication
 
         /// <summary>
+        /// Hashes a plaintext password using BCrypt
+        /// </summary>
+        public static string HashPassword(string plainTextPassword)
+        {
+            return BCrypt.Net.BCrypt.HashPassword(plainTextPassword);
+        }
+
+        /// <summary>
         /// Returns a user when email+password match AND account is active (users.is_active = 1).
         /// Returns null otherwise.
-        /// NOTE: This currently compares plaintext passwords to match your existing code.
         /// </summary>
         public UserModel? AuthenticateUser(string email, string password)
         {
@@ -40,17 +54,22 @@ namespace HillsCafeManagement.Services
                     FROM users u
                     LEFT JOIN employees e ON u.employee_id = e.id
                     WHERE u.email = @Email
-                      AND u.password = @Password
                       AND u.is_active = 1
                     LIMIT 1;";
 
                 using var cmd = new MySqlCommand(query, connection);
                 cmd.Parameters.AddWithValue("@Email", email);
-                cmd.Parameters.AddWithValue("@Password", password);
 
                 using var reader = cmd.ExecuteReader();
 
                 if (!reader.Read()) return null;
+
+                // Get stored hashed password
+                string storedHash = reader["password"]?.ToString() ?? string.Empty;
+
+                // Verify password
+                if (!BCrypt.Net.BCrypt.Verify(password, storedHash))
+                    return null;
 
                 EmployeeModel? employee = null;
 
@@ -69,7 +88,7 @@ namespace HillsCafeManagement.Services
                 {
                     Id = reader.GetInt32("user_id"),
                     Email = reader["email"]?.ToString(),
-                    Password = reader["password"]?.ToString(),
+                    Password = storedHash,
                     Role = reader["role"]?.ToString(),
                     EmployeeId = reader.IsDBNull(reader.GetOrdinal("employee_id")) ? null : reader.GetInt32("employee_id"),
                     IsActive = ReadTinyIntAsBool(reader, "user_is_active", true),

@@ -1,13 +1,13 @@
-Ôªøusing HillsCafeManagement.Helpers;
-using HillsCafeManagement.Models;
-using HillsCafeManagement.Services;
+using SihyuPOSPayroll.Helpers;
+using SihyuPOSPayroll.Models;
+using SihyuPOSPayroll.Services;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
 
-namespace HillsCafeManagement.ViewModels
+namespace SihyuPOSPayroll.ViewModels
 {
     public class AttendanceAdminViewModel : INotifyPropertyChanged
     {
@@ -215,7 +215,7 @@ namespace HillsCafeManagement.ViewModels
                     SelectedLeave = fresh;
                 }
 
-                // Do NOT auto-filter here, to avoid the row ‚Äúdisappearing‚Äù due to active filters.
+                // Do NOT auto-filter here, to avoid the row ìdisappearingî due to active filters.
             }
             catch (Exception ex)
             {

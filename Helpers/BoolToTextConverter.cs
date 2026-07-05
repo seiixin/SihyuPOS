@@ -1,9 +1,9 @@
-﻿#nullable enable
+#nullable enable
 using System;
 using System.Globalization;
 using System.Windows.Data;
 
-namespace HillsCafeManagement.Helpers
+namespace SihyuPOSPayroll.Helpers
 {
     [ValueConversion(typeof(object), typeof(string))]
     public sealed class BoolToTextConverter : IValueConverter

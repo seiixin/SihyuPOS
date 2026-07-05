@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="HillsCafeManagement.Views.Employee.Attendance.AttendanceView"
+<UserControl x:Class="SihyuPOSPayroll.Views.Employee.Attendance.AttendanceView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:sys="clr-namespace:System;assembly=mscorlib"
@@ -59,14 +59,14 @@
                         </Grid.ColumnDefinitions>
 
                         <TextBlock Grid.Column="0"
-                                   Text="⏱ Clock In/Out Panel"
+                                   Text="? Clock In/Out Panel"
                                    FontSize="20"
                                    FontWeight="Bold"
                                    Foreground="White"/>
 
                         <!-- Employee (Name + User ID) -->
                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" >
-                            <TextBlock Text="👤 " FontSize="16" Margin="0,0,4,0"/>
+                            <TextBlock Text="?? " FontSize="16" Margin="0,0,4,0"/>
                             <TextBlock Text="{Binding EmployeeDisplay}"
                                        FontSize="14"
                                        FontWeight="SemiBold"
@@ -181,10 +181,10 @@
                                                 Binding="{Binding Date, StringFormat={}{0:yyyy-MM-dd}}"
                                                 Width="*" />
                             <DataGridTextColumn Header="Time In"
-                                                Binding="{Binding TimeIn, StringFormat={}{0:hh\\:mm\\:ss}, TargetNullValue=—}"
+                                                Binding="{Binding TimeIn, StringFormat={}{0:hh\\:mm\\:ss}, TargetNullValue=�}"
                                                 Width="*" />
                             <DataGridTextColumn Header="Time Out"
-                                                Binding="{Binding TimeOut, StringFormat={}{0:hh\\:mm\\:ss}, TargetNullValue=—}"
+                                                Binding="{Binding TimeOut, StringFormat={}{0:hh\\:mm\\:ss}, TargetNullValue=�}"
                                                 Width="*" />
 
                             <!-- CHANGED: bind to computed DisplayStatus (No Record / Day Off / Present / etc.) -->
@@ -346,7 +346,7 @@
                                 <DataGridTextColumn Header="Type" Binding="{Binding LeaveType}" Width="*" />
                                 <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="*" />
                                 <DataGridTextColumn Header="Reason" Binding="{Binding Reason}" Width="2*" />
-                                <DataGridTextColumn Header="Approved At" Binding="{Binding ApprovedAt, StringFormat={}{0:yyyy-MM-dd HH:mm}, TargetNullValue=—}" Width="*" />
+                                <DataGridTextColumn Header="Approved At" Binding="{Binding ApprovedAt, StringFormat={}{0:yyyy-MM-dd HH:mm}, TargetNullValue=�}" Width="*" />
                             </DataGrid.Columns>
                         </DataGrid>
 

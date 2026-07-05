@@ -1,13 +1,13 @@
-﻿using System;
+using System;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Markup; // XamlParseException
-using HillsCafeManagement.Services;
-using HillsCafeManagement.ViewModels;
+using SihyuPOSPayroll.Services;
+using SihyuPOSPayroll.ViewModels;
 
-namespace HillsCafeManagement.Views.Admin.Payroll
+namespace SihyuPOSPayroll.Views.Admin.Payroll
 {
     /// <summary>
     /// Interaction logic for PositionSalaryEdit.xaml
@@ -135,7 +135,7 @@ namespace HillsCafeManagement.Views.Admin.Payroll
         }
 
         /// <summary>
-        /// Actions column: 📝 Edit button click handler.
+        /// Actions column: ?? Edit button click handler.
         /// Requires the DataGrid in XAML to be named 'RatesGrid' and the button wired with Click="EditRow_Click".
         /// </summary>
         private void EditRow_Click(object sender, RoutedEventArgs e)
@@ -169,7 +169,7 @@ namespace HillsCafeManagement.Views.Admin.Payroll
         }
 
         /// <summary>
-        /// Actions column: 🗑 Delete button click handler.
+        /// Actions column: ?? Delete button click handler.
         /// Requires the button wired with Click="DeleteRow_Click".
         /// </summary>
         private void DeleteRow_Click(object sender, RoutedEventArgs e)

@@ -1,9 +1,9 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using System.Windows;
-using HillsCafeManagement.Services;
+using SihyuPOSPayroll.Services;
 
-namespace HillsCafeManagement
+namespace SihyuPOSPayroll
 {
     /// <summary>
     /// Interaction logic for App.xaml
@@ -48,7 +48,7 @@ namespace HillsCafeManagement
             var root = ex.InnerException ?? ex;
             MessageBox.Show(
                 $"{title}\n\n{root.GetType().Name}: {root.Message}\n\n{root.StackTrace}",
-                "HillsCafe – Error",
+                "SihyuPOSPayroll – Error",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error
             );

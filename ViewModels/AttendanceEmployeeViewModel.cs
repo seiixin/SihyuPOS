@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -7,11 +7,11 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows.Input;
-using HillsCafeManagement.Helpers;
-using HillsCafeManagement.Models;
-using HillsCafeManagement.Services;
+using SihyuPOSPayroll.Helpers;
+using SihyuPOSPayroll.Models;
+using SihyuPOSPayroll.Services;
 
-namespace HillsCafeManagement.ViewModels
+namespace SihyuPOSPayroll.ViewModels
 {
     /// <summary>
     /// Employee Attendance VM:
@@ -221,7 +221,7 @@ namespace HillsCafeManagement.ViewModels
             {
                 if (LeaveHalfDay) return "0.5 day";
                 var days = (LeaveDateTo.Date - LeaveDateFrom.Date).TotalDays + 1;
-                if (days < 0) return "—";
+                if (days < 0) return "�";
                 return $"{days:0} day(s)";
             }
         }
@@ -253,7 +253,7 @@ namespace HillsCafeManagement.ViewModels
         {
             CurrentEmployeeId = _employeeService.GetEmployeeIdByUserId(Session.CurrentUserId);
             if (CurrentEmployeeId is null)
-                LastMessage = "⚠️ No employee profile linked to your user. Please contact admin.";
+                LastMessage = "?? No employee profile linked to your user. Please contact admin.";
         }
 
         private void SetupCommands()
@@ -328,7 +328,7 @@ namespace HillsCafeManagement.ViewModels
 
         private async Task ClockInAsync()
         {
-            if (CurrentEmployeeId is null) { LastMessage = "❌ No linked employee profile."; return; }
+            if (CurrentEmployeeId is null) { LastMessage = "? No linked employee profile."; return; }
 
             try
             {
@@ -340,19 +340,19 @@ namespace HillsCafeManagement.ViewModels
                 else
                     _attendanceService.ClockIn(empId);
 
-                LastMessage = $"✅ Clock In successful! ({DateTime.Now:hh:mm:ss tt})";
+                LastMessage = $"? Clock In successful! ({DateTime.Now:hh:mm:ss tt})";
                 await RefreshAttendanceAsync();
             }
             catch (Exception ex)
             {
-                LastMessage = $"❌ Clock In failed: {ex.Message}";
+                LastMessage = $"? Clock In failed: {ex.Message}";
             }
             finally { IsBusyAttendance = false; _ = ClearMessageAfterDelay(); }
         }
 
         private async Task ClockOutAsync()
         {
-            if (CurrentEmployeeId is null) { LastMessage = "❌ No linked employee profile."; return; }
+            if (CurrentEmployeeId is null) { LastMessage = "? No linked employee profile."; return; }
 
             try
             {
@@ -364,12 +364,12 @@ namespace HillsCafeManagement.ViewModels
                 else
                     _attendanceService.ClockOut(empId);
 
-                LastMessage = $"✅ Clock Out successful! ({DateTime.Now:hh:mm:ss tt})";
+                LastMessage = $"? Clock Out successful! ({DateTime.Now:hh:mm:ss tt})";
                 await RefreshAttendanceAsync();
             }
             catch (Exception ex)
             {
-                LastMessage = $"❌ Clock Out failed: {ex.Message}";
+                LastMessage = $"? Clock Out failed: {ex.Message}";
             }
             finally { IsBusyAttendance = false; _ = ClearMessageAfterDelay(); }
         }
@@ -397,7 +397,7 @@ namespace HillsCafeManagement.ViewModels
                 if (CurrentEmployeeId is null)
                 {
                     Attendances.Clear();
-                    LastMessage = "⚠️ No linked employee profile.";
+                    LastMessage = "?? No linked employee profile.";
                     return;
                 }
 
@@ -466,11 +466,11 @@ namespace HillsCafeManagement.ViewModels
 
                 // Payroll-friendly worked days (complete pairs only)
                 var workedDays = await Task.Run(() => _attendanceService.GetWorkedDaysCount(empId, from, to));
-                LastMessage = $"📋 Loaded {Attendances.Count} day(s). ✅ Worked days (complete pairs only): {workedDays}.";
+                LastMessage = $"?? Loaded {Attendances.Count} day(s). ? Worked days (complete pairs only): {workedDays}.";
             }
             catch (Exception ex)
             {
-                LastMessage = $"❌ Failed to load attendance: {ex.Message}";
+                LastMessage = $"? Failed to load attendance: {ex.Message}";
             }
             finally { IsBusyAttendance = false; }
         }
@@ -507,11 +507,11 @@ namespace HillsCafeManagement.ViewModels
                 LeaveRequests.Clear();
                 foreach (var lr in list) LeaveRequests.Add(lr);
 
-                LastMessage = $"🗂 Loaded {LeaveRequests.Count} leave request(s).";
+                LastMessage = $"?? Loaded {LeaveRequests.Count} leave request(s).";
             }
             catch (Exception ex)
             {
-                LastMessage = $"❌ Failed to load leaves: {ex.Message}";
+                LastMessage = $"? Failed to load leaves: {ex.Message}";
             }
             finally { IsBusyLeave = false; }
         }
@@ -554,12 +554,12 @@ namespace HillsCafeManagement.ViewModels
             {
                 IsBusyLeave = true;
 
-                if (CurrentEmployeeId is null) { LastMessage = "❌ No linked employee profile."; return; }
+                if (CurrentEmployeeId is null) { LastMessage = "? No linked employee profile."; return; }
 
                 var overlaps = await Task.Run(() =>
                     _leaveService.GetForEmployee(CurrentEmployeeId.Value, LeaveDateFrom, LeaveDateTo, null)
                                  .Any(x => x.Status == LeaveStatus.Approved || x.Status == LeaveStatus.Pending));
-                if (overlaps) { LastMessage = "⚠️ Overlaps with existing pending/approved leave."; return; }
+                if (overlaps) { LastMessage = "?? Overlaps with existing pending/approved leave."; return; }
 
                 var model = new LeaveRequestModel
                 {
@@ -575,12 +575,12 @@ namespace HillsCafeManagement.ViewModels
                 var id = await Task.Run(() => _leaveService.Create(model));
                 LeaveFormId = id;
 
-                LastMessage = "✅ Leave request submitted (Pending).";
+                LastMessage = "? Leave request submitted (Pending).";
                 await RefreshLeaveListAsync();
             }
             catch (Exception ex)
             {
-                LastMessage = $"❌ Submit failed: {ex.Message}";
+                LastMessage = $"? Submit failed: {ex.Message}";
             }
             finally { IsBusyLeave = false; _ = ClearMessageAfterDelay(); }
         }
@@ -602,8 +602,8 @@ namespace HillsCafeManagement.ViewModels
                 IsBusyLeave = true;
 
                 var row = LeaveRequests.FirstOrDefault(x => x.Id == LeaveFormId);
-                if (row == null) { LastMessage = "⚠️ Leave request not found."; return; }
-                if (row.Status != LeaveStatus.Pending) { LastMessage = "⚠️ Only pending requests can be edited."; return; }
+                if (row == null) { LastMessage = "?? Leave request not found."; return; }
+                if (row.Status != LeaveStatus.Pending) { LastMessage = "?? Only pending requests can be edited."; return; }
 
                 row.LeaveType = LeaveType;
                 row.Reason = string.IsNullOrWhiteSpace(LeaveReason) ? null : LeaveReason.Trim();
@@ -612,12 +612,12 @@ namespace HillsCafeManagement.ViewModels
                 row.HalfDay = LeaveHalfDay;
 
                 var ok = await Task.Run(() => _leaveService.Update(row));
-                LastMessage = ok ? "✅ Leave request updated." : "❌ Update failed.";
+                LastMessage = ok ? "? Leave request updated." : "? Update failed.";
                 await RefreshLeaveListAsync();
             }
             catch (Exception ex)
             {
-                LastMessage = $"❌ Update failed: {ex.Message}";
+                LastMessage = $"? Update failed: {ex.Message}";
             }
             finally { IsBusyLeave = false; _ = ClearMessageAfterDelay(); }
         }
@@ -635,10 +635,10 @@ namespace HillsCafeManagement.ViewModels
                 IsBusyLeave = true;
 
                 var row = SelectedLeave ?? LeaveRequests.FirstOrDefault(x => x.Id == LeaveFormId);
-                if (row == null) { LastMessage = "⚠️ Select a leave request to cancel."; return; }
+                if (row == null) { LastMessage = "?? Select a leave request to cancel."; return; }
 
                 var ok = await Task.Run(() => _leaveService.Cancel(row.Id));
-                LastMessage = ok ? "✅ Leave request cancelled." : "❌ Cancel failed.";
+                LastMessage = ok ? "? Leave request cancelled." : "? Cancel failed.";
                 await RefreshLeaveListAsync();
 
                 if (row.Id == LeaveFormId)
@@ -657,7 +657,7 @@ namespace HillsCafeManagement.ViewModels
             }
             catch (Exception ex)
             {
-                LastMessage = $"❌ Cancel failed: {ex.Message}";
+                LastMessage = $"? Cancel failed: {ex.Message}";
             }
             finally { IsBusyLeave = false; _ = ClearMessageAfterDelay(); }
         }

@@ -1,6 +1,6 @@
-﻿using HillsCafeManagement.Models;
-using HillsCafeManagement.Services;
-using HillsCafeManagement.Helpers;
+using SihyuPOSPayroll.Models;
+using SihyuPOSPayroll.Services;
+using SihyuPOSPayroll.Helpers;
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -8,7 +8,7 @@ using System.Windows.Input;
 using System.Windows;
 using System.Threading.Tasks;
 
-namespace HillsCafeManagement.ViewModels
+namespace SihyuPOSPayroll.ViewModels
 {
     public class AdminPayslipViewModel : BaseViewModel
     {

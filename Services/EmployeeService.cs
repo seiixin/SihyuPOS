@@ -1,11 +1,12 @@
-﻿#nullable enable
-using HillsCafeManagement.Models;
+#nullable enable
+using SihyuPOSPayroll.Helpers;
+using SihyuPOSPayroll.Models;
 using MySql.Data.MySqlClient;
 using System;
 using System.Collections.Generic;
 using System.Data;
 
-namespace HillsCafeManagement.Services
+namespace SihyuPOSPayroll.Services
 {
     public interface IEmployeeService
     {
@@ -36,7 +37,7 @@ namespace HillsCafeManagement.Services
         public EmployeeService(string? connectionString = null)
         {
             _connectionString = string.IsNullOrWhiteSpace(connectionString)
-                ? "server=localhost;user=root;password=;database=hillscafe_db;"
+                ? ConfigurationHelper.GetConnectionString()
                 : connectionString!;
         }
 

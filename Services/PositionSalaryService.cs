@@ -1,4 +1,4 @@
-﻿// HillsCafeManagement.Services.PositionSalaryService (refactored, safer init)
+// HillsCafeManagement.Services.PositionSalaryService (refactored, safer init)
 // - No schema work in constructor
 // - TryEnsureSchema() + IsDbReady() expose errors without throwing
 // - Load() never throws; it sets LastError and returns whatever it could load
@@ -13,8 +13,9 @@ using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using MySql.Data.MySqlClient;
+using SihyuPOSPayroll.Helpers;
 
-namespace HillsCafeManagement.Services
+namespace SihyuPOSPayroll.Services
 {
     /// <summary>
     /// DB-backed service for managing Position → Daily Rate presets.
@@ -64,7 +65,7 @@ namespace HillsCafeManagement.Services
         public PositionSalaryService(string? connectionString = null)
         {
             _connectionString = string.IsNullOrWhiteSpace(connectionString)
-                ? "server=localhost;user=root;password=;database=hillscafe_db;"
+                ? ConfigurationHelper.GetConnectionString()
                 : connectionString!;
             // IMPORTANT: no EnsureSchema() here — avoid side effects in ctor
         }

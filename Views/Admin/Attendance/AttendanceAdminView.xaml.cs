@@ -1,14 +1,14 @@
-﻿#nullable enable
+#nullable enable
 using System;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
 using System.Windows.Media;
-using HillsCafeManagement.Models;
-using HillsCafeManagement.ViewModels;
+using SihyuPOSPayroll.Models;
+using SihyuPOSPayroll.ViewModels;
 
-namespace HillsCafeManagement.Views.Admin.Attendance
+namespace SihyuPOSPayroll.Views.Admin.Attendance
 {
     /// <summary>
     /// Interaction logic for AttendanceAdminView.xaml
@@ -63,7 +63,7 @@ namespace HillsCafeManagement.Views.Admin.Attendance
             Unloaded -= OnUnloaded;
         }
 
-        // Keep VM.SelectedLeave in sync with the grid’s selection
+        // Keep VM.SelectedLeave in sync with the grid�s selection
         private void LeaveGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (_savingRow) return;

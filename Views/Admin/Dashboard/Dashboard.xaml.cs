@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -13,7 +13,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace HillsCafeManagement.Views.Admin.Dashboard
+namespace SihyuPOSPayroll.Views.Admin.Dashboard
 {
     /// <summary>
     /// Interaction logic for Dashboard.xaml

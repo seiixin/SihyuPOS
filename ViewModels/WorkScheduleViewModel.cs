@@ -1,15 +1,15 @@
-Ôªøusing System;
+using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows;
-using HillsCafeManagement.Helpers;
-using HillsCafeManagement.Models;
-using HillsCafeManagement.Services;
+using SihyuPOSPayroll.Helpers;
+using SihyuPOSPayroll.Models;
+using SihyuPOSPayroll.Services;
 using MySql.Data.MySqlClient;
 
-namespace HillsCafeManagement.ViewModels
+namespace SihyuPOSPayroll.ViewModels
 {
     public class WorkScheduleViewModel : INotifyPropertyChanged
     {
@@ -86,7 +86,7 @@ namespace HillsCafeManagement.ViewModels
         public void Load()
         {
             IsBusy = true;
-            Status = "Loading‚Ä¶";
+            Status = "LoadingÖ";
 
             try
             {
@@ -204,7 +204,7 @@ namespace HillsCafeManagement.ViewModels
             if (item is null) return;
 
             var confirm = MessageBox.Show(
-                $"Remove ‚Äú{item.Label}‚Äù from this list?\n(This does not delete from DB until you Save.)",
+                $"Remove ì{item.Label}î from this list?\n(This does not delete from DB until you Save.)",
                 "Confirm Remove", MessageBoxButton.YesNo, MessageBoxImage.Question);
 
             if (confirm != MessageBoxResult.Yes) return;

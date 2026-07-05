@@ -1,7 +1,7 @@
-﻿using System.Windows.Controls;
-using HillsCafeManagement.ViewModels;
+using System.Windows.Controls;
+using SihyuPOSPayroll.ViewModels;
 
-namespace HillsCafeManagement.Views.Admin.Receipts
+namespace SihyuPOSPayroll.Views.Admin.Receipts
 {
     public partial class Receipts : UserControl
     {

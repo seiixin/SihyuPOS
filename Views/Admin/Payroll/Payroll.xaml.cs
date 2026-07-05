@@ -1,16 +1,16 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Markup;                 // XamlParseException
-using HillsCafeManagement.Models;
-using HillsCafeManagement.Services;
-using HillsCafeManagement.ViewModels;
-using HillsCafeManagement.Views.Admin.Payrolls; // AddEditPayroll
-using HillsCafeManagement.Views.Admin.Payroll;  // PositionSalaryEdit
+using SihyuPOSPayroll.Models;
+using SihyuPOSPayroll.Services;
+using SihyuPOSPayroll.ViewModels;
+using SihyuPOSPayroll.Views.Admin.Payrolls; // AddEditPayroll
+using SihyuPOSPayroll.Views.Admin.Payroll;  // PositionSalaryEdit
 
-namespace HillsCafeManagement.Views.Admin.Payroll
+namespace SihyuPOSPayroll.Views.Admin.Payroll
 {
     public partial class Payroll : UserControl
     {
@@ -300,7 +300,7 @@ namespace HillsCafeManagement.Views.Admin.Payroll
                 var createdSlips = _payslipService.CreatePayslipsFromPayrollPeriod(start, end);
 
                 MessageBox.Show(
-                    $"Generated payroll for {start:yyyy-MM-dd} → {end:yyyy-MM-dd}\n" +
+                    $"Generated payroll for {start:yyyy-MM-dd} ? {end:yyyy-MM-dd}\n" +
                     $"Rows: {generated.Count}\n" +
                     $"Payslips created: {createdSlips}",
                     "Success", MessageBoxButton.OK, MessageBoxImage.Information);

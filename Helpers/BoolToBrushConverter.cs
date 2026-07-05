@@ -1,10 +1,10 @@
-﻿#nullable enable
+#nullable enable
 using System;
 using System.Globalization;
 using System.Windows.Data;
 using System.Windows.Media;
 
-namespace HillsCafeManagement.Helpers
+namespace SihyuPOSPayroll.Helpers
 {
     [ValueConversion(typeof(object), typeof(Brush))]
     public sealed class BoolToBrushConverter : IValueConverter

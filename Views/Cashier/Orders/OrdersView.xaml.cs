@@ -1,11 +1,11 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using HillsCafeManagement.Models;
-using HillsCafeManagement.ViewModels;
+using SihyuPOSPayroll.Models;
+using SihyuPOSPayroll.ViewModels;
 
-namespace HillsCafeManagement.Views.Cashier.Orders
+namespace SihyuPOSPayroll.Views.Cashier.Orders
 {
     public partial class OrdersView : UserControl
     {

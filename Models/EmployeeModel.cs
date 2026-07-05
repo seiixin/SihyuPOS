@@ -1,7 +1,7 @@
-﻿#nullable enable
+#nullable enable
 using System;
 
-namespace HillsCafeManagement.Models
+namespace SihyuPOSPayroll.Models
 {
     /// <summary>
     /// HR-facing employee profile. Login status is owned by the linked UserAccount.
@@ -11,7 +11,7 @@ namespace HillsCafeManagement.Models
         public int Id { get; set; }
 
         // ---- Identity & Contact ----
-        public string? FullName { get; set; } = string.Empty;   // ✅ Ensure FullName exists
+        public string? FullName { get; set; } = string.Empty;   // ? Ensure FullName exists
         public int? Age { get; set; }
         public string? Sex { get; set; } = string.Empty;
         public string? Address { get; set; } = string.Empty;
@@ -47,7 +47,7 @@ namespace HillsCafeManagement.Models
         /// <summary>
         /// Convenience mirror of the linked user's id (null if no linked user).
         /// </summary>
-        public int? UserId => UserAccount?.Id;                  // ✅ Ensure UserId is available
+        public int? UserId => UserAccount?.Id;                  // ? Ensure UserId is available
 
         /// <summary>
         /// Convenience mirror of the linked user's login status:

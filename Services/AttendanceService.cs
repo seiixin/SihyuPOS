@@ -1,12 +1,13 @@
-﻿#nullable enable
-using HillsCafeManagement.Models;
+#nullable enable
+using SihyuPOSPayroll.Helpers;
+using SihyuPOSPayroll.Models;
 using MySql.Data.MySqlClient;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Runtime.CompilerServices;
 
-namespace HillsCafeManagement.Services
+namespace SihyuPOSPayroll.Services
 {
     /// <summary>
     /// Exception that includes a precise reason + diagnostics + source file/line.
@@ -46,7 +47,7 @@ namespace HillsCafeManagement.Services
         public AttendanceService(string? connectionString = null)
         {
             _connectionString = string.IsNullOrWhiteSpace(connectionString)
-                ? "server=localhost;user=root;password=;database=hillscafe_db;"
+                ? ConfigurationHelper.GetConnectionString()
                 : connectionString!;
         }
 
@@ -115,9 +116,9 @@ namespace HillsCafeManagement.Services
         /// <summary>
         /// Returns a dense per-day calendar between [from..to] (inclusive) for the employee,
         /// with computed display status per day:
-        ///   - "Present"  → BOTH time_in and time_out exist for that date
-        ///   - "No Record"→ scheduled workday but missing one/both logs
-        ///   - "Day Off"  → not a scheduled workday
+        ///   - "Present"  ? BOTH time_in and time_out exist for that date
+        ///   - "No Record"? scheduled workday but missing one/both logs
+        ///   - "Day Off"  ? not a scheduled workday
         /// TimeIn is earliest log for the day, TimeOut is latest log for the day.
         /// </summary>
         public List<AttendanceModel> GetDailyAttendanceCalendar(int employeeId, DateTime from, DateTime to)
@@ -473,7 +474,7 @@ namespace HillsCafeManagement.Services
             [CallerFilePath] string callerFile = "",
             [CallerLineNumber] int callerLine = 0)
         {
-            // 1) Load employee’s work schedule + shift
+            // 1) Load employee�s work schedule + shift
             int? workScheduleId = null;
             string? shiftName = null;
 

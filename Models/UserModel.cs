@@ -1,7 +1,7 @@
-﻿#nullable enable
+#nullable enable
 using System;
 
-namespace HillsCafeManagement.Models
+namespace SihyuPOSPayroll.Models
 {
     /// <summary>
     /// Application user linked to an employee record.

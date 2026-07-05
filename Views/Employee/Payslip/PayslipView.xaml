@@ -1,5 +1,5 @@
-﻿<UserControl
-    x:Class="HillsCafeManagement.Views.Employee.Payslip.PayslipView"
+<UserControl
+    x:Class="SihyuPOSPayroll.Views.Employee.Payslip.PayslipView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:vm="clr-namespace:HillsCafeManagement.ViewModels"
@@ -37,7 +37,7 @@
 
         <!-- Title + toolbar -->
         <DockPanel Grid.Row="0" LastChildFill="False" Margin="0,0,0,16">
-            <TextBlock Text="🧾 My Payslips"
+            <TextBlock Text="?? My Payslips"
                        FontSize="28"
                        FontWeight="Bold"
                        Foreground="White"
@@ -145,9 +145,9 @@
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="Pay Date" Binding="{Binding PayDate, StringFormat=d}" Width="*" />
                     <DataGridTextColumn Header="Hours Worked" Binding="{Binding HoursWorked}" Width="*" />
-                    <DataGridTextColumn Header="Rate / Hour" Binding="{Binding RatePerHour, StringFormat=₱{0:N2}}" Width="*" />
-                    <DataGridTextColumn Header="Deductions" Binding="{Binding Deductions, StringFormat=₱{0:N2}}" Width="*" />
-                    <DataGridTextColumn Header="Net Salary" Binding="{Binding NetSalary, StringFormat=₱{0:N2}}" Width="*" />
+                    <DataGridTextColumn Header="Rate / Hour" Binding="{Binding RatePerHour, StringFormat=?{0:N2}}" Width="*" />
+                    <DataGridTextColumn Header="Deductions" Binding="{Binding Deductions, StringFormat=?{0:N2}}" Width="*" />
+                    <DataGridTextColumn Header="Net Salary" Binding="{Binding NetSalary, StringFormat=?{0:N2}}" Width="*" />
                 </DataGrid.Columns>
             </DataGrid>
 
@@ -191,7 +191,7 @@
         <!-- Busy overlay -->
         <Border Background="#80000000"
                 Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}">
-            <TextBlock Text="Loading…"
+            <TextBlock Text="Loading�"
                        Foreground="White"
                        FontSize="18"
                        FontWeight="Bold"

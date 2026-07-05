@@ -1,4 +1,4 @@
-Ôªøusing System;
+using System;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
@@ -6,11 +6,11 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Input;
-using HillsCafeManagement.Helpers;   // RelayCommand / RelayCommand<T>
-using HillsCafeManagement.Services;
+using SihyuPOSPayroll.Helpers;   // RelayCommand / RelayCommand<T>
+using SihyuPOSPayroll.Services;
 using MySql.Data.MySqlClient;
 
-namespace HillsCafeManagement.ViewModels
+namespace SihyuPOSPayroll.ViewModels
 {
     /// <summary>
     /// ViewModel for Positions & Salaries editor.
@@ -89,7 +89,7 @@ namespace HillsCafeManagement.ViewModels
         public void Load()
         {
             IsBusy = true;
-            Status = "Loading‚Ä¶";
+            Status = "LoadingÖ";
 
             try
             {
@@ -202,7 +202,7 @@ namespace HillsCafeManagement.ViewModels
             if (item is null) return;
             item.IsActive = false;
             item.UpdatedAt = DateTime.Now;
-            Status = $"Deactivated ‚Äú{item.Position}‚Äù. Save to apply.";
+            Status = $"Deactivated ì{item.Position}î. Save to apply.";
             RefreshCanExec();
         }
 
@@ -211,7 +211,7 @@ namespace HillsCafeManagement.ViewModels
             if (item is null) return;
 
             var confirm = MessageBox.Show(
-                $"Remove ‚Äú{item.Position}‚Äù from this list?\n(This will be deleted from DB after you Save.)",
+                $"Remove ì{item.Position}î from this list?\n(This will be deleted from DB after you Save.)",
                 "Confirm Remove", MessageBoxButton.YesNo, MessageBoxImage.Question);
 
             if (confirm != MessageBoxResult.Yes) return;

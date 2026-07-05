@@ -1,12 +1,12 @@
-﻿using HillsCafeManagement.Models;
-using HillsCafeManagement.Services;
+using SihyuPOSPayroll.Models;
+using SihyuPOSPayroll.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace HillsCafeManagement.Views.Admin.Employees
+namespace SihyuPOSPayroll.Views.Admin.Employees
 {
     public partial class Employees : UserControl
     {

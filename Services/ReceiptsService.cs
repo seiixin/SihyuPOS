@@ -1,14 +1,15 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
-using HillsCafeManagement.Models;
+using SihyuPOSPayroll.Helpers;
+using SihyuPOSPayroll.Models;
 using MySql.Data.MySqlClient;
 
-namespace HillsCafeManagement.Services
+namespace SihyuPOSPayroll.Services
 {
     public static class ReceiptsServices
     {
-        private const string ConnectionString = "server=localhost;user=root;password=;database=hillscafe_db;";
+        private static string GetConnectionString() => ConfigurationHelper.GetConnectionString();
 
         // ======================================================
         // BASIC CRUD + SEARCH
@@ -22,7 +23,7 @@ namespace HillsCafeManagement.Services
         {
             var receipts = new List<ReceiptsModel>();
 
-            using var conn = new MySqlConnection(ConnectionString);
+            using var conn = new MySqlConnection(GetConnectionString());
             conn.Open();
 
             var sql = @"
@@ -67,7 +68,7 @@ namespace HillsCafeManagement.Services
         /// </summary>
         public static ReceiptsModel? GetById(int id)
         {
-            using var conn = new MySqlConnection(ConnectionString);
+            using var conn = new MySqlConnection(GetConnectionString());
             conn.Open();
 
             var sql = @"
@@ -94,7 +95,7 @@ namespace HillsCafeManagement.Services
         /// </summary>
         public static ReceiptsModel? GetByOrderId(int orderId)
         {
-            using var conn = new MySqlConnection(ConnectionString);
+            using var conn = new MySqlConnection(GetConnectionString());
             conn.Open();
 
             var sql = @"
@@ -121,7 +122,7 @@ namespace HillsCafeManagement.Services
         /// </summary>
         public static int Create(ReceiptsModel model)
         {
-            using var conn = new MySqlConnection(ConnectionString);
+            using var conn = new MySqlConnection(GetConnectionString());
             conn.Open();
 
             const string sql = @"
@@ -141,7 +142,7 @@ namespace HillsCafeManagement.Services
         /// </summary>
         public static void Update(ReceiptsModel model)
         {
-            using var conn = new MySqlConnection(ConnectionString);
+            using var conn = new MySqlConnection(GetConnectionString());
             conn.Open();
 
             const string sql = @"
@@ -163,7 +164,7 @@ namespace HillsCafeManagement.Services
         /// </summary>
         public static void Delete(int id)
         {
-            using var conn = new MySqlConnection(ConnectionString);
+            using var conn = new MySqlConnection(GetConnectionString());
             conn.Open();
 
             const string sql = "DELETE FROM receipts WHERE id = @id;";
@@ -177,7 +178,7 @@ namespace HillsCafeManagement.Services
         /// </summary>
         public static void DeleteByOrderId(int orderId)
         {
-            using var conn = new MySqlConnection(ConnectionString);
+            using var conn = new MySqlConnection(GetConnectionString());
             conn.Open();
 
             const string sql = "DELETE FROM receipts WHERE order_id = @oid;";
@@ -196,7 +197,7 @@ namespace HillsCafeManagement.Services
         /// </summary>
         public static int? EnsureForPaidOrder(int orderId)
         {
-            using var conn = new MySqlConnection(ConnectionString);
+            using var conn = new MySqlConnection(GetConnectionString());
             conn.Open();
 
             // 1) Check order payment status + total
@@ -249,7 +250,7 @@ namespace HillsCafeManagement.Services
         /// </summary>
         public static void SyncForOrder(int orderId)
         {
-            using var conn = new MySqlConnection(ConnectionString);
+            using var conn = new MySqlConnection(GetConnectionString());
             conn.Open();
 
             string? paymentStatus = null;
@@ -275,7 +276,7 @@ namespace HillsCafeManagement.Services
         /// </summary>
         public static int EnsureAllForPaidOrders()
         {
-            using var conn = new MySqlConnection(ConnectionString);
+            using var conn = new MySqlConnection(GetConnectionString());
             conn.Open();
 
             const string sql = @"
@@ -295,7 +296,7 @@ namespace HillsCafeManagement.Services
 
         public static ReceiptDetailsModel? GetDetailsByReceiptId(int receiptId)
         {
-            using var conn = new MySqlConnection(ConnectionString);
+            using var conn = new MySqlConnection(GetConnectionString());
             conn.Open();
 
             // 1) Header (table_number may be string in DB; we’ll parse to int)
@@ -404,7 +405,7 @@ namespace HillsCafeManagement.Services
 // -----------------------------------------------------------------
 // Lightweight DTOs for full-receipt export (unchanged)
 // -----------------------------------------------------------------
-namespace HillsCafeManagement.Models
+namespace SihyuPOSPayroll.Models
 {
     public class ReceiptDetailsModel
     {

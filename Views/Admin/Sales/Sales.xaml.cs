@@ -1,7 +1,7 @@
-﻿using System.Windows.Controls;
-using HillsCafeManagement.ViewModels;
+using System.Windows.Controls;
+using SihyuPOSPayroll.ViewModels;
 
-namespace HillsCafeManagement.Views.Admin.Sales
+namespace SihyuPOSPayroll.Views.Admin.Sales
 {
     public partial class Sales : UserControl
     {

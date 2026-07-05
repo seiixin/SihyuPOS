@@ -1,5 +1,5 @@
-﻿<UserControl
-    x:Class="HillsCafeManagement.Views.Admin.Payroll.Payroll"
+<UserControl
+    x:Class="SihyuPOSPayroll.Views.Admin.Payroll.Payroll"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -18,7 +18,7 @@
         </Grid.RowDefinitions>
 
         <!-- Header -->
-        <TextBlock Text="💰 Payroll Records"
+        <TextBlock Text="?? Payroll Records"
                    FontSize="28"
                    FontWeight="Bold"
                    Foreground="White"
@@ -258,13 +258,13 @@
                 <DataGridTextColumn Header="Period Start" Binding="{Binding StartDate, StringFormat=\{0:yyyy-MM-dd\}}" Width="*" />
                 <DataGridTextColumn Header="Period End" Binding="{Binding EndDate, StringFormat=\{0:yyyy-MM-dd\}}" Width="*" />
                 <DataGridTextColumn Header="Days Worked" Binding="{Binding TotalDaysWorked}" Width="*" />
-                <DataGridTextColumn Header="Gross Salary" Binding="{Binding GrossSalary, StringFormat=₱{0:N2}}" Width="*" />
-                <DataGridTextColumn Header="SSS" Binding="{Binding SssDeduction, StringFormat=₱{0:N2}}" Width="*" />
-                <DataGridTextColumn Header="PhilHealth" Binding="{Binding PhilhealthDeduction, StringFormat=₱{0:N2}}" Width="*" />
-                <DataGridTextColumn Header="Pag-IBIG" Binding="{Binding PagibigDeduction, StringFormat=₱{0:N2}}" Width="*" />
-                <DataGridTextColumn Header="Other Deductions" Binding="{Binding OtherDeductions, StringFormat=₱{0:N2}}" Width="*" />
-                <DataGridTextColumn Header="Bonus" Binding="{Binding Bonus, StringFormat=₱{0:N2}}" Width="*" />
-                <DataGridTextColumn Header="Net Salary" Binding="{Binding NetSalary, StringFormat=₱{0:N2}}" Width="*" />
+                <DataGridTextColumn Header="Gross Salary" Binding="{Binding GrossSalary, StringFormat=?{0:N2}}" Width="*" />
+                <DataGridTextColumn Header="SSS" Binding="{Binding SssDeduction, StringFormat=?{0:N2}}" Width="*" />
+                <DataGridTextColumn Header="PhilHealth" Binding="{Binding PhilhealthDeduction, StringFormat=?{0:N2}}" Width="*" />
+                <DataGridTextColumn Header="Pag-IBIG" Binding="{Binding PagibigDeduction, StringFormat=?{0:N2}}" Width="*" />
+                <DataGridTextColumn Header="Other Deductions" Binding="{Binding OtherDeductions, StringFormat=?{0:N2}}" Width="*" />
+                <DataGridTextColumn Header="Bonus" Binding="{Binding Bonus, StringFormat=?{0:N2}}" Width="*" />
+                <DataGridTextColumn Header="Net Salary" Binding="{Binding NetSalary, StringFormat=?{0:N2}}" Width="*" />
 
                 <!-- Actions -->
                 <DataGridTemplateColumn Header="Actions" Width="120">
@@ -272,7 +272,7 @@
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                                 <!-- Edit -->
-                                <Button Content="📝"
+                                <Button Content="??"
                                         ToolTip="Edit"
                                         Background="Transparent"
                                         BorderThickness="0"
@@ -281,7 +281,7 @@
                                         Click="EditPayroll_Click"
                                         DataContext="{Binding}" />
                                 <!-- Delete -->
-                                <Button Content="🗑"
+                                <Button Content="??"
                                         ToolTip="Delete"
                                         Background="Transparent"
                                         BorderThickness="0"

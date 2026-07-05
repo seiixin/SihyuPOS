@@ -1,13 +1,13 @@
-﻿// Views/Admin/Payroll/AddEditPayroll.xaml.cs
+// Views/Admin/Payroll/AddEditPayroll.xaml.cs
 #nullable enable
-using HillsCafeManagement.Models;
-using HillsCafeManagement.Services;
+using SihyuPOSPayroll.Models;
+using SihyuPOSPayroll.Services;
 using System;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace HillsCafeManagement.Views.Admin.Payrolls
+namespace SihyuPOSPayroll.Views.Admin.Payrolls
 {
     public partial class AddEditPayroll : UserControl
     {
@@ -88,7 +88,7 @@ namespace HillsCafeManagement.Views.Admin.Payrolls
         }
 
         // ========================
-        // Core: attendance → days
+        // Core: attendance ? days
         // ========================
 
         /// <summary>
@@ -112,7 +112,7 @@ namespace HillsCafeManagement.Views.Admin.Payrolls
 
             try
             {
-                // ✅ Single source of truth:
+                // ? Single source of truth:
                 // DISTINCT dates WHERE time_in IS NOT NULL AND time_out IS NOT NULL
                 int days = _attendanceService.GetWorkedDaysCount(employeeId, start, end);
                 DaysWorkedTextBox.Text = days.ToString();

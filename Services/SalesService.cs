@@ -1,18 +1,19 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
-using HillsCafeManagement.Models;
+using SihyuPOSPayroll.Helpers;
+using SihyuPOSPayroll.Models;
 using MySql.Data.MySqlClient;
 
-namespace HillsCafeManagement.Services
+namespace SihyuPOSPayroll.Services
 {
     public static class SalesService
     {
-        private const string ConnectionString = "server=localhost;user=root;password=;database=hillscafe_db;";
+        private static string GetConnectionString() => ConfigurationHelper.GetConnectionString();
 
         public static List<SalesRow> GetSales(ReportPeriod period)
         {
-            using var conn = new MySqlConnection(ConnectionString);
+            using var conn = new MySqlConnection(GetConnectionString());
             conn.Open();
 
             string sql = period switch

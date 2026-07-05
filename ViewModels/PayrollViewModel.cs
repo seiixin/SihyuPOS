@@ -1,14 +1,14 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Input;
-using HillsCafeManagement.Models;
-using HillsCafeManagement.Helpers; // RelayCommand<T>
+using SihyuPOSPayroll.Models;
+using SihyuPOSPayroll.Helpers; // RelayCommand<T>
 
-namespace HillsCafeManagement.ViewModels
+namespace SihyuPOSPayroll.ViewModels
 {
     public class PayrollViewModel : INotifyPropertyChanged
     {

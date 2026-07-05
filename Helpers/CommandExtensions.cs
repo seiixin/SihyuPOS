@@ -1,7 +1,7 @@
-﻿#nullable enable
+#nullable enable
 using System.Windows.Input;
 
-namespace HillsCafeManagement.Helpers
+namespace SihyuPOSPayroll.Helpers
 {
     public static class CommandExtensions
     {

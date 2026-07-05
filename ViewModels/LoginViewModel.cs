@@ -1,15 +1,15 @@
-﻿using System;
+using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Input;
-using HillsCafeManagement.Helpers;
-using HillsCafeManagement.Models;
-using HillsCafeManagement.Services;
-using HillsCafeManagement.Views.Layouts;
-using HillsCafeManagement.ViewModels;
+using SihyuPOSPayroll.Helpers;
+using SihyuPOSPayroll.Models;
+using SihyuPOSPayroll.Services;
+using SihyuPOSPayroll.Views.Layouts;
+using SihyuPOSPayroll.ViewModels;
 
-namespace HillsCafeManagement.ViewModels
+namespace SihyuPOSPayroll.ViewModels
 {
     public class LoginViewModel : INotifyPropertyChanged
     {

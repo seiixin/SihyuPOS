@@ -1,9 +1,9 @@
-﻿using System.Windows;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using HillsCafeManagement.ViewModels;
+using SihyuPOSPayroll.ViewModels;
 
-namespace HillsCafeManagement
+namespace SihyuPOSPayroll
 {
     public partial class MainWindow : Window
     {

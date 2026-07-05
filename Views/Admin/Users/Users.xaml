@@ -1,8 +1,8 @@
-﻿<UserControl
-    x:Class="HillsCafeManagement.Views.Admin.Users.Users"
+<UserControl
+    x:Class="SihyuPOSPayroll.Views.Admin.Users.Users"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:helpers="clr-namespace:HillsCafeManagement.Helpers"
+    xmlns:helpers="clr-namespace:SihyuPOSPayroll.Helpers"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     mc:Ignorable="d"
@@ -23,7 +23,7 @@
         </Grid.RowDefinitions>
 
         <!-- Header -->
-        <TextBlock Text="🧑‍💼 Users &amp; Roles Management"
+        <TextBlock Text="????? Users &amp; Roles Management"
                    FontSize="28"
                    FontWeight="Bold"
                    Foreground="White"
@@ -112,14 +112,14 @@
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                <Button Content="📝"
+                                <Button Content="??"
                                         ToolTip="Edit"
                                         Background="Transparent"
                                         BorderThickness="0"
                                         FontSize="16"
                                         Click="EditUser_Click"
                                         Margin="0,0,5,0"/>
-                                <Button Content="🗑"
+                                <Button Content="??"
                                         ToolTip="Delete"
                                         Background="Transparent"
                                         BorderThickness="0"

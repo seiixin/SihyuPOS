@@ -1,10 +1,10 @@
-﻿using HillsCafeManagement.Models;
-using HillsCafeManagement.Services;
+using SihyuPOSPayroll.Models;
+using SihyuPOSPayroll.Services;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace HillsCafeManagement.Views.Admin.Users
+namespace SihyuPOSPayroll.Views.Admin.Users
 {
     public partial class AddEditUser : UserControl
     {

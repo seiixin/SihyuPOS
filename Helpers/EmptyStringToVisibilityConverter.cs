@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 using System;
 using System.Collections;
 using System.Globalization;
@@ -6,7 +6,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Data;
 
-namespace HillsCafeManagement.Helpers
+namespace SihyuPOSPayroll.Helpers
 {
     /// <summary>
     /// Converts "empty" values to Visibility.Collapsed (or Hidden).

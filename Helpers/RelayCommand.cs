@@ -1,8 +1,8 @@
-﻿#nullable enable
+#nullable enable
 using System;
 using System.Windows.Input;
 
-namespace HillsCafeManagement.Helpers
+namespace SihyuPOSPayroll.Helpers
 {
     // -------- Non-generic --------
     public class RelayCommand : ICommand

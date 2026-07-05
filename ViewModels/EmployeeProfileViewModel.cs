@@ -1,18 +1,18 @@
-ï»¿using System;
+using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using Microsoft.Win32;
 
-using HillsCafeManagement.Models;
-using HillsCafeManagement.Services;
-using HillsCafeManagement.Helpers; // RelayCommand
+using SihyuPOSPayroll.Models;
+using SihyuPOSPayroll.Services;
+using SihyuPOSPayroll.Helpers; // RelayCommand
 
 // Alias the *Services* interface/implementation to avoid namespace ambiguity
 using IEmployeeService = HillsCafeManagement.Services.IEmployeeService;
 using EmployeeService = HillsCafeManagement.Services.EmployeeService;
 
-namespace HillsCafeManagement.ViewModels
+namespace SihyuPOSPayroll.ViewModels
 {
     // NOTE: Removed the local IEmployeeService from ViewModels to avoid conflicts.
     // Use the Services-layer interface via the aliases above.
@@ -37,7 +37,7 @@ namespace HillsCafeManagement.ViewModels
             }
         }
 
-        // 2) Alternative: pass the logged-in UserModel (like Sidebar does), weâ€™ll extract employeeId
+        // 2) Alternative: pass the logged-in UserModel (like Sidebar does), we’ll extract employeeId
         public EmployeeProfileViewModel(UserModel user, IEmployeeService? service = null)
             : this(user?.Employee?.Id ?? 0, service) { }
 
@@ -77,8 +77,8 @@ namespace HillsCafeManagement.ViewModels
             }
         }
 
-        public string DisplayName => Employee?.FullName ?? "â€”";
-        public string DisplayPosition => string.IsNullOrWhiteSpace(Employee?.Position) ? "â€”" : Employee!.Position;
+        public string DisplayName => Employee?.FullName ?? "—";
+        public string DisplayPosition => string.IsNullOrWhiteSpace(Employee?.Position) ? "—" : Employee!.Position;
 
         private bool _isBusy;
         public bool IsBusy

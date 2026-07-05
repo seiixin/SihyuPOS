@@ -1,15 +1,20 @@
-﻿using HillsCafeManagement.Models;
+using SihyuPOSPayroll.Helpers;
+using SihyuPOSPayroll.Models;
 using MySql.Data.MySqlClient;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace HillsCafeManagement.Services
+namespace SihyuPOSPayroll.Services
 {
     public class OrderService
     {
-        private readonly string _connectionString =
-            "server=localhost;user=root;password=;database=hillscafe_db;";
+        private readonly string _connectionString;
+
+        public OrderService()
+        {
+            _connectionString = ConfigurationHelper.GetConnectionString();
+        }
 
         // ---------------- Table dropdown model ----------------
         public sealed class TableOption

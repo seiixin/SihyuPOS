@@ -1,11 +1,11 @@
-﻿using HillsCafeManagement.Models;
-using HillsCafeManagement.Services;
+using SihyuPOSPayroll.Models;
+using SihyuPOSPayroll.Services;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace HillsCafeManagement.Views.Admin.Users
+namespace SihyuPOSPayroll.Views.Admin.Users
 {
     public partial class Users : UserControl
     {
@@ -46,7 +46,7 @@ namespace HillsCafeManagement.Views.Admin.Users
                 LoadUsers();
             };
 
-            // add to RootGrid (which we’ll add to XAML below)
+            // add to RootGrid (which we�ll add to XAML below)
             RootGrid.Children.Add(addUserPopup);
         }
 

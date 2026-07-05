@@ -1,11 +1,12 @@
-﻿#nullable enable
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Data;
-using HillsCafeManagement.Models;
+using SihyuPOSPayroll.Helpers;
+using SihyuPOSPayroll.Models;
 using MySql.Data.MySqlClient;
 
-namespace HillsCafeManagement.Services
+namespace SihyuPOSPayroll.Services
 {
     public interface ILeaveRequestService
     {
@@ -30,7 +31,14 @@ namespace HillsCafeManagement.Services
 
     public sealed class LeaveRequestService : ILeaveRequestService
     {
-        private readonly string _cs = "server=localhost;user=root;password=;database=hillscafe_db;";
+        private readonly string _cs;
+
+        public LeaveRequestService(string? connectionString = null)
+        {
+            _cs = string.IsNullOrWhiteSpace(connectionString)
+                ? ConfigurationHelper.GetConnectionString()
+                : connectionString!;
+        }
 
         // ===== user -> employee resolver (reads users.employee_id) =====
         private int GetEmployeeIdOrThrow(int userId)

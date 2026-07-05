@@ -1,13 +1,13 @@
-﻿using System;
+using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Markup;
-using HillsCafeManagement.Services;
-using HillsCafeManagement.ViewModels;
-using HillsCafeManagement.Models;
+using SihyuPOSPayroll.Services;
+using SihyuPOSPayroll.ViewModels;
+using SihyuPOSPayroll.Models;
 
-namespace HillsCafeManagement.Views.Admin.Attendance
+namespace SihyuPOSPayroll.Views.Admin.Attendance
 {
     public partial class WorkScheduleEdit : UserControl
     {

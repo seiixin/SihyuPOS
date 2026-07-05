@@ -1,4 +1,4 @@
-﻿public class TableModel
+public class TableModel
 {
     public int Id { get; set; }
     public int TableNumber { get; set; }

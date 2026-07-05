@@ -1,6 +1,6 @@
-﻿#nullable enable
-using HillsCafeManagement.Models;
-using HillsCafeManagement.Services;
+#nullable enable
+using SihyuPOSPayroll.Models;
+using SihyuPOSPayroll.Services;
 using Microsoft.Win32;
 using System;
 using System.Globalization;
@@ -10,11 +10,12 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
 
-namespace HillsCafeManagement.Views.Admin.Employees
+namespace SihyuPOSPayroll.Views.Admin.Employees
 {
     public partial class AddEditEmployee : UserControl
     {
         private readonly EmployeeService _employeeService = new();
+        private readonly UserService _userService = new();
         private readonly PositionSalaryService _positionSalaryService = new();
         private readonly WorkScheduleService _workScheduleService = new();   // Work schedule source
 
@@ -85,9 +86,29 @@ namespace HillsCafeManagement.Views.Admin.Employees
                 DateHiredDatePicker.SelectedDate = employee.DateHired;
 
                 // =========================
-                // ACCOUNT STATUS (edit mode)
-                // Set based on linked user; default true if null
+                // ACCOUNT (edit mode)
                 // =========================
+                if (employee.UserAccount != null)
+                {
+                    CreateUserAccountCheckBox.IsChecked = true;
+                    EmailTextBox.Text = employee.UserAccount.Email ?? string.Empty;
+                    // Don't set password, since we don't store plaintext
+                    // Select the correct role
+                    foreach (var item in RoleComboBox.Items)
+                    {
+                        if (item is ComboBoxItem cbi && 
+                            string.Equals(cbi.Content?.ToString(), employee.UserAccount.Role, StringComparison.OrdinalIgnoreCase))
+                        {
+                            RoleComboBox.SelectedItem = cbi;
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    CreateUserAccountCheckBox.IsChecked = false;
+                }
+                
                 var isActive = employee.UserAccount?.IsActive ?? true;
                 if (StatusComboBox != null)
                     StatusComboBox.SelectedValue = isActive ? "1" : "0";
@@ -214,6 +235,24 @@ namespace HillsCafeManagement.Views.Admin.Employees
             };
 
             var isActiveSelected = GetSelectedIsActiveOrDefault(); // read from StatusComboBox
+            var createAccount = CreateUserAccountCheckBox.IsChecked == true;
+            
+            // Validate user account fields if creating account
+            if (createAccount)
+            {
+                if (string.IsNullOrWhiteSpace(EmailTextBox.Text))
+                {
+                    MessageBox.Show("Please enter an email address for the user account.", "Validation",
+                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+                if (string.IsNullOrWhiteSpace(PasswordBox.Password))
+                {
+                    MessageBox.Show("Please enter a password for the user account.", "Validation",
+                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+            }
 
             if (_isEditMode && _editingEmployee != null)
             {
@@ -223,8 +262,45 @@ namespace HillsCafeManagement.Views.Admin.Employees
                 var success = _employeeService.UpdateEmployee(employee);
                 if (success)
                 {
-                    // Apply account status AFTER saving main details
-                    TrySetActiveStatusByEmployeeId(employee.Id, isActiveSelected);
+                    // Handle user account
+                    if (createAccount)
+                    {
+                        var role = (RoleComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Employee";
+                        
+                        if (_editingEmployee.UserAccount != null)
+                        {
+                            // Update existing user
+                            var user = new UserModel
+                            {
+                                Id = _editingEmployee.UserAccount.Id,
+                                Email = EmailTextBox.Text,
+                                Password = PasswordBox.Password, // Will be hashed in UserService
+                                Role = role,
+                                EmployeeId = employee.Id
+                            };
+                            _userService.UpdateUser(user);
+                        }
+                        else
+                        {
+                            // Create new user
+                            var user = new UserModel
+                            {
+                                Email = EmailTextBox.Text,
+                                Password = PasswordBox.Password, // Will be hashed in UserService
+                                Role = role,
+                                EmployeeId = employee.Id
+                            };
+                            _userService.AddUser(user);
+                        }
+                        
+                        // Apply account status
+                        TrySetActiveStatusByEmployeeId(employee.Id, isActiveSelected);
+                    }
+                    else
+                    {
+                        // Optionally delete user account if checkbox is unchecked
+                        // For now, just skip - maybe add later
+                    }
 
                     MessageBox.Show("Employee updated successfully.", "Success",
                         MessageBoxButton.OK, MessageBoxImage.Information);
@@ -243,8 +319,22 @@ namespace HillsCafeManagement.Views.Admin.Employees
                 var success = _employeeService.AddEmployee(employee);
                 if (success)
                 {
-                    // Apply account status AFTER we have employee.Id
-                    TrySetActiveStatusByEmployeeId(employee.Id, isActiveSelected);
+                    // Handle user account
+                    if (createAccount)
+                    {
+                        var role = (RoleComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Employee";
+                        var user = new UserModel
+                        {
+                            Email = EmailTextBox.Text,
+                            Password = PasswordBox.Password, // Will be hashed in UserService
+                            Role = role,
+                            EmployeeId = employee.Id
+                        };
+                        _userService.AddUser(user);
+                        
+                        // Apply account status
+                        TrySetActiveStatusByEmployeeId(employee.Id, isActiveSelected);
+                    }
 
                     MessageBox.Show("Employee added successfully.", "Success",
                         MessageBoxButton.OK, MessageBoxImage.Information);
