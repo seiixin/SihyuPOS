@@ -12,9 +12,8 @@ namespace SihyuPOSPayroll.Services
         private const int CommandTimeoutSeconds = 15;
 
         // ------------------------------------------------------------
-        // OPTIONAL: call ONCE at app startup (App.xaml.cs OnStartup)
-        // to create columns if they don't exist yet.
-        // Or run the equivalent SQL once manually and NEVER call this.
+        // Call ONCE at app startup (App.xaml.cs OnStartup)
+        // to fix table/column names and create columns if they don't exist yet.
         // ------------------------------------------------------------
         private static bool _schemaChecked = false;
         public static void EnsureSchemaAtStartup(string connectionString = "server=localhost;user=root;password=;database=sihyu_pos;")
@@ -26,33 +25,145 @@ namespace SihyuPOSPayroll.Services
                 using var conn = new MySqlConnection(connectionString);
                 conn.Open();
 
-                var existing = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                // 1. Check for old table names (snake_case) and rename to PascalCase
+                // Check PayslipRequests
+                const string checkTablePascal = @"
+                    SELECT COUNT(*)
+                    FROM INFORMATION_SCHEMA.TABLES
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = 'PayslipRequests'";
+                const string checkTableSnake = @"
+                    SELECT COUNT(*)
+                    FROM INFORMATION_SCHEMA.TABLES
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = 'payslip_requests'";
+                bool hasPascal;
+                bool hasSnake;
+                
+                using (var cmd = new MySqlCommand(checkTablePascal, conn))
+                {
+                    hasPascal = Convert.ToInt32(cmd.ExecuteScalar()) > 0;
+                }
+                using (var cmd = new MySqlCommand(checkTableSnake, conn))
+                {
+                    hasSnake = Convert.ToInt32(cmd.ExecuteScalar()) > 0;
+                }
+
+                if (hasSnake && !hasPascal)
+                {
+                    // Rename from payslip_requests to PayslipRequests
+                    using var renameCmd = new MySqlCommand("RENAME TABLE payslip_requests TO PayslipRequests;", conn);
+                    renameCmd.CommandTimeout = CommandTimeoutSeconds;
+                    renameCmd.ExecuteNonQuery();
+                }
+
+                // Now ensure PayslipRequests has all columns with PascalCase names
+                var existingCols = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 const string colCheckSql = @"
                     SELECT COLUMN_NAME
                     FROM INFORMATION_SCHEMA.COLUMNS
                     WHERE TABLE_SCHEMA = DATABASE()
-                      AND TABLE_NAME = 'PayslipRequests'
-                      AND COLUMN_NAME IN ('PayrollId','Reason');";
+                      AND TABLE_NAME = 'PayslipRequests'";
 
                 using (var checkCmd = new MySqlCommand(colCheckSql, conn))
                 {
                     checkCmd.CommandTimeout = CommandTimeoutSeconds;
                     using var rdr = checkCmd.ExecuteReader();
-                    while (rdr.Read()) existing.Add(rdr.GetString(0));
+                    while (rdr.Read()) existingCols.Add(rdr.GetString(0));
                 }
 
-                // Perform DDL only if really needed, and NEVER inside a user TX.
-                if (!existing.Contains("PayrollId"))
+                // Rename old snake_case columns to PascalCase if they exist
+                if (existingCols.Contains("id") && !existingCols.Contains("Id"))
+                {
+                    using var alter = new MySqlCommand("ALTER TABLE PayslipRequests CHANGE COLUMN id Id INT AUTO_INCREMENT PRIMARY KEY;", conn);
+                    alter.CommandTimeout = CommandTimeoutSeconds;
+                    alter.ExecuteNonQuery();
+                    existingCols.Remove("id");
+                    existingCols.Add("Id");
+                }
+                if (existingCols.Contains("employee_id") && !existingCols.Contains("EmployeeId"))
+                {
+                    using var alter = new MySqlCommand("ALTER TABLE PayslipRequests CHANGE COLUMN employee_id EmployeeId INT NOT NULL;", conn);
+                    alter.CommandTimeout = CommandTimeoutSeconds;
+                    alter.ExecuteNonQuery();
+                    existingCols.Remove("employee_id");
+                    existingCols.Add("EmployeeId");
+                }
+                if (existingCols.Contains("payroll_id") && !existingCols.Contains("PayrollId"))
+                {
+                    using var alter = new MySqlCommand("ALTER TABLE PayslipRequests CHANGE COLUMN payroll_id PayrollId INT NULL;", conn);
+                    alter.CommandTimeout = CommandTimeoutSeconds;
+                    alter.ExecuteNonQuery();
+                    existingCols.Remove("payroll_id");
+                    existingCols.Add("PayrollId");
+                }
+                if (existingCols.Contains("full_name") && !existingCols.Contains("FullName"))
+                {
+                    using var alter = new MySqlCommand("ALTER TABLE PayslipRequests CHANGE COLUMN full_name FullName VARCHAR(255) NULL;", conn);
+                    alter.CommandTimeout = CommandTimeoutSeconds;
+                    alter.ExecuteNonQuery();
+                    existingCols.Remove("full_name");
+                    existingCols.Add("FullName");
+                }
+                if (existingCols.Contains("request_date") && !existingCols.Contains("RequestDate"))
+                {
+                    using var alter = new MySqlCommand("ALTER TABLE PayslipRequests CHANGE COLUMN request_date RequestDate DATETIME DEFAULT CURRENT_TIMESTAMP;", conn);
+                    alter.CommandTimeout = CommandTimeoutSeconds;
+                    alter.ExecuteNonQuery();
+                    existingCols.Remove("request_date");
+                    existingCols.Add("RequestDate");
+                }
+                if (existingCols.Contains("updated_date") && !existingCols.Contains("UpdatedDate"))
+                {
+                    using var alter = new MySqlCommand("ALTER TABLE PayslipRequests CHANGE COLUMN updated_date UpdatedDate DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;", conn);
+                    alter.CommandTimeout = CommandTimeoutSeconds;
+                    alter.ExecuteNonQuery();
+                    existingCols.Remove("updated_date");
+                    existingCols.Add("UpdatedDate");
+                }
+
+                // Now add missing columns
+                if (!existingCols.Contains("PayrollId"))
                 {
                     using var alter1 = new MySqlCommand("ALTER TABLE PayslipRequests ADD COLUMN PayrollId INT NULL AFTER EmployeeId;", conn);
                     alter1.CommandTimeout = CommandTimeoutSeconds;
                     alter1.ExecuteNonQuery();
                 }
-                if (!existing.Contains("Reason"))
+                if (!existingCols.Contains("Reason"))
                 {
                     using var alter2 = new MySqlCommand("ALTER TABLE PayslipRequests ADD COLUMN Reason TEXT NULL AFTER Status;", conn);
                     alter2.CommandTimeout = CommandTimeoutSeconds;
                     alter2.ExecuteNonQuery();
+                }
+
+                // 2. Do the same for Payslips table
+                const string checkPayslipPascal = @"
+                    SELECT COUNT(*)
+                    FROM INFORMATION_SCHEMA.TABLES
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = 'Payslips'";
+                const string checkPayslipSnake = @"
+                    SELECT COUNT(*)
+                    FROM INFORMATION_SCHEMA.TABLES
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = 'payslips'";
+                bool hasPayslipPascal;
+                bool hasPayslipSnake;
+                
+                using (var cmd = new MySqlCommand(checkPayslipPascal, conn))
+                {
+                    hasPayslipPascal = Convert.ToInt32(cmd.ExecuteScalar()) > 0;
+                }
+                using (var cmd = new MySqlCommand(checkPayslipSnake, conn))
+                {
+                    hasPayslipSnake = Convert.ToInt32(cmd.ExecuteScalar()) > 0;
+                }
+
+                if (hasPayslipSnake && !hasPayslipPascal)
+                {
+                    using var renameCmd = new MySqlCommand("RENAME TABLE payslips TO Payslips;", conn);
+                    renameCmd.CommandTimeout = CommandTimeoutSeconds;
+                    renameCmd.ExecuteNonQuery();
                 }
 
                 _schemaChecked = true;

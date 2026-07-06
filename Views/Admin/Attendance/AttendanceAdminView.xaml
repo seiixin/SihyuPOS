@@ -5,62 +5,20 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:models="clr-namespace:SihyuPOSPayroll.Models"
-             xmlns:att="clr-namespace:SihyuPOSPayroll.Views.Admin.Attendance"
              mc:Ignorable="d"
-             Background="#2A2B40"
+             Background="#000000"
              d:DesignHeight="600"
              d:DesignWidth="900">
 
-    <!-- ========================= Resources ========================= -->
     <UserControl.Resources>
         <helpers:EmptyStringToVisibilityConverter x:Key="EmptyStringToVisibilityConverter" />
 
-        <!-- Button look -->
-        <Style x:Key="StyledButton" TargetType="Button">
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="Padding" Value="10,5"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}"
-                                CornerRadius="10"
-                                Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center"
-                                              VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Opacity" Value="0.9"/>
-                            </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Opacity" Value="0.5"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <!-- DataGrid header style -->
-        <Style x:Key="GridHeader" TargetType="DataGridColumnHeader">
-            <Setter Property="Background" Value="#6378FF"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="HorizontalContentAlignment" Value="Center"/>
-            <Setter Property="Height" Value="40"/>
-        </Style>
-
-        <!-- Allowed statuses for editing -->
         <x:Array x:Key="EditableStatuses" Type="{x:Type models:LeaveStatus}">
             <models:LeaveStatus>Pending</models:LeaveStatus>
             <models:LeaveStatus>Approved</models:LeaveStatus>
             <models:LeaveStatus>Rejected</models:LeaveStatus>
         </x:Array>
 
-        <!-- Combo look inside cells -->
         <Style x:Key="CellCombo" TargetType="ComboBox">
             <Setter Property="IsEditable" Value="False"/>
             <Setter Property="IsReadOnly" Value="True"/>
@@ -69,203 +27,350 @@
             <Setter Property="SelectedItem"
                     Value="{Binding Status, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
         </Style>
+
+        <!-- ── Styled TabItem so both tabs look dark/green ── -->
+        <Style x:Key="DarkTabItem" TargetType="TabItem">
+            <Setter Property="Foreground"       Value="#9CA3AF"/>
+            <Setter Property="Background"       Value="Transparent"/>
+            <Setter Property="BorderThickness"  Value="0"/>
+            <Setter Property="Padding"          Value="18,10"/>
+            <Setter Property="FontSize"         Value="14"/>
+            <Setter Property="FontFamily"       Value="Segoe UI"/>
+            <Setter Property="Cursor"           Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border x:Name="TabBorder"
+                                Background="Transparent"
+                                BorderBrush="Transparent"
+                                BorderThickness="0,0,0,2"
+                                Padding="{TemplateBinding Padding}">
+                            <TextBlock x:Name="TabText"
+                                       Text="{TemplateBinding Header}"
+                                       Foreground="{TemplateBinding Foreground}"
+                                       FontSize="{TemplateBinding FontSize}"
+                                       FontFamily="{TemplateBinding FontFamily}"
+                                       VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="TabBorder" Property="BorderBrush" Value="#128854"/>
+                                <Setter TargetName="TabText"   Property="Foreground"  Value="#F3F4F6"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="TabText" Property="Foreground" Value="#F3F4F6"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ── Kill the inner DatePickerTextBox rectangle ── -->
+        <Style x:Key="CleanDatePickerTextBox" TargetType="DatePickerTextBox">
+            <Setter Property="Background"      Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding"         Value="10,0"/>
+            <Setter Property="Foreground"      Value="#F3F4F6"/>
+            <Setter Property="CaretBrush"      Value="#128854"/>
+            <Setter Property="SelectionBrush"  Value="#128854"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="DatePickerTextBox">
+                        <Grid>
+                            <ScrollViewer x:Name="PART_ContentHost"
+                                          Background="Transparent"
+                                          BorderThickness="0"
+                                          VerticalAlignment="Center"
+                                          Margin="{TemplateBinding Padding}"/>
+                            <!-- Watermark -->
+                            <ContentControl x:Name="PART_Watermark"
+                                            Content="{TemplateBinding Tag}"
+                                            Foreground="#6B7280"
+                                            Focusable="False"
+                                            IsHitTestVisible="False"
+                                            Margin="{TemplateBinding Padding}"
+                                            VerticalAlignment="Center"
+                                            Visibility="Collapsed"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="Text" Value="">
+                                <Setter TargetName="PART_Watermark" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                            <Trigger Property="Text" Value="{x:Null}">
+                                <Setter TargetName="PART_Watermark" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ── Styled DatePicker (dark bg, green focus, no inner rectangle) ── -->
+        <Style x:Key="DarkDatePicker" TargetType="DatePicker">
+            <Setter Property="Background"      Value="#090B17"/>
+            <Setter Property="Foreground"      Value="#F3F4F6"/>
+            <Setter Property="BorderBrush"     Value="#1A1D2E"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding"         Value="0"/>
+            <Setter Property="Height"          Value="36"/>
+            <Setter Property="FontSize"        Value="13"/>
+            <Setter Property="FontFamily"      Value="Segoe UI"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="DatePicker">
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="32"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Inner text input — styled to have NO border/rectangle -->
+                                <DatePickerTextBox x:Name="PART_TextBox"
+                                                   Grid.Column="0"
+                                                   Style="{StaticResource CleanDatePickerTextBox}"
+                                                   Tag="Select a date"
+                                                   Foreground="{TemplateBinding Foreground}"/>
+
+                                <!-- Calendar icon -->
+                                <Button x:Name="PART_Button"
+                                        Grid.Column="1"
+                                        Background="Transparent"
+                                        BorderThickness="0"
+                                        Cursor="Hand"
+                                        Focusable="False"
+                                        VerticalAlignment="Center"
+                                        HorizontalAlignment="Center">
+                                    <TextBlock Text="&#xE787;"
+                                               FontFamily="Segoe MDL2 Assets"
+                                               FontSize="13"
+                                               Foreground="#477C60"/>
+                                </Button>
+
+                                <!-- Calendar popup -->
+                                <Popup x:Name="PART_Popup"
+                                       Grid.Column="0"
+                                       AllowsTransparency="True"
+                                       Placement="Bottom"
+                                       PlacementTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}"
+                                       StaysOpen="False"/>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush"     Value="#128854"/>
+                                <Setter TargetName="Bd" Property="BorderThickness" Value="1.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ── Styled TextBox for filter inputs ── -->
+        <Style x:Key="FilterTextBox" TargetType="TextBox">
+            <Setter Property="Background"       Value="#090B17"/>
+            <Setter Property="Foreground"       Value="#F3F4F6"/>
+            <Setter Property="BorderBrush"      Value="#1A1D2E"/>
+            <Setter Property="BorderThickness"  Value="1"/>
+            <Setter Property="Padding"          Value="10,0"/>
+            <Setter Property="Height"           Value="36"/>
+            <Setter Property="FontSize"         Value="13"/>
+            <Setter Property="FontFamily"       Value="Segoe UI"/>
+            <Setter Property="CaretBrush"       Value="#128854"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <ScrollViewer x:Name="PART_ContentHost"
+                                          VerticalAlignment="Center"
+                                          HorizontalScrollBarVisibility="Hidden"
+                                          VerticalScrollBarVisibility="Hidden"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush"     Value="#128854"/>
+                                <Setter TargetName="Bd" Property="BorderThickness" Value="1.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
     </UserControl.Resources>
 
-    <!-- ========================= Layout ========================= -->
-    <Grid Margin="20">
+    <Grid Margin="28,24,28,24">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- Header row with title (left) and Work Schedules button (right) -->
+        <!-- ── Page Header ── -->
         <Grid Grid.Row="0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-
-            <TextBlock Text="?? Attendance &amp; Leave Admin"
-                       FontSize="28"
-                       FontWeight="Bold"
-                       Foreground="White"
-                       Margin="0,0,16,0"
-                       VerticalAlignment="Center"/>
-
+            <Border BorderBrush="#072219" BorderThickness="0,0,0,1" Margin="0,0,0,20" Padding="0,0,0,14">
+                <TextBlock Text="Attendance &amp; Leave Admin"
+                           FontSize="26" FontWeight="Bold" Foreground="#477C60"
+                           VerticalAlignment="Center"/>
+            </Border>
             <Button Grid.Column="1"
                     Content="Work Schedules"
-                    Background="#5469D4"
-                    Style="{StaticResource StyledButton}"
-                    Click="OpenWorkSchedules_Click"/>
+                    Style="{StaticResource PrimaryButton}"
+                    Margin="0,0,0,20"
+                    Click="OpenWorkSchedules_Click"
+                    VerticalAlignment="Bottom"/>
         </Grid>
 
+        <!-- ── Tab control ── -->
         <TabControl Grid.Row="1"
-                    Margin="0,16,0,0"
-                    Background="Transparent"
-                    BorderThickness="0"
-                    Padding="0">
+                    Background="#000000"
+                    BorderBrush="#072219"
+                    BorderThickness="0,1,0,0"
+                    Padding="0,8,0,0">
 
-            <!-- ===================== ATTENDANCE ===================== -->
-            <TabItem Header="Attendance">
-                <Grid Background="Transparent" Margin="0,10,0,0">
+            <!-- ══ ATTENDANCE TAB ══ -->
+            <TabItem Header="Attendance" Style="{StaticResource DarkTabItem}">
+                <Grid Background="Transparent" Margin="0,14,0,0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <!-- Filters -->
-                    <Grid Grid.Row="0" Margin="0,0,0,10">
+                    <!-- Filter bar -->
+                    <Grid Grid.Row="0" Margin="0,0,0,12">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <StackPanel Orientation="Horizontal"
-                                    VerticalAlignment="Center"
-                                    Margin="0,0,10,0">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
                             <TextBlock Text="Date:"
-                                       Foreground="White"
+                                       Foreground="#9CA3AF"
                                        VerticalAlignment="Center"
-                                       Margin="0,0,5,0"/>
+                                       Margin="0,0,8,0"/>
                             <DatePicker SelectedDate="{Binding FilterDate, Mode=TwoWay}"
-                                        Width="140"
-                                        Margin="0,0,10,0"/>
+                                        Width="160"
+                                        Style="{StaticResource DarkDatePicker}"
+                                        Margin="0,0,20,0"/>
+
                             <TextBlock Text="Employee ID:"
-                                       Foreground="White"
+                                       Foreground="#9CA3AF"
                                        VerticalAlignment="Center"
-                                       Margin="0,0,5,0"/>
+                                       Margin="0,0,8,0"/>
                             <TextBox Text="{Binding FilterEmployeeId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                     Width="120"
-                                     Margin="0,0,10,0"/>
+                                     Width="130"
+                                     Style="{StaticResource FilterTextBox}"
+                                     Margin="0,0,0,0"/>
                         </StackPanel>
 
                         <Button Grid.Column="1"
                                 Content="Filter"
                                 Command="{Binding FilterCommand}"
-                                Background="#6378FF"
-                                Style="{StaticResource StyledButton}"/>
+                                Style="{StaticResource PrimaryButton}"/>
                     </Grid>
 
                     <!-- Attendance grid -->
-                    <DataGrid Grid.Row="1"
-                              ItemsSource="{Binding Attendances}"
-                              SelectedItem="{Binding SelectedAttendance, Mode=TwoWay}"
-                              AutoGenerateColumns="False"
-                              CanUserAddRows="False"
-                              IsReadOnly="False"
-                              Background="#2A2B40"
-                              Foreground="Black"
-                              RowBackground="#D9D9D9"
-                              AlternatingRowBackground="#D9D9D9"
-                              BorderThickness="0"
-                              GridLinesVisibility="None"
-                              RowHeight="40"
-                              Margin="0,10,0,10"
-                              ColumnHeaderHeight="40">
-                        <DataGrid.Resources>
-                            <Style TargetType="DataGridColumnHeader"
-                                   BasedOn="{StaticResource GridHeader}"/>
-                        </DataGrid.Resources>
+                    <Border Grid.Row="1" Background="#090B17" CornerRadius="10" Padding="0">
+                        <DataGrid ItemsSource="{Binding Attendances}"
+                                  SelectedItem="{Binding SelectedAttendance, Mode=TwoWay}"
+                                  AutoGenerateColumns="False"
+                                  CanUserAddRows="False"
+                                  IsReadOnly="False"
+                                  BorderThickness="0"
+                                  Background="#090B17"
+                                  GridLinesVisibility="None"
+                                  RowHeight="48"
+                                  ColumnHeaderHeight="44">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="ID"          Binding="{Binding Id}"                                              IsReadOnly="True" Width="*"/>
+                                <DataGridTextColumn Header="Employee ID" Binding="{Binding EmployeeId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"    Width="*"/>
+                                <DataGridTextColumn Header="Date"        Binding="{Binding Date, StringFormat=\{0:yyyy-MM-dd\}}"                              Width="*"/>
+                                <DataGridTextColumn Header="Time In"     Binding="{Binding TimeIn, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"         Width="*"/>
+                                <DataGridTextColumn Header="Time Out"    Binding="{Binding TimeOut, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"        Width="*"/>
+                                <DataGridTextColumn Header="Status"      Binding="{Binding Status, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"         Width="*"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Border>
 
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Header="ID"
-                                                Binding="{Binding Id}"
-                                                IsReadOnly="True"
-                                                Width="*"/>
-                            <DataGridTextColumn Header="Employee ID"
-                                                Binding="{Binding EmployeeId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                Width="*"/>
-                            <DataGridTextColumn Header="Date"
-                                                Binding="{Binding Date, StringFormat=\{0:yyyy-MM-dd\}}"
-                                                Width="*"/>
-                            <DataGridTextColumn Header="Time In"
-                                                Binding="{Binding TimeIn, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                Width="*"/>
-                            <DataGridTextColumn Header="Time Out"
-                                                Binding="{Binding TimeOut, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                Width="*"/>
-                            <DataGridTextColumn Header="Status"
-                                                Binding="{Binding Status, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                Width="*"/>
-                        </DataGrid.Columns>
-                    </DataGrid>
-
-                    <!-- CRUD -->
-                    <StackPanel Grid.Row="2"
-                                Orientation="Horizontal"
-                                HorizontalAlignment="Right"
-                                Margin="0,10,0,0">
-                        <Button Content="Add"
-                                Command="{Binding AddCommand}"
-                                Background="#28a745"
-                                Style="{StaticResource StyledButton}"
-                                Margin="0,0,10,0"/>
-                        <Button Content="Update"
-                                Command="{Binding UpdateCommand}"
-                                Background="#ffc107"
-                                Foreground="Black"
-                                Style="{StaticResource StyledButton}"
-                                Margin="0,0,10,0"/>
-                        <Button Content="Delete"
-                                Command="{Binding DeleteCommand}"
-                                Background="#dc3545"
-                                Style="{StaticResource StyledButton}"/>
+                    <!-- CRUD buttons -->
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+                        <Button Content="Add"    Command="{Binding AddCommand}"    Style="{StaticResource PrimaryButton}"   Margin="0,0,8,0"/>
+                        <Button Content="Update" Command="{Binding UpdateCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"/>
+                        <Button Content="Delete" Command="{Binding DeleteCommand}" Style="{StaticResource DangerButton}"/>
                     </StackPanel>
                 </Grid>
             </TabItem>
 
-            <!-- ===================== LEAVE REQUESTS ===================== -->
-            <TabItem Header="Leave Requests">
-                <Grid Background="Transparent" Margin="0,10,0,0">
+            <!-- ══ LEAVE REQUESTS TAB ══ -->
+            <TabItem Header="Leave Requests" Style="{StaticResource DarkTabItem}">
+                <Grid Background="Transparent" Margin="0,14,0,0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <!-- Filters -->
-                    <Grid Grid.Row="0" Margin="0,0,0,10">
+                    <!-- Filter bar -->
+                    <Grid Grid.Row="0" Margin="0,0,0,12">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <StackPanel Orientation="Horizontal"
-                                    VerticalAlignment="Center"
-                                    Margin="0,0,10,0">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
                             <TextBlock Text="Employee ID:"
-                                       Foreground="White"
+                                       Foreground="#9CA3AF"
                                        VerticalAlignment="Center"
-                                       Margin="0,0,5,0"/>
+                                       Margin="0,0,8,0"/>
                             <TextBox Text="{Binding LeaveFilterEmployeeId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                      Width="120"
-                                     Margin="0,0,10,0"/>
+                                     Style="{StaticResource FilterTextBox}"
+                                     Margin="0,0,20,0"/>
 
                             <TextBlock Text="From:"
-                                       Foreground="White"
+                                       Foreground="#9CA3AF"
                                        VerticalAlignment="Center"
-                                       Margin="0,0,5,0"/>
+                                       Margin="0,0,8,0"/>
                             <DatePicker SelectedDate="{Binding LeaveFrom, Mode=TwoWay}"
-                                        Width="140"
-                                        Margin="0,0,10,0"/>
+                                        Width="160"
+                                        Style="{StaticResource DarkDatePicker}"
+                                        Margin="0,0,20,0"/>
 
                             <TextBlock Text="To:"
-                                       Foreground="White"
+                                       Foreground="#9CA3AF"
                                        VerticalAlignment="Center"
-                                       Margin="0,0,5,0"/>
+                                       Margin="0,0,8,0"/>
                             <DatePicker SelectedDate="{Binding LeaveTo, Mode=TwoWay}"
-                                        Width="140"
-                                        Margin="0,0,10,0"/>
+                                        Width="160"
+                                        Style="{StaticResource DarkDatePicker}"
+                                        Margin="0,0,20,0"/>
 
                             <TextBlock Text="Status:"
-                                       Foreground="White"
+                                       Foreground="#9CA3AF"
                                        VerticalAlignment="Center"
-                                       Margin="0,0,5,0"/>
+                                       Margin="0,0,8,0"/>
                             <ComboBox SelectedValue="{Binding LeaveFilterStatus, Mode=TwoWay}"
                                       SelectedValuePath="Tag"
                                       Width="140"
-                                      Margin="0,0,10,0">
+                                      Height="36"
+                                      Margin="0,0,0,0">
                                 <ComboBoxItem Content="Pending"  Tag="{x:Static models:LeaveStatus.Pending}"/>
                                 <ComboBoxItem Content="Approved" Tag="{x:Static models:LeaveStatus.Approved}"/>
                                 <ComboBoxItem Content="Rejected" Tag="{x:Static models:LeaveStatus.Rejected}"/>
@@ -275,124 +380,59 @@
                         <Button Grid.Column="1"
                                 Content="Filter"
                                 Command="{Binding LeaveFilterCommand}"
-                                Background="#6378FF"
-                                Style="{StaticResource StyledButton}"/>
+                                Style="{StaticResource PrimaryButton}"/>
                     </Grid>
 
                     <!-- Leave grid -->
-                    <DataGrid x:Name="LeaveGrid"
-                              Grid.Row="1"
-                              ItemsSource="{Binding LeaveRequests}"
-                              SelectedItem="{Binding SelectedLeave, Mode=TwoWay}"
-                              AutoGenerateColumns="False"
-                              CanUserAddRows="False"
-                              IsReadOnly="False"
-                              SelectionUnit="FullRow"
-                              Background="#2A2B40"
-                              Foreground="Black"
-                              RowBackground="#D9D9D9"
-                              AlternatingRowBackground="#D9D9D9"
-                              BorderThickness="0"
-                              GridLinesVisibility="None"
-                              RowHeight="40"
-                              Margin="0,10,0,10"
-                              ColumnHeaderHeight="40"
-                              SelectionChanged="LeaveGrid_SelectionChanged"
-                              RowEditEnding="LeaveGrid_RowEditEnding"
-                              CurrentCellChanged="LeaveGrid_CurrentCellChanged">
-                        <DataGrid.Resources>
-                            <Style TargetType="DataGridColumnHeader"
-                                   BasedOn="{StaticResource GridHeader}"/>
-                        </DataGrid.Resources>
+                    <Border Grid.Row="1" Background="#090B17" CornerRadius="10" Padding="0">
+                        <DataGrid x:Name="LeaveGrid"
+                                  ItemsSource="{Binding LeaveRequests}"
+                                  SelectedItem="{Binding SelectedLeave, Mode=TwoWay}"
+                                  AutoGenerateColumns="False"
+                                  CanUserAddRows="False"
+                                  IsReadOnly="False"
+                                  SelectionUnit="FullRow"
+                                  BorderThickness="0"
+                                  Background="#090B17"
+                                  GridLinesVisibility="None"
+                                  RowHeight="48"
+                                  ColumnHeaderHeight="44"
+                                  SelectionChanged="LeaveGrid_SelectionChanged"
+                                  RowEditEnding="LeaveGrid_RowEditEnding"
+                                  CurrentCellChanged="LeaveGrid_CurrentCellChanged">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="ID"       Binding="{Binding Id}"              IsReadOnly="True" Width="*"/>
+                                <DataGridTextColumn Header="Employee" Binding="{Binding EmployeeDisplay}" IsReadOnly="True" Width="2*"/>
+                                <DataGridTextColumn Header="Type"     Binding="{Binding LeaveType,  Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="*"/>
+                                <DataGridTextColumn Header="Reason"   Binding="{Binding Reason,     Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="2*"/>
+                                <DataGridTextColumn Header="From"     Binding="{Binding DateFrom,   StringFormat=\{0:yyyy-MM-dd\}}" Width="*"/>
+                                <DataGridTextColumn Header="To"       Binding="{Binding DateTo,     StringFormat=\{0:yyyy-MM-dd\}}" Width="*"/>
+                                <DataGridCheckBoxColumn Header="Half Day" Binding="{Binding HalfDay, Mode=TwoWay}" Width="*"/>
+                                <DataGridComboBoxColumn Header="Status"
+                                                        ItemsSource="{StaticResource EditableStatuses}"
+                                                        SelectedItemBinding="{Binding Status, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                        ElementStyle="{StaticResource CellCombo}"
+                                                        EditingElementStyle="{StaticResource CellComboEditing}"
+                                                        Width="*"/>
+                                <DataGridTextColumn Binding="{Binding EmployeeId}"    Visibility="Collapsed"/>
+                                <DataGridTextColumn Binding="{Binding ApproverUserId}" Visibility="Collapsed"/>
+                                <DataGridTextColumn Binding="{Binding ApprovedAt, StringFormat=\{0:yyyy-MM-dd HH:mm\}}" Visibility="Collapsed"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Border>
 
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Header="ID"
-                                                Binding="{Binding Id}"
-                                                IsReadOnly="True"
-                                                Width="*"/>
-
-                            <!-- NEW: Show Employee Name + ID (read-only) -->
-                            <DataGridTextColumn Header="Employee"
-                                                Binding="{Binding EmployeeDisplay}"
-                                                IsReadOnly="True"
-                                                Width="2*"/>
-
-                            <DataGridTextColumn Header="Type"
-                                                Binding="{Binding LeaveType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                Width="*"/>
-                            <DataGridTextColumn Header="Reason"
-                                                Binding="{Binding Reason, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                Width="2*"/>
-                            <DataGridTextColumn Header="From"
-                                                Binding="{Binding DateFrom, StringFormat=\{0:yyyy-MM-dd\}}"
-                                                Width="*"/>
-                            <DataGridTextColumn Header="To"
-                                                Binding="{Binding DateTo, StringFormat=\{0:yyyy-MM-dd\}}"
-                                                Width="*"/>
-                            <DataGridCheckBoxColumn Header="Half Day"
-                                                    Binding="{Binding HalfDay, Mode=TwoWay}"
-                                                    Width="*"/>
-
-                            <!-- Status dropdown -->
-                            <DataGridComboBoxColumn Header="Status"
-                                                    ItemsSource="{StaticResource EditableStatuses}"
-                                                    SelectedItemBinding="{Binding Status, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                    ElementStyle="{StaticResource CellCombo}"
-                                                    EditingElementStyle="{StaticResource CellComboEditing}"
-                                                    Width="*"/>
-
-                            <!-- Hidden columns (keep for filters/logic) -->
-                            <DataGridTextColumn Header="Employee ID (Hidden)"
-                                                Binding="{Binding EmployeeId}"
-                                                Visibility="Collapsed"/>
-                            <DataGridTextColumn Header="Approver UserId"
-                                                Binding="{Binding ApproverUserId}"
-                                                Visibility="Collapsed"/>
-                            <DataGridTextColumn Header="Approved At"
-                                                Binding="{Binding ApprovedAt, StringFormat=\{0:yyyy-MM-dd HH:mm\}}"
-                                                Visibility="Collapsed"/>
-                        </DataGrid.Columns>
-                    </DataGrid>
-
-                    <!-- Actions -->
-                    <StackPanel Grid.Row="2"
-                                Orientation="Horizontal"
-                                HorizontalAlignment="Right"
-                                Margin="0,10,0,0">
-                        <Button Content="Create"
-                                Command="{Binding LeaveCreateCommand}"
-                                Background="#28a745"
-                                Style="{StaticResource StyledButton}"
-                                Margin="0,0,10,0"/>
-                        <Button Content="Update"
-                                Command="{Binding LeaveUpdateCommand}"
-                                Background="#ffc107"
-                                Foreground="Black"
-                                Style="{StaticResource StyledButton}"
-                                Margin="0,0,10,0"/>
-                        <Button Content="Delete"
-                                Command="{Binding LeaveDeleteCommand}"
-                                Background="#dc3545"
-                                Style="{StaticResource StyledButton}"
-                                Margin="0,0,10,0"/>
-
-                        <Button Content="Approve"
-                                Command="{Binding LeaveApproveCommand}"
-                                Background="#4caf50"
-                                Style="{StaticResource StyledButton}"
-                                Margin="0,0,10,0"/>
-                        <Button Content="Reject"
-                                Command="{Binding LeaveRejectCommand}"
-                                Background="#f44336"
-                                Style="{StaticResource StyledButton}"
-                                Margin="0,0,10,0"/>
-                        <Button Content="Cancel"
-                                Command="{Binding LeaveCancelCommand}"
-                                Background="#9e9e9e"
-                                Style="{StaticResource StyledButton}"/>
+                    <!-- Action buttons -->
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+                        <Button Content="Create"  Command="{Binding LeaveCreateCommand}"  Style="{StaticResource PrimaryButton}"   Margin="0,0,8,0"/>
+                        <Button Content="Update"  Command="{Binding LeaveUpdateCommand}"  Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"/>
+                        <Button Content="Delete"  Command="{Binding LeaveDeleteCommand}"  Style="{StaticResource DangerButton}"    Margin="0,0,8,0"/>
+                        <Button Content="Approve" Command="{Binding LeaveApproveCommand}" Style="{StaticResource PrimaryButton}"   Margin="0,0,8,0"/>
+                        <Button Content="Reject"  Command="{Binding LeaveRejectCommand}"  Style="{StaticResource DangerButton}"    Margin="0,0,8,0"/>
+                        <Button Content="Cancel"  Command="{Binding LeaveCancelCommand}"  Style="{StaticResource SecondaryButton}"/>
                     </StackPanel>
                 </Grid>
             </TabItem>
+
         </TabControl>
     </Grid>
 </UserControl>

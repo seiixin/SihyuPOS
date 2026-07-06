@@ -136,13 +136,13 @@
                 </StackPanel>
 
                 <TextBlock Text="Connect with your team."
-                           FontFamily="Segoe UI, Roboto, Helvetica, Arial, sans-serif"
-                           Foreground="#9CA3AF"
-                           FontSize="18"
-                           TextWrapping="Wrap"
-                           TextAlignment="Center"
-                           Margin="0 25 0 0"
-                           Width="420"/>
+                               FontFamily="Segoe UI, Roboto, Helvetica, Arial, sans-serif"
+                               Foreground="#9CA3AF"
+                               FontSize="18"
+                               TextWrapping="Wrap"
+                               TextAlignment="Center"
+                               Margin="0,25,0,0"
+                               Width="420"/>
             </StackPanel>
         </Border>
 
@@ -151,8 +151,8 @@
             <Border 
                 Background="#111827"
                 CornerRadius="24"
-                Padding="45"
-                Width="420"
+                Padding="55"
+                Width="480"
                 Height="Auto"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"
@@ -169,19 +169,19 @@
                                FontWeight="ExtraBold"
                                Foreground="#34D399"
                                HorizontalAlignment="Center"
-                               Margin="0 0 35 0">
+                               Margin="0,0,0,35">
                         <TextBlock.Effect>
                             <DropShadowEffect BlurRadius="20" Color="#10B981" ShadowDepth="0" Opacity="0.5"/>
                         </TextBlock.Effect>
                     </TextBlock>
 
                     <!-- Email Input -->
-                    <Border Margin="0 0 20 0">
+                    <Border Margin="0,0,0,20">
                         <Grid>
                             <TextBox x:Name="EmailTextBox" 
                                      Text=""
-                                     Height="50"
-                                     Padding="15,0"
+                                     Height="58"
+                                     Padding="18,0"
                                      FontFamily="Segoe UI, Roboto, Helvetica, Arial, sans-serif"
                                      FontSize="14"
                                      BorderThickness="2"
@@ -229,7 +229,7 @@
                                        Text="admin@sihyupos.com"
                                        Foreground="#6B7280"
                                        FontSize="14"
-                                       Padding="15,0"
+                                       Padding="18,0"
                                        IsHitTestVisible="False"
                                        VerticalAlignment="Center"
                                        Margin="2"/>
@@ -237,11 +237,11 @@
                     </Border>
 
                     <!-- Password Input -->
-                    <Border Margin="0 0 20 0">
+                    <Border Margin="0,0,0,20">
                         <Grid>
                             <PasswordBox x:Name="PasswordBox"
-                                         Height="50"
-                                         Padding="15,0"
+                                         Height="58"
+                                         Padding="18,0"
                                          FontFamily="Segoe UI, Roboto, Helvetica, Arial, sans-serif"
                                          FontSize="14"
                                          BorderThickness="2"
@@ -288,7 +288,7 @@
                                        Text="••••••••"
                                        Foreground="#6B7280"
                                        FontSize="14"
-                                       Padding="15,0"
+                                       Padding="18,0"
                                        IsHitTestVisible="False"
                                        VerticalAlignment="Center"
                                        Margin="2"/>
@@ -300,7 +300,7 @@
                                     FontFamily="Segoe UI, Roboto, Helvetica, Arial, sans-serif"
                                     FontSize="14"
                                     FontWeight="Bold"
-                                    Padding="0,0,15,0"
+                                    Padding="0,0,18,0"
                                     HorizontalAlignment="Right"
                                     Click="TogglePassword_Click">
                             </Button>
@@ -312,7 +312,7 @@
                               FontFamily="Segoe UI, Roboto, Helvetica, Arial, sans-serif"
                               Foreground="#9CA3AF"
                               FontSize="14"
-                              Margin="0 0 25 0"
+                              Margin="0,0,0,30"
                               VerticalAlignment="Center">
                         <CheckBox.Style>
                             <Style TargetType="CheckBox">
@@ -320,16 +320,16 @@
                                     <Setter.Value>
                                         <ControlTemplate TargetType="CheckBox">
                                             <StackPanel Orientation="Horizontal">
-                                                <Border Width="20" Height="20"
+                                                <Border Width="24" Height="24"
                                                         Background="#0B0F19"
                                                         BorderBrush="#2D3748"
                                                         BorderThickness="2"
                                                         CornerRadius="4"
-                                                        Margin="0,0,8,0">
+                                                        Margin="0,0,12,0">
                                                     <Path x:Name="CheckMark"
-                                                          Data="M 3 10 L 8 15 L 17 5"
+                                                          Data="M 3 12 L 9 18 L 21 6"
                                                           Stroke="#10B981"
-                                                          StrokeThickness="2"
+                                                          StrokeThickness="3"
                                                           Fill="Transparent"
                                                           Visibility="Collapsed"/>
                                                 </Border>
@@ -353,8 +353,8 @@
                             FontSize="18"
                             FontWeight="Bold"
                             Foreground="#0B0F19"
-                            Height="50"
-                            Margin="0 0 25 0"
+                            Height="58"
+                            Margin="0,0,0,20"
                             Click="LoginButton_Click"
                             Cursor="Hand">
                         <Button.Background>
@@ -403,7 +403,7 @@
                                Foreground="#F87171"
                                TextAlignment="Center"
                                TextWrapping="Wrap"
-                               Margin="0">
+                               Margin="0,10,0,0">
                         <TextBlock.Effect>
                             <DropShadowEffect BlurRadius="15" Color="#EF4444" ShadowDepth="0" Opacity="0.8"/>
                         </TextBlock.Effect>

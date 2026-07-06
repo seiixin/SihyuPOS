@@ -2,123 +2,108 @@
     x:Class="SihyuPOSPayroll.Views.Admin.Payrolls.AddEditPayroll"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    mc:Ignorable="d"
-    d:DesignWidth="400" d:DesignHeight="600"
-    Background="#99000000">
+    Background="{StaticResource BackgroundDarkBrush}">
 
     <!-- semi-transparent overlay -->
-    <Border
-        Width="400"
-        Background="White"
-        Padding="20"
-        CornerRadius="10"
-        VerticalAlignment="Center"
-        HorizontalAlignment="Center">
-
+    <Border Style="{StaticResource CardBorder}" Width="400" VerticalAlignment="Center" HorizontalAlignment="Center">
         <!-- Scrollable content -->
         <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="500">
             <StackPanel>
-
                 <!-- Title -->
                 <TextBlock x:Name="TitleText"
                            Text="Add / Edit Payroll"
                            FontSize="20"
                            FontWeight="Bold"
-                           Foreground="#6378FF"
-                           Margin="0,0,0,10"
-                           TextAlignment="Center" />
+                           Foreground="{StaticResource TextPrimaryBrush}"
+                           Margin="0,0,0,20"
+                           TextAlignment="Center"/>
 
                 <!-- Employee -->
-                <TextBlock Text="Employee:" FontWeight="Bold" />
+                <TextBlock Text="Employee:" FontWeight="Bold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
                 <ComboBox x:Name="EmployeeComboBox"
-                          Margin="0,0,0,10"
+                          Margin="0,0,0,16"
                           DisplayMemberPath="FullName"
                           SelectedValuePath="Id"
-                          ItemsSource="{Binding Employees}" />
+                          ItemsSource="{Binding Employees}"/>
 
                 <!-- Start Date -->
-                <TextBlock Text="Start Date:" FontWeight="Bold" />
+                <TextBlock Text="Start Date:" FontWeight="Bold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
                 <DatePicker x:Name="StartDatePicker"
-                            Margin="0,0,0,10" />
+                            Margin="0,0,0,16"/>
 
                 <!-- End Date -->
-                <TextBlock Text="End Date:" FontWeight="Bold" />
+                <TextBlock Text="End Date:" FontWeight="Bold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
                 <DatePicker x:Name="EndDatePicker"
-                            Margin="0,0,0,10" />
+                            Margin="0,0,0,16"/>
 
                 <!-- Total Days Worked (auto) -->
-                <TextBlock Text="Total Days Worked:" FontWeight="Bold" />
+                <TextBlock Text="Total Days Worked:" FontWeight="Bold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
                 <TextBox x:Name="DaysWorkedTextBox"
                          Margin="0,0,0,4"
                          IsReadOnly="True"
                          IsEnabled="False"
-                         ToolTip="Auto-calculated from attendance (count of shifts with both time in &amp; time out)." />
+                         ToolTip="Auto-calculated from attendance (count of shifts with both time in &amp; time out)."/>
                 <TextBlock Text="(Auto-calculated from attendance)"
-                           Foreground="#666"
+                           Foreground="{StaticResource TextMutedBrush}"
                            FontStyle="Italic"
-                           FontSize="11"
-                           Margin="0,0,0,10"/>
+                           FontSize="12"
+                           Margin="0,0,0,16"/>
 
                 <!-- Gross Salary -->
-                <TextBlock Text="Gross Salary:" FontWeight="Bold" />
+                <TextBlock Text="Gross Salary:" FontWeight="Bold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
                 <TextBox x:Name="GrossSalaryTextBox"
-                         Margin="0,0,0,10" />
+                         Margin="0,0,0,16"/>
 
                 <!-- Deductions -->
-                <TextBlock Text="SSS Deduction:" FontWeight="Bold" />
+                <TextBlock Text="SSS Deduction:" FontWeight="Bold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
                 <TextBox x:Name="SSSTextBox"
-                         Margin="0,0,0,10" />
+                         Margin="0,0,0,16"/>
 
-                <TextBlock Text="PhilHealth Deduction:" FontWeight="Bold" />
+                <TextBlock Text="PhilHealth Deduction:" FontWeight="Bold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
                 <TextBox x:Name="PhilhealthTextBox"
-                         Margin="0,0,0,10" />
+                         Margin="0,0,0,16"/>
 
-                <TextBlock Text="Pag-IBIG Deduction:" FontWeight="Bold" />
+                <TextBlock Text="Pag-IBIG Deduction:" FontWeight="Bold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
                 <TextBox x:Name="PagibigTextBox"
-                         Margin="0,0,0,10" />
+                         Margin="0,0,0,16"/>
 
-                <TextBlock Text="Other Deductions:" FontWeight="Bold" />
+                <TextBlock Text="Other Deductions:" FontWeight="Bold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
                 <TextBox x:Name="OtherDeductionsTextBox"
-                         Margin="0,0,0,10" />
+                         Margin="0,0,0,16"/>
 
                 <!-- Bonus -->
-                <TextBlock Text="Bonus:" FontWeight="Bold" />
+                <TextBlock Text="Bonus:" FontWeight="Bold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
                 <TextBox x:Name="BonusTextBox"
-                         Margin="0,0,0,10" />
+                         Margin="0,0,0,16"/>
 
                 <!-- Net Salary (Readonly) -->
-                <TextBlock Text="Net Salary:" FontWeight="Bold" />
+                <TextBlock Text="Net Salary:" FontWeight="Bold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
                 <TextBox x:Name="NetSalaryTextBox"
-                         Margin="0,0,0,10"
-                         IsReadOnly="True" />
+                         Margin="0,0,0,16"
+                         IsReadOnly="True"/>
 
                 <!-- Branch Name -->
-                <TextBlock Text="Branch Name:" FontWeight="Bold" />
+                <TextBlock Text="Branch Name:" FontWeight="Bold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
                 <TextBox x:Name="BranchNameTextBox"
-                         Margin="0,0,0,10" />
+                         Margin="0,0,0,16"/>
 
                 <!-- Shift Type -->
-                <TextBlock Text="Shift Type:" FontWeight="Bold" />
+                <TextBlock Text="Shift Type:" FontWeight="Bold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
                 <TextBox x:Name="ShiftTypeTextBox"
-                         Margin="0,0,0,10" />
+                         Margin="0,0,0,16"/>
 
                 <!-- Buttons -->
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                     <Button Content="Cancel"
-                            Margin="0,0,10,0"
-                            Padding="8,4"
-                            Click="Cancel_Click" />
+                            Style="{StaticResource SecondaryButton}"
+                            Margin="0,0,8,0"
+                            Click="Cancel_Click"/>
 
                     <Button x:Name="SaveButton"
                             Content="Save"
-                            Background="#6378FF"
-                            Foreground="White"
-                            Padding="8,4"
-                            Click="Save_Click" />
+                            Style="{StaticResource PrimaryButton}"
+                            Click="Save_Click"/>
                 </StackPanel>
-
             </StackPanel>
         </ScrollViewer>
     </Border>

@@ -1,123 +1,91 @@
 <UserControl x:Class="SihyuPOSPayroll.Views.Admin.Inventory.AddEditInventoryDialog"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             Height="400" 
-             Width="450"
-             Background="#282c44">
+             Background="Transparent">
 
-    <Grid Margin="20">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
+    <Border Style="{StaticResource CardBorder}" Width="450" VerticalAlignment="Center" HorizontalAlignment="Center">
+        <Grid Margin="20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
 
-        <!-- Header -->
-        <TextBlock Text="?? Product Information"
-                   FontSize="20"
-                   FontWeight="Bold"
-                   Foreground="White"
-                   Margin="0,0,0,20" />
+            <!-- Header -->
+            <TextBlock Text="Product Information"
+                       FontSize="20"
+                       FontWeight="Bold"
+                       Foreground="{StaticResource TextPrimaryBrush}"
+                       Margin="0,0,0,24"/>
 
-        <!-- Form Fields -->
-        <StackPanel Grid.Row="1" Orientation="Vertical" Margin="0" VerticalAlignment="Top" >
+            <!-- Form Fields -->
+            <StackPanel Grid.Row="1" Orientation="Vertical" VerticalAlignment="Top">
+                <!-- Product Name -->
+                <StackPanel Margin="0,0,0,20">
+                    <TextBlock Text="Product Name *"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               FontWeight="Medium"
+                               Margin="0,0,0,4"/>
+                    <TextBox x:Name="ProductNameTextBox"
+                             Height="40"/>
+                </StackPanel>
 
-            <!-- Product Name -->
-            <StackPanel Margin="0,0,0,15">
-                <TextBlock Text="Product Name *" 
-                           Foreground="White" 
-                           FontWeight="Bold" 
-                           Margin="0,0,0,5" />
-                <TextBox x:Name="ProductNameTextBox"
-                         Height="35"
-                         Background="#d1d3d4"
-                         Foreground="Black"
-                         Padding="8"
-                         BorderThickness="0"
-                         FontSize="14" />
+                <!-- Category Name -->
+                <StackPanel Margin="0,0,0,20">
+                    <TextBlock Text="Category"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               FontWeight="Medium"
+                               Margin="0,0,0,4"/>
+                    <ComboBox x:Name="CategoryComboBox"
+                              Height="40"
+                              IsEditable="True">
+                        <ComboBoxItem>Beverages</ComboBoxItem>
+                        <ComboBoxItem>Dairy</ComboBoxItem>
+                        <ComboBoxItem>Sweeteners</ComboBoxItem>
+                        <ComboBoxItem>Bakery</ComboBoxItem>
+                        <ComboBoxItem>Meat</ComboBoxItem>
+                        <ComboBoxItem>Vegetables</ComboBoxItem>
+                        <ComboBoxItem>Fruits</ComboBoxItem>
+                        <ComboBoxItem>Condiments</ComboBoxItem>
+                        <ComboBoxItem>Snacks</ComboBoxItem>
+                    </ComboBox>
+                </StackPanel>
+
+                <!-- Quantity -->
+                <StackPanel Margin="0,0,0,20">
+                    <TextBlock Text="Quantity *"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               FontWeight="Medium"
+                               Margin="0,0,0,4"/>
+                    <TextBox x:Name="QuantityTextBox"
+                             Height="40"
+                             PreviewTextInput="NumberValidationTextBox"/>
+                </StackPanel>
+
+                <!-- Expiry Date -->
+                <StackPanel Margin="0,0,0,20">
+                    <TextBlock Text="Expiry Date (Optional)"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               FontWeight="Medium"
+                               Margin="0,0,0,4"/>
+                    <DatePicker x:Name="ExpiryDatePicker"
+                                Height="40"/>
+                </StackPanel>
             </StackPanel>
 
-            <!-- Category Name -->
-            <StackPanel Margin="0,0,0,15">
-                <TextBlock Text="Category" 
-                           Foreground="White" 
-                           FontWeight="Bold" 
-                           Margin="0,0,0,5" />
-                <ComboBox x:Name="CategoryComboBox"
-                          Height="35"
-                          Background="#d1d3d4"
-                          Foreground="Black"
-                          Padding="8"
-                          BorderThickness="0"
-                          FontSize="14"
-                          IsEditable="True">
-                    <ComboBoxItem>Beverages</ComboBoxItem>
-                    <ComboBoxItem>Dairy</ComboBoxItem>
-                    <ComboBoxItem>Sweeteners</ComboBoxItem>
-                    <ComboBoxItem>Bakery</ComboBoxItem>
-                    <ComboBoxItem>Meat</ComboBoxItem>
-                    <ComboBoxItem>Vegetables</ComboBoxItem>
-                    <ComboBoxItem>Fruits</ComboBoxItem>
-                    <ComboBoxItem>Condiments</ComboBoxItem>
-                    <ComboBoxItem>Snacks</ComboBoxItem>
-                </ComboBox>
+            <!-- Buttons -->
+            <StackPanel Grid.Row="2"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        Margin="0,12,0,0">
+                <Button Content="Save"
+                        Click="SaveButton_Click"
+                        Style="{StaticResource PrimaryButton}"
+                        Margin="0,0,8,0"/>
+                <Button Content="Cancel"
+                        Click="CancelButton_Click"
+                        Style="{StaticResource SecondaryButton}"/>
             </StackPanel>
-
-            <!-- Quantity -->
-            <StackPanel Margin="0,0,0,15">
-                <TextBlock Text="Quantity *" 
-                           Foreground="White" 
-                           FontWeight="Bold" 
-                           Margin="0,0,0,5" />
-                <TextBox x:Name="QuantityTextBox"
-                         Height="35"
-                         Background="#d1d3d4"
-                         Foreground="Black"
-                         Padding="8"
-                         BorderThickness="0"
-                         FontSize="14"
-                         PreviewTextInput="NumberValidationTextBox" />
-            </StackPanel>
-
-            <!-- Expiry Date -->
-            <StackPanel>
-                <TextBlock Text="Expiry Date (Optional)" 
-                           Foreground="White" 
-                           FontWeight="Bold" 
-                           Margin="0,0,0,5" />
-                <DatePicker x:Name="ExpiryDatePicker"
-                            Height="35"
-                            Background="#d1d3d4"
-                            BorderThickness="0"
-                            FontSize="14" />
-            </StackPanel>
-
-        </StackPanel>
-
-        <!-- Buttons -->
-        <StackPanel Grid.Row="2" 
-                    Orientation="Horizontal" 
-                    HorizontalAlignment="Right" 
-                    Margin="0,20,0,0">
-            <Button Content="Save" 
-                    Click="SaveButton_Click"
-                    Background="#28a745"
-                    Foreground="White"
-                    Padding="20,8"
-                    Margin="0,0,10,0"
-                    BorderThickness="0"
-                    FontWeight="Bold"
-                    Cursor="Hand"
-                    MinWidth="80" />
-            <Button Content="Cancel" 
-                    Click="CancelButton_Click"
-                    Background="#6c757d"
-                    Foreground="White"
-                    Padding="20,8"
-                    BorderThickness="0"
-                    FontWeight="Bold"
-                    Cursor="Hand"
-                    MinWidth="80" />
-        </StackPanel>
-    </Grid>
+        </Grid>
+    </Border>
 </UserControl>

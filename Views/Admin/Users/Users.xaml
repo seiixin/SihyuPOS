@@ -6,15 +6,14 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     mc:Ignorable="d"
-    Background="#2A2B40"
+    Background="#000000"
     d:DesignHeight="500" d:DesignWidth="800">
 
     <UserControl.Resources>
         <helpers:EmptyStringToVisibilityConverter x:Key="EmptyStringToVisibilityConverter" />
     </UserControl.Resources>
 
-    <!-- Root container for layout and popups -->
-    <Grid x:Name="RootGrid" Margin="20">
+    <Grid x:Name="RootGrid" Margin="28,24,28,24">
 
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -22,34 +21,47 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- Header -->
-        <TextBlock Text="????? Users &amp; Roles Management"
-                   FontSize="28"
-                   FontWeight="Bold"
-                   Foreground="White"
-                   Margin="0,0,0,20" />
+        <!-- Page Header -->
+        <Border BorderBrush="#072219" BorderThickness="0,0,0,1" Margin="0,0,0,20" Padding="0,0,0,14">
+            <TextBlock Text="Users &amp; Roles Management"
+                       FontSize="26"
+                       FontWeight="Bold"
+                       Foreground="#477C60"/>
+        </Border>
 
         <!-- Search & Add Button -->
-        <Grid Grid.Row="1" Margin="0,0,0,10">
+        <Grid Grid.Row="1" Margin="0,0,0,14">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
-            <!-- Search box with placeholder -->
-            <Border Background="#D9D9D9" CornerRadius="10" Padding="8" Margin="0,0,10,0">
+            <!-- Search box -->
+            <Border Background="#090B17"
+                    CornerRadius="8"
+                    BorderBrush="#0D1117"
+                    BorderThickness="1"
+                    Padding="12,0"
+                    Height="40"
+                    Margin="0,0,12,0">
                 <Grid>
+                    <TextBlock Text="&#xE721;"
+                               FontFamily="Segoe MDL2 Assets"
+                               FontSize="13"
+                               Foreground="#6B7280"
+                               VerticalAlignment="Center"
+                               HorizontalAlignment="Left"
+                               Margin="0,0,8,0"/>
                     <TextBox x:Name="SearchBox"
                              Background="Transparent"
                              BorderThickness="0"
-                             Foreground="Black"
-                             FontSize="14"
+                             Foreground="#F3F4F6"
                              VerticalContentAlignment="Center"
+                             Margin="20,0,0,0"
                              TextChanged="SearchBox_TextChanged" />
-
-                    <TextBlock Text="Search"
-                               Foreground="Gray"
-                               Margin="4,0,0,0"
+                    <TextBlock Text="Search users..."
+                               Foreground="#6B7280"
+                               Margin="24,0,0,0"
                                VerticalAlignment="Center"
                                IsHitTestVisible="False"
                                Visibility="{Binding Text.Length, Converter={StaticResource EmptyStringToVisibilityConverter}, ElementName=SearchBox}" />
@@ -59,77 +71,49 @@
             <!-- Add User Button -->
             <Button x:Name="AddUserButton"
                     Grid.Column="1"
-                    Content="Add User"
-                    Background="#6378FF"
-                    Foreground="White"
-                    FontWeight="Bold"
-                    Padding="10,5"
-                    Cursor="Hand"
-                    BorderThickness="0"
-                    Click="AddUser_Click">
-                <Button.Template>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}"
-                                CornerRadius="10"
-                                Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                    </ControlTemplate>
-                </Button.Template>
-            </Button>
+                    Content="+ Add User"
+                    Style="{StaticResource PrimaryButton}"
+                    Padding="18,10"
+                    Click="AddUser_Click"/>
         </Grid>
 
-        <!-- DataGrid listing users -->
-        <DataGrid x:Name="UserDataGrid"
-                  Grid.Row="2"
-                  AutoGenerateColumns="False"
-                  CanUserAddRows="False"
-                  IsReadOnly="True"
-                  Background="#2A2B40"
-                  Foreground="Black"
-                  RowBackground="#D9D9D9"
-                  AlternatingRowBackground="#D9D9D9"
-                  BorderThickness="0"
-                  GridLinesVisibility="None"
-                  ColumnHeaderHeight="40"
-                  RowHeight="40"
-                  Margin="0,10,0,0">
-
-            <DataGrid.Resources>
-                <Style TargetType="DataGridColumnHeader">
-                    <Setter Property="Background" Value="#6378FF" />
-                    <Setter Property="Foreground" Value="White" />
-                    <Setter Property="FontWeight" Value="Bold" />
-                    <Setter Property="HorizontalContentAlignment" Value="Center" />
-                </Style>
-            </DataGrid.Resources>
-
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="Email" Binding="{Binding Email}" Width="*" />
-                <DataGridTextColumn Header="Role" Binding="{Binding Role}" Width="*" />
-                <DataGridTextColumn Header="Linked Employee" Binding="{Binding Employee.FullName}" Width="*" />
-                <DataGridTemplateColumn Header="Actions" Width="100">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                <Button Content="??"
-                                        ToolTip="Edit"
-                                        Background="Transparent"
-                                        BorderThickness="0"
-                                        FontSize="16"
-                                        Click="EditUser_Click"
-                                        Margin="0,0,5,0"/>
-                                <Button Content="??"
-                                        ToolTip="Delete"
-                                        Background="Transparent"
-                                        BorderThickness="0"
-                                        FontSize="16"
-                                        Click="DeleteUser_Click"/>
-                            </StackPanel>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-            </DataGrid.Columns>
-        </DataGrid>
+        <!-- DataGrid -->
+        <Border Grid.Row="2" Background="#090B17" CornerRadius="10" Padding="0">
+            <DataGrid x:Name="UserDataGrid"
+                      AutoGenerateColumns="False"
+                      CanUserAddRows="False"
+                      IsReadOnly="True"
+                      ColumnHeaderHeight="44"
+                      RowHeight="48"
+                      Background="#090B17"
+                      BorderThickness="0"
+                      RowBackground="#090B17"
+                      AlternatingRowBackground="#000000">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Email" Binding="{Binding Email}" Width="*" />
+                    <DataGridTextColumn Header="Role" Binding="{Binding Role}" Width="*" />
+                    <DataGridTextColumn Header="Linked Employee" Binding="{Binding Employee.FullName}" Width="*" />
+                    <DataGridTemplateColumn Header="Actions" Width="180">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <Button Content="Edit"
+                                            ToolTip="Edit"
+                                            Style="{StaticResource SecondaryButton}"
+                                            Padding="12,6"
+                                            Click="EditUser_Click"
+                                            Margin="0,0,8,0"/>
+                                    <Button Content="Delete"
+                                            ToolTip="Delete"
+                                            Style="{StaticResource DangerButton}"
+                                            Padding="12,6"
+                                            Click="DeleteUser_Click"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
     </Grid>
 </UserControl>

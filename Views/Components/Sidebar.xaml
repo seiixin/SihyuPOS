@@ -3,59 +3,181 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:vm="clr-namespace:SihyuPOSPayroll.ViewModels"
              mc:Ignorable="d"
-             d:DesignHeight="600" d:DesignWidth="250"
+             d:DesignHeight="700" d:DesignWidth="260"
              x:Name="SidebarControl">
 
-    <!-- Entire Sidebar with Scroll (scrollbar hidden) -->
-    <Border Background="{StaticResource SurfaceDarkBrush}">
-        <ScrollViewer x:Name="SidebarScroll"
-                      VerticalScrollBarVisibility="Hidden"
-                      CanContentScroll="False"
-                      PanningMode="VerticalOnly"
-                      PreviewMouseWheel="SidebarScroll_PreviewMouseWheel">
-            <StackPanel Margin="0,30" HorizontalAlignment="Center">
+    <!-- ── Root: pitch-black sidebar ── -->
+    <Border Background="#000000">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>   <!-- Row 0: brand header -->
+                <RowDefinition Height="*"/>      <!-- Row 1: scrollable menu -->
+                <RowDefinition Height="Auto"/>   <!-- Row 2: profile widget -->
+            </Grid.RowDefinitions>
 
-                <!-- Profile Section -->
-                <Grid Width="64" Height="64">
-                    <!-- Outer ring -->
-                    <Ellipse Stroke="{StaticResource BorderSubtleBrush}" StrokeThickness="1"/>
-                    <!-- Circular avatar -->
-                    <Ellipse>
-                        <Ellipse.Fill>
-                            <!-- Bind to SidebarViewModel.UserAvatarImage -->
+            <!-- ── Row 0: Brand header ── -->
+            <Border Grid.Row="0"
+                    Padding="20,18,20,14"
+                    Background="#000000"
+                    BorderBrush="#0D1117"
+                    BorderThickness="0,0,0,1">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <!-- Green accent square logo -->
+                    <Border Width="30" Height="30"
+                            Background="#128854"
+                            CornerRadius="6"
+                            Margin="0,0,10,0">
+                        <TextBlock Text="S"
+                                   FontSize="16"
+                                   FontWeight="Bold"
+                                   Foreground="#000000"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"/>
+                    </Border>
+                    <TextBlock Text="SihyuPOS"
+                               FontSize="17"
+                               FontWeight="Bold"
+                               Foreground="#F3F4F6"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+
+            <!-- ── Row 1: Scrollable menu grouped by section ── -->
+            <ScrollViewer Grid.Row="1"
+                          x:Name="SidebarScroll"
+                          VerticalScrollBarVisibility="Hidden"
+                          HorizontalScrollBarVisibility="Disabled"
+                          CanContentScroll="False"
+                          PanningMode="VerticalOnly"
+                          PreviewMouseWheel="SidebarScroll_PreviewMouseWheel"
+                          Background="#000000">
+
+                <!-- ItemsControl over MenuGroups -->
+                <ItemsControl ItemsSource="{Binding MenuGroups}"
+                              Margin="0,6,0,8">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:SidebarMenuGroup}">
+                            <StackPanel>
+                                <!-- Section header label — bold green, uppercase -->
+                                <TextBlock Text="{Binding Header}"
+                                           FontSize="10"
+                                           FontWeight="Bold"
+                                           Foreground="#477C60"
+                                           Margin="20,14,0,4"
+                                           IsHitTestVisible="False"
+                                           Focusable="False"/>
+
+                                <!-- Menu items ListBox -->
+                                <ListBox ItemsSource="{Binding Items}"
+                                         Background="Transparent"
+                                         BorderThickness="0"
+                                         Padding="10,0">
+                                    <ListBox.ItemContainerStyle>
+                                        <Style TargetType="ListBoxItem">
+                                            <Setter Property="Background" Value="Transparent"/>
+                                            <Setter Property="Foreground" Value="#9CA3AF"/>
+                                            <Setter Property="Padding" Value="10,9"/>
+                                            <Setter Property="Margin" Value="0,1"/>
+                                            <Setter Property="Cursor" Value="Hand"/>
+                                            <Setter Property="BorderThickness" Value="0"/>
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="ListBoxItem">
+                                                        <Border x:Name="ItemBorder"
+                                                                Background="{TemplateBinding Background}"
+                                                                CornerRadius="7"
+                                                                Padding="{TemplateBinding Padding}"
+                                                                BorderThickness="2,0,0,0"
+                                                                BorderBrush="Transparent">
+                                                            <ContentPresenter/>
+                                                        </Border>
+                                                        <ControlTemplate.Triggers>
+                                                            <Trigger Property="IsSelected" Value="True">
+                                                                <Setter TargetName="ItemBorder" Property="Background" Value="#072219"/>
+                                                                <Setter TargetName="ItemBorder" Property="BorderBrush" Value="#128854"/>
+                                                                <Setter Property="Foreground" Value="#F3F4F6"/>
+                                                            </Trigger>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <Setter TargetName="ItemBorder" Property="Background" Value="#0D1117"/>
+                                                            </Trigger>
+                                                        </ControlTemplate.Triggers>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                            <EventSetter Event="MouseLeftButtonUp"
+                                                         Handler="MenuItem_Clicked"/>
+                                        </Style>
+                                    </ListBox.ItemContainerStyle>
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate DataType="{x:Type vm:SidebarMenuItem}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <!-- Icon glyph -->
+                                                <TextBlock Text="{Binding Icon}"
+                                                           FontFamily="Segoe MDL2 Assets"
+                                                           FontSize="15"
+                                                           Width="22"
+                                                           VerticalAlignment="Center"
+                                                           Margin="0,0,10,0"
+                                                           Foreground="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=Foreground}"/>
+                                                <!-- Label -->
+                                                <TextBlock Text="{Binding Label}"
+                                                           FontSize="13"
+                                                           VerticalAlignment="Center"
+                                                           Foreground="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=Foreground}"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
+            <!-- ── Row 2: Profile widget (bottom-anchored) ── -->
+            <Border Grid.Row="2"
+                    Background="#090B17"
+                    Padding="14,12"
+                    BorderBrush="#0D1117"
+                    BorderThickness="0,1,0,0">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+
+                    <!-- Circular avatar with emerald ring -->
+                    <Border Width="38" Height="38"
+                            CornerRadius="19"
+                            BorderBrush="#128854"
+                            BorderThickness="2">
+                        <Border.Background>
                             <ImageBrush ImageSource="{Binding UserAvatarImage}"
                                         Stretch="UniformToFill"/>
-                        </Ellipse.Fill>
-                    </Ellipse>
-                </Grid>
+                        </Border.Background>
+                        <Border CornerRadius="17"
+                                Background="#072219">
+                            <TextBlock Text="{Binding UserInitials, FallbackValue='A'}"
+                                       FontSize="14"
+                                       FontWeight="Bold"
+                                       Foreground="#128854"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"/>
+                        </Border>
+                    </Border>
 
-                <TextBlock Text="{Binding UserRole, FallbackValue='ADMIN'}"
-                           FontWeight="Bold"
-                           FontSize="16"
-                           Margin="0,10,0,0"
-                           Foreground="{StaticResource TextPrimaryBrush}"
-                           TextAlignment="Center"/>
-                <TextBlock Text="{Binding UserName, FallbackValue='(First Last)'}"
-                           FontSize="12"
-                           HorizontalAlignment="Center"
-                           Foreground="{StaticResource TextSecondaryBrush}"
-                           Margin="0,0,0,20"/>
+                    <!-- Name + role -->
+                    <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding UserName, FallbackValue='Admin'}"
+                                   FontSize="13"
+                                   FontWeight="SemiBold"
+                                   Foreground="#F3F4F6"/>
+                        <TextBlock Text="{Binding UserRole, FallbackValue='Administrator'}"
+                                   FontSize="11"
+                                   Foreground="#477C60"
+                                   Margin="0,2,0,0"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
 
-                <!-- Sidebar Menu -->
-                <ListBox Width="220"
-                         Background="Transparent"
-                         BorderThickness="0"
-                         ItemsSource="{Binding MenuItems}"
-                         SelectedItem="{Binding SelectedMenuItem, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding}" />
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
-
-            </StackPanel>
-        </ScrollViewer>
+        </Grid>
     </Border>
 </UserControl>

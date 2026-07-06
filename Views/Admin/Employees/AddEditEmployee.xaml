@@ -7,130 +7,128 @@
     mc:Ignorable="d"
     d:DesignWidth="450"
     d:DesignHeight="600"
-    Background="#99000000">
+    Background="#AA000000">
 
     <Border
+        Style="{StaticResource CardBorder}"
         Width="450"
-        Background="White"
-        Padding="20"
-        CornerRadius="10"
+        Padding="24"
         VerticalAlignment="Center"
         HorizontalAlignment="Center"
         MaxHeight="600">
 
-        <ScrollViewer VerticalScrollBarVisibility="Auto" Height="560">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="560">
             <StackPanel>
-
                 <!-- Title -->
                 <TextBlock x:Name="TitleText"
                            Text="Add / Edit Employee"
                            FontSize="20"
                            FontWeight="Bold"
-                           Foreground="#6378FF"
-                           Margin="0,0,0,15"
+                           Foreground="{StaticResource AccentEmeraldBrush}"
+                           Margin="0,0,0,16"
                            TextAlignment="Center" />
 
                 <!-- Helper note for auto-fill -->
-                <Border Background="#F1F5FF" CornerRadius="8" Padding="10" Margin="0,0,0,12">
+                <Border Style="{StaticResource CardBorder}" Padding="12" Margin="0,0,0,12" Background="#1A3D33">
                     <TextBlock
-                        Text="Tip: Selecting a Position will auto-fill Salary Per Day from Payroll ? Positions &amp; Salaries. Enable Manual Override to edit salary."
-                        Foreground="#223"
+                        Text="Tip: Selecting a Position will auto-fill Salary Per Day from Payroll &gt; Positions &amp; Salaries. Enable Manual Override to edit salary."
+                        Foreground="{StaticResource TextSecondaryBrush}"
                         TextWrapping="Wrap"/>
                 </Border>
 
                 <!-- Full Name -->
-                <TextBlock Text="Full Name:" FontWeight="Bold" />
-                <TextBox x:Name="FullNameTextBox" Margin="0,0,0,10" />
+                <TextBlock Text="Full Name:" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" />
+                <TextBox x:Name="FullNameTextBox" Margin="0,4,0,12" />
 
                 <!-- Age -->
-                <TextBlock Text="Age:" FontWeight="Bold" />
-                <TextBox x:Name="AgeTextBox" Margin="0,0,0,10" />
+                <TextBlock Text="Age:" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" />
+                <TextBox x:Name="AgeTextBox" Margin="0,4,0,12" />
 
                 <!-- Sex -->
-                <TextBlock Text="Sex:" FontWeight="Bold" />
-                <ComboBox x:Name="SexComboBox" Margin="0,0,0,10" SelectedIndex="0">
+                <TextBlock Text="Sex:" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" />
+                <ComboBox x:Name="SexComboBox" Margin="0,4,0,12" SelectedIndex="0">
                     <ComboBoxItem Content="Male" />
                     <ComboBoxItem Content="Female" />
                     <ComboBoxItem Content="Other" />
                 </ComboBox>
 
                 <!-- Address -->
-                <TextBlock Text="Address:" FontWeight="Bold" />
-                <TextBox x:Name="AddressTextBox" Margin="0,0,0,10" />
+                <TextBlock Text="Address:" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" />
+                <TextBox x:Name="AddressTextBox" Margin="0,4,0,12" />
 
                 <!-- Birthday -->
-                <TextBlock Text="Birthday:" FontWeight="Bold" />
-                <DatePicker x:Name="BirthdayDatePicker" Margin="0,0,0,10" SelectedDateFormat="Short" />
+                <TextBlock Text="Birthday:" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" />
+                <DatePicker x:Name="BirthdayDatePicker" Margin="0,4,0,12" SelectedDateFormat="Short" />
 
                 <!-- Contact Number -->
-                <TextBlock Text="Contact Number:" FontWeight="Bold" />
-                <TextBox x:Name="ContactNumberTextBox" Margin="0,0,0,10" />
+                <TextBlock Text="Contact Number:" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" />
+                <TextBox x:Name="ContactNumberTextBox" Margin="0,4,0,12" />
 
                 <!-- Position -->
-                <TextBlock Text="Position:" FontWeight="Bold" />
+                <TextBlock Text="Position:" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" />
                 <ComboBox x:Name="PositionComboBox"
                           IsEditable="True"
-                          Margin="0,0,0,6"
+                          Margin="0,4,0,4"
                           StaysOpenOnEdit="True"
                           IsTextSearchEnabled="True"
                           SelectionChanged="PositionComboBox_SelectionChanged"/>
                 <TextBlock Text="(Start typing to search...)"
-                           Foreground="#777" FontSize="11" Margin="0,0,0,10"/>
+                           Foreground="{StaticResource TextMutedBrush}" FontSize="11" Margin="0,0,0,12"/>
 
                 <!-- Salary Per Day + manual override -->
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,2">
-                    <TextBlock Text="Salary Per Day:" FontWeight="Bold" VerticalAlignment="Center"/>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,4">
+                    <TextBlock Text="Salary Per Day:" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                     <CheckBox x:Name="ManualOverrideCheckBox"
                               Content="Manual Override"
-                              Margin="12,0,0,0"
+                              Margin="16,0,0,0"
                               VerticalAlignment="Center"
                               Checked="ManualOverrideCheckBox_Checked"
                               Unchecked="ManualOverrideCheckBox_Unchecked"/>
                 </StackPanel>
 
                 <TextBox x:Name="SalaryPerDayTextBox"
-                         Margin="0,0,0,10"
+                         Margin="0,4,0,12"
                          IsReadOnly="True"
                          ToolTip="Auto-filled from position. Enable Manual Override to edit." />
 
                 <!-- Work Schedule -->
-                <TextBlock Text="Work Schedule:" FontWeight="Bold" />
+                <TextBlock Text="Work Schedule:" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" />
                 <ComboBox x:Name="WorkScheduleComboBox"
-                          Margin="0,0,0,10"
+                          Margin="0,4,0,12"
                           DisplayMemberPath="Label"
                           SelectedValuePath="Id" />
 
                 <!-- Shift -->
-                <TextBlock Text="Shift:" FontWeight="Bold" />
-                <ComboBox x:Name="ShiftComboBox" Margin="0,0,0,10" SelectedIndex="0">
+                <TextBlock Text="Shift:" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" />
+                <ComboBox x:Name="ShiftComboBox" Margin="0,4,0,12" SelectedIndex="0">
                     <ComboBoxItem Content="Morning" />
                     <ComboBoxItem Content="Afternoon" />
                     <ComboBoxItem Content="Night" />
                 </ComboBox>
 
                 <!-- SSS -->
-                <TextBlock Text="SSS Number:" FontWeight="Bold" />
-                <TextBox x:Name="SssNumberTextBox" Margin="0,0,0,10" />
+                <TextBlock Text="SSS Number:" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" />
+                <TextBox x:Name="SssNumberTextBox" Margin="0,4,0,12" />
 
                 <!-- Philhealth -->
-                <TextBlock Text="Philhealth Number:" FontWeight="Bold" />
-                <TextBox x:Name="PhilhealthNumberTextBox" Margin="0,0,0,10" />
+                <TextBlock Text="Philhealth Number:" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" />
+                <TextBox x:Name="PhilhealthNumberTextBox" Margin="0,4,0,12" />
 
                 <!-- Pagibig -->
-                <TextBlock Text="Pagibig Number:" FontWeight="Bold" />
-                <TextBox x:Name="PagibigNumberTextBox" Margin="0,0,0,10" />
+                <TextBlock Text="Pagibig Number:" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" />
+                <TextBox x:Name="PagibigNumberTextBox" Margin="0,4,0,12" />
 
                 <!-- Profile Photo -->
-                <TextBlock Text="Profile Photo:" FontWeight="Bold" />
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,10" VerticalAlignment="Center">
+                <TextBlock Text="Profile Photo:" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" />
+                <StackPanel Orientation="Horizontal" Margin="0,4,0,12" VerticalAlignment="Center">
                     <Button x:Name="UploadImageButton"
                             Content="Upload Photo"
-                            Padding="8,4"
+                            Style="{StaticResource SecondaryButton}"
                             Click="UploadImage_Click"/>
                     <TextBlock x:Name="SelectedImageLabel"
-                               Margin="10,0,0,0"
+                               Margin="12,0,0,0"
                                VerticalAlignment="Center"
-                               Foreground="#555"
+                               Foreground="{StaticResource TextSecondaryBrush}"
                                Text="No file selected"/>
                 </StackPanel>
 
@@ -138,24 +136,24 @@
                 <Image x:Name="ImagePreview"
                        Height="120"
                        Stretch="Uniform"
-                       Margin="0,0,0,10"
+                       Margin="0,0,0,12"
                        Visibility="Collapsed"/>
 
                 <!-- Emergency Contact -->
-                <TextBlock Text="Emergency Contact:" FontWeight="Bold" />
-                <TextBox x:Name="EmergencyContactTextBox" Margin="0,0,0,10" />
+                <TextBlock Text="Emergency Contact:" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" />
+                <TextBox x:Name="EmergencyContactTextBox" Margin="0,4,0,12" />
 
                 <!-- Date Hired -->
-                <TextBlock Text="Date Hired:" FontWeight="Bold" />
-                <DatePicker x:Name="DateHiredDatePicker" Margin="0,0,0,10" SelectedDateFormat="Short" />
+                <TextBlock Text="Date Hired:" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" />
+                <DatePicker x:Name="DateHiredDatePicker" Margin="0,4,0,12" SelectedDateFormat="Short" />
 
                 <!-- ========================= -->
                 <!-- Account Status (AFTER details) -->
                 <!-- ========================= -->
-                <Separator Margin="0,5,0,10"/>
-                <TextBlock Text="Account Status:" FontWeight="Bold" />
+                <Separator Margin="0,8,0,12"/>
+                <TextBlock Text="Account Status:" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" />
                 <ComboBox x:Name="StatusComboBox"
-                          Margin="0,0,0,15"
+                          Margin="0,4,0,16"
                           SelectedIndex="0"
                           SelectedValuePath="Tag">
                     <ComboBoxItem Content="Active (can log in)"    Tag="1"/>
@@ -164,10 +162,9 @@
 
                 <!-- Buttons -->
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button Content="Cancel" Margin="0,0,10,0" Padding="8,4" Click="Cancel_Click" />
-                    <Button x:Name="SaveButton" Content="Save" Background="#6378FF" Foreground="White" Padding="8,4" Click="Save_Click" />
+                    <Button Content="Cancel" Style="{StaticResource SecondaryButton}" Margin="0,0,10,0" Click="Cancel_Click" />
+                    <Button x:Name="SaveButton" Content="Save" Style="{StaticResource PrimaryButton}" Click="Save_Click" />
                 </StackPanel>
-
             </StackPanel>
         </ScrollViewer>
     </Border>

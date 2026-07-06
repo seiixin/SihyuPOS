@@ -2,12 +2,8 @@
     x:Class="SihyuPOSPayroll.Views.Admin.Payroll.PositionSalaryEdit"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d"
     x:Name="Root"
-    d:DesignWidth="520" d:DesignHeight="640"
-    Background="#99000000"
+    Background="{StaticResource BackgroundDarkBrush}"
     Focusable="True">
 
     <!-- ? InputBindings must be directly under the root element -->
@@ -20,23 +16,21 @@
                     Command="{Binding DataContext.CloseCommand, ElementName=Root}"/>
     </UserControl.InputBindings>
 
-    <Border Width="520" Background="White" Padding="20" CornerRadius="10"
-            VerticalAlignment="Center" HorizontalAlignment="Center">
+    <Border Style="{StaticResource CardBorder}" Width="520" VerticalAlignment="Center" HorizontalAlignment="Center">
         <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="580">
             <StackPanel>
-
                 <TextBlock Text="Positions &amp; Salaries"
-                           FontSize="20" FontWeight="Bold" Foreground="#6378FF"
-                           Margin="0,0,0,14" TextAlignment="Center"/>
+                           FontSize="20" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}"
+                           Margin="0,0,0,20" TextAlignment="Center"/>
 
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,10">
-                    <Button Content="Reload" Command="{Binding ReloadCommand}" Margin="0,0,8,0" Padding="8,4"/>
-                    <Button Content="Add Row" Command="{Binding AddCommand}" Margin="0,0,8,0" Padding="8,4"/>
-                    <Button Content="Save" Command="{Binding SaveCommand}" Background="#57B894" Foreground="White" Padding="8,4"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,16">
+                    <Button Content="Reload" Command="{Binding ReloadCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"/>
+                    <Button Content="Add Row" Command="{Binding AddCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"/>
+                    <Button Content="Save" Command="{Binding SaveCommand}" Style="{StaticResource PrimaryButton}"/>
                 </StackPanel>
 
                 <TextBlock Text="Tip: Type a Position and Daily Rate below. Use Save to persist to DB."
-                           Foreground="#666" Margin="0,0,0,8"/>
+                           Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,16"/>
 
                 <DataGrid x:Name="RatesGrid"
                           ItemsSource="{Binding Rates}"
@@ -46,26 +40,18 @@
                           CanUserDeleteRows="False"
                           HeadersVisibility="Column"
                           GridLinesVisibility="None"
-                          RowHeight="34"
-                          ColumnHeaderHeight="34"
-                          Margin="0,0,0,10"
+                          RowHeight="48"
+                          ColumnHeaderHeight="48"
+                          Margin="0,0,0,16"
                           IsReadOnly="False"
                           VirtualizingPanel.IsVirtualizing="True"
                           VirtualizingPanel.ScrollUnit="Pixel"
                           KeyboardNavigation.TabNavigation="Cycle">
-
                     <DataGrid.Resources>
-                        <Style TargetType="DataGridColumnHeader">
-                            <Setter Property="Background" Value="#6378FF"/>
-                            <Setter Property="Foreground" Value="White"/>
-                            <Setter Property="FontWeight" Value="Bold"/>
-                            <Setter Property="HorizontalContentAlignment" Value="Center"/>
-                        </Style>
-
                         <!-- ? EventSetter is allowed; Setter for events is NOT -->
                         <Style x:Key="NumericTextBox" TargetType="TextBox">
                             <Setter Property="HorizontalContentAlignment" Value="Right"/>
-                            <Setter Property="Padding" Value="2"/>
+                            <Setter Property="Padding" Value="8,6"/>
                             <EventSetter Event="PreviewTextInput" Handler="NumericOnly_PreviewTextInput"/>
                         </Style>
                     </DataGrid.Resources>
@@ -96,18 +82,14 @@
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                        <Button Content="??"
+                                        <Button Content="Edit"
                                                 ToolTip="Edit"
-                                                Background="Transparent"
-                                                BorderThickness="0"
-                                                FontSize="16"
-                                                Click="EditRow_Click"
-                                                Margin="0,0,6,0"/>
-                                        <Button Content="??"
+                                                Style="{StaticResource SecondaryButton}"
+                                                Margin="0,0,8,0"
+                                                Click="EditRow_Click"/>
+                                        <Button Content="Delete"
                                                 ToolTip="Delete"
-                                                Background="Transparent"
-                                                BorderThickness="0"
-                                                FontSize="16"
+                                                Style="{StaticResource DangerButton}"
                                                 Click="DeleteRow_Click"/>
                                     </StackPanel>
                                 </DataTemplate>
@@ -117,22 +99,19 @@
                 </DataGrid>
 
                 <DockPanel>
-                    <TextBlock Text="{Binding Status}" Foreground="#444" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding Status}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                     <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
-                        <TextBlock Text="Busy: " Foreground="#666" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="Busy: " Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,8,0" VerticalAlignment="Center"/>
                         <CheckBox IsChecked="{Binding IsBusy, Mode=OneWay}"
                                   IsEnabled="False"
                                   Focusable="False"
                                   VerticalAlignment="Center"
-                                  Margin="0,0,12,0"/>
+                                  Margin="0,0,16,0"/>
                         <Button Content="Close"
                                 Command="{Binding CloseCommand}"
-                                Background="#6378FF"
-                                Foreground="White"
-                                Padding="8,4"/>
+                                Style="{StaticResource SecondaryButton}"/>
                     </StackPanel>
                 </DockPanel>
-
             </StackPanel>
         </ScrollViewer>
     </Border>

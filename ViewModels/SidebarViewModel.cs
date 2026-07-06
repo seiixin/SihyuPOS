@@ -36,6 +36,21 @@ using EmployeeService = SihyuPOSPayroll.Services.EmployeeService;
 
 namespace SihyuPOSPayroll.ViewModels
 {
+    // ── Sidebar menu data models ───────────────────────────────────────────────
+    public class SidebarMenuGroup
+    {
+        public string Header { get; set; } = string.Empty;        // e.g. "INFRASTRUCTURE"
+        public List<SidebarMenuItem> Items { get; set; } = new();
+    }
+
+    public class SidebarMenuItem
+    {
+        public string Label   { get; set; } = string.Empty;       // e.g. "Dashboard"
+        public string Icon    { get; set; } = string.Empty;       // Segoe MDL2 glyph e.g. "\uE80F"
+        public ICommand? Command { get; set; }                    // Navigate(Label)
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
     public class SidebarViewModel : INotifyPropertyChanged
     {
         // -----------------------------
@@ -62,6 +77,7 @@ namespace SihyuPOSPayroll.ViewModels
         {
             _service = service ?? new EmployeeService();
             MenuItems = new ObservableCollection<string>();
+            MenuGroups = new ObservableCollection<SidebarMenuGroup>();
             NavigateCommand = new RelayCommand<string?>(Navigate);
             ReloadProfileCommand = new RelayCommand<object?>(_ => LoadEmployee(_employeeId));
             RefreshAvatarCommand = new RelayCommand<object?>(_ => RefreshAvatar());
@@ -116,6 +132,7 @@ namespace SihyuPOSPayroll.ViewModels
         }
 
         public ObservableCollection<string> MenuItems { get; }
+        public ObservableCollection<SidebarMenuGroup> MenuGroups { get; }
         public ICommand NavigateCommand { get; }
         public ICommand ReloadProfileCommand { get; }
         public ICommand RefreshAvatarCommand { get; }
@@ -225,6 +242,7 @@ namespace SihyuPOSPayroll.ViewModels
         private void InitializeMenuItems()
         {
             MenuItems.Clear();
+            MenuGroups.Clear();
 
             switch (_role)
             {
@@ -242,6 +260,55 @@ namespace SihyuPOSPayroll.ViewModels
                     MenuItems.Add("Tables");
                     MenuItems.Add("Sales & Reports");
                     MenuItems.Add("Logout");
+
+                    MenuGroups.Add(new SidebarMenuGroup
+                    {
+                        Header = "INFRASTRUCTURE",
+                        Items = new List<SidebarMenuItem>
+                        {
+                            MakeItem("Dashboard",  "\uE80F"),
+                            MakeItem("Inventory",  "\uE8B4"),
+                        }
+                    });
+                    MenuGroups.Add(new SidebarMenuGroup
+                    {
+                        Header = "ADMIN TOOLS",
+                        Items = new List<SidebarMenuItem>
+                        {
+                            MakeItem("Users", "\uE716"),
+                            MakeItem("Menu",  "\uE8A5"),
+                        }
+                    });
+                    MenuGroups.Add(new SidebarMenuGroup
+                    {
+                        Header = "OPERATIONS",
+                        Items = new List<SidebarMenuItem>
+                        {
+                            MakeItem("Attendance", "\uE787"),
+                            MakeItem("Employees",  "\uE716"),
+                            MakeItem("Payroll",    "\uE8C7"),
+                        }
+                    });
+                    MenuGroups.Add(new SidebarMenuGroup
+                    {
+                        Header = "FINANCIALS",
+                        Items = new List<SidebarMenuItem>
+                        {
+                            MakeItem("Payslip Requests", "\uE7C3"),
+                            MakeItem("Receipts",         "\uE9F9"),
+                            MakeItem("Orders",           "\uE8A5"),
+                            MakeItem("Tables",           "\uE7EF"),
+                            MakeItem("Sales & Reports",  "\uE9D9"),
+                        }
+                    });
+                    MenuGroups.Add(new SidebarMenuGroup
+                    {
+                        Header = "ACCOUNT",
+                        Items = new List<SidebarMenuItem>
+                        {
+                            MakeItem("Logout", "\uF3B1"),
+                        }
+                    });
                     break;
 
                 case "CASHIER":
@@ -251,6 +318,27 @@ namespace SihyuPOSPayroll.ViewModels
                     MenuItems.Add("Receipts");
                     MenuItems.Add("Tables");
                     MenuItems.Add("Logout");
+
+                    MenuGroups.Add(new SidebarMenuGroup
+                    {
+                        Header = "POS",
+                        Items = new List<SidebarMenuItem>
+                        {
+                            MakeItem("POS",       "\uE8C9"),
+                            MakeItem("Inventory", "\uE8B4"),
+                            MakeItem("Orders",    "\uE8A5"),
+                            MakeItem("Receipts",  "\uE9F9"),
+                            MakeItem("Tables",    "\uE7EF"),
+                        }
+                    });
+                    MenuGroups.Add(new SidebarMenuGroup
+                    {
+                        Header = "ACCOUNT",
+                        Items = new List<SidebarMenuItem>
+                        {
+                            MakeItem("Logout", "\uF3B1"),
+                        }
+                    });
                     break;
 
                 case "EMPLOYEE":
@@ -259,9 +347,36 @@ namespace SihyuPOSPayroll.ViewModels
                     MenuItems.Add("Payslip");
                     MenuItems.Add("Profile");
                     MenuItems.Add("Logout");
+
+                    MenuGroups.Add(new SidebarMenuGroup
+                    {
+                        Header = "WORKSPACE",
+                        Items = new List<SidebarMenuItem>
+                        {
+                            MakeItem("Attendance", "\uE787"),
+                            MakeItem("Payslip",    "\uE9F9"),
+                            MakeItem("Profile",    "\uE77B"),
+                        }
+                    });
+                    MenuGroups.Add(new SidebarMenuGroup
+                    {
+                        Header = "ACCOUNT",
+                        Items = new List<SidebarMenuItem>
+                        {
+                            MakeItem("Logout", "\uF3B1"),
+                        }
+                    });
                     break;
             }
         }
+
+        /// <summary>Creates a SidebarMenuItem wired to Navigate(label).</summary>
+        private SidebarMenuItem MakeItem(string label, string icon) => new SidebarMenuItem
+        {
+            Label   = label,
+            Icon    = icon,
+            Command = new RelayCommand<object?>(_ => Navigate(label)),
+        };
 
         private void SetDefaultView()
         {

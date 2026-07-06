@@ -5,49 +5,40 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
              d:DesignWidth="520" d:DesignHeight="640"
-             Background="#99000000"
+             Background="{StaticResource BackgroundDarkBrush}"
              Focusable="True">
 
     <!-- Centered card container -->
-    <Border Width="520"
-            Background="White"
-            Padding="20"
-            CornerRadius="10"
-            VerticalAlignment="Center"
-            HorizontalAlignment="Center">
-
+    <Border Style="{StaticResource CardBorder}" Width="520" VerticalAlignment="Center" HorizontalAlignment="Center">
         <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="580">
             <StackPanel>
-
                 <!-- Title -->
                 <TextBlock Text="Work Days Schedule Setup"
                            FontSize="20"
                            FontWeight="Bold"
-                           Foreground="#6378FF"
-                           Margin="0,0,0,14"
+                           Foreground="{StaticResource TextPrimaryBrush}"
+                           Margin="0,0,0,16"
                            TextAlignment="Center"/>
 
                 <!-- Toolbar -->
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,10">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,16">
                     <Button Content="Reload"
                             Command="{Binding ReloadCommand}"
-                            Margin="0,0,8,0"
-                            Padding="8,4"/>
+                            Style="{StaticResource SecondaryButton}"
+                            Margin="0,0,8,0"/>
                     <Button Content="Add Row"
                             Command="{Binding AddCommand}"
-                            Margin="0,0,8,0"
-                            Padding="8,4"/>
+                            Style="{StaticResource SecondaryButton}"
+                            Margin="0,0,8,0"/>
                     <Button Content="Save"
                             Command="{Binding SaveCommand}"
-                            Background="#57B894"
-                            Foreground="White"
-                            Padding="8,4"/>
+                            Style="{StaticResource PrimaryButton}"/>
                 </StackPanel>
 
                 <!-- Tip -->
                 <TextBlock Text="Tip: Label can be 'MWF', 'TTh', or any name. Double-click the Days cell (or click Edit) to edit Mon-Sun."
-                           Foreground="#666"
-                           Margin="0,0,0,8"/>
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           Margin="0,0,0,16"/>
 
                 <!-- DataGrid -->
                 <DataGrid x:Name="SchedulesGrid"
@@ -58,22 +49,11 @@
                           CanUserDeleteRows="False"
                           HeadersVisibility="Column"
                           GridLinesVisibility="None"
-                          RowHeight="34"
-                          ColumnHeaderHeight="34"
-                          Margin="0,0,0,10"
+                          RowHeight="48"
+                          ColumnHeaderHeight="48"
+                          Margin="0,0,0,16"
                           IsReadOnly="False">
-
-                    <DataGrid.Resources>
-                        <Style TargetType="DataGridColumnHeader">
-                            <Setter Property="Background" Value="#6378FF"/>
-                            <Setter Property="Foreground" Value="White"/>
-                            <Setter Property="FontWeight" Value="Bold"/>
-                            <Setter Property="HorizontalContentAlignment" Value="Center"/>
-                        </Style>
-                    </DataGrid.Resources>
-
                     <DataGrid.Columns>
-
                         <!-- Label (editable) -->
                         <DataGridTextColumn Header="Label"
                                             Width="*"
@@ -84,7 +64,7 @@
                             <!-- display -->
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding DaysText}" />
+                                    <TextBlock Text="{Binding DaysText}" Foreground="{StaticResource TextPrimaryBrush}"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
 
@@ -123,45 +103,37 @@
                                         <!-- Edit: begin editing this row -->
                                         <Button Content="Edit"
                                                 ToolTip="Edit"
-                                                Background="Transparent"
-                                                BorderThickness="0"
-                                                FontSize="14"
-                                                Click="EditRow_Click"
-                                                Margin="0,0,6,0"/>
+                                                Style="{StaticResource SecondaryButton}"
+                                                Margin="0,0,8,0"
+                                                Click="EditRow_Click"/>
 
                                         <!-- Delete: remove from grid; persists after Save -->
                                         <Button Content="Delete"
                                                 ToolTip="Delete"
-                                                Background="Transparent"
-                                                BorderThickness="0"
-                                                FontSize="14"
+                                                Style="{StaticResource DangerButton}"
                                                 Click="DeleteRow_Click"/>
                                     </StackPanel>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-
                     </DataGrid.Columns>
                 </DataGrid>
 
                 <!-- Footer -->
                 <DockPanel>
-                    <TextBlock Text="{Binding Status}" Foreground="#444" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding Status}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                     <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
-                        <TextBlock Text="Busy: " Foreground="#666" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="Busy: " Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,8,0" VerticalAlignment="Center"/>
                         <CheckBox IsChecked="{Binding IsBusy, Mode=OneWay}"
                                   IsEnabled="False"
                                   Focusable="False"
                                   VerticalAlignment="Center"
-                                  Margin="0,0,12,0"/>
+                                  Margin="0,0,16,0"/>
                         <Button Content="Close"
                                 Command="{Binding CloseCommand}"
-                                Background="#6378FF"
-                                Foreground="White"
-                                Padding="8,4"/>
+                                Style="{StaticResource SecondaryButton}"/>
                     </StackPanel>
                 </DockPanel>
-
             </StackPanel>
         </ScrollViewer>
     </Border>

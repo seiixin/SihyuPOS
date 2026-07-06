@@ -10,7 +10,7 @@
     <Grid>
         <!-- Layout Columns -->
         <Grid.ColumnDefinitions>
-            <ColumnDefinition x:Name="SidebarColumn" Width="250"/>
+            <ColumnDefinition x:Name="SidebarColumn" Width="260"/>
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
@@ -21,26 +21,81 @@
                             DataContext="{Binding}" />
 
         <!-- Main Content Area -->
-        <Grid Grid.Column="1" Background="{StaticResource BackgroundDarkBrush}">
+        <Grid Grid.Column="1" Background="#000000">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <!-- Toggle Button -->
-            <Button Content="☰"
-                    Width="40"
-                    Height="40"
-                    Margin="10"
-                    HorizontalAlignment="Left"
-                    VerticalAlignment="Top"
-                    Click="ToggleSidebar_Click"
-                    Style="{StaticResource SecondaryButton}"/>
+            <!-- ── Row 0: TopBar ── -->
+            <Border Grid.Row="0"
+                    Height="52"
+                    Background="#090B17"
+                    BorderBrush="#0D1117"
+                    BorderThickness="0,0,0,1">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>  <!-- toggle -->
+                        <ColumnDefinition Width="*"/>     <!-- search bar -->
+                        <ColumnDefinition Width="Auto"/>  <!-- notification bell -->
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Sidebar toggle button -->
+                    <Button Grid.Column="0"
+                            Content="&#xE700;"
+                            Style="{StaticResource SecondaryButton}"
+                            Width="44"
+                            Height="44"
+                            Margin="6,0,0,0"
+                            Click="ToggleSidebar_Click"
+                            FontFamily="Segoe MDL2 Assets"
+                            FontSize="16"
+                            VerticalAlignment="Center"/>
+
+                    <!-- Search bar -->
+                    <Border Grid.Column="1"
+                            Background="#0D1117"
+                            CornerRadius="8"
+                            Padding="12,0"
+                            Margin="12,8"
+                            VerticalAlignment="Stretch">
+                        <Grid>
+                            <TextBlock Text="&#xE721;"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="13"
+                                       Foreground="#6B7280"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,8,0"
+                                       HorizontalAlignment="Left"/>
+                            <TextBox x:Name="TopBarSearchBox"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     Foreground="#F3F4F6"
+                                     VerticalAlignment="Center"
+                                     Margin="20,0,0,0"
+                                     Text=""/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Notification bell -->
+                    <Button Grid.Column="2"
+                            Style="{StaticResource IconButton}"
+                            Width="44"
+                            Height="44"
+                            Margin="0,0,10,0"
+                            VerticalAlignment="Center">
+                        <TextBlock Text="&#xEA8F;"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   FontSize="18"
+                                   Foreground="#9CA3AF"/>
+                    </Button>
+                </Grid>
+            </Border>
 
             <!-- Main Content View -->
             <ContentControl Grid.Row="1"
                             Content="{Binding CurrentView}"
-                            Margin="10"
+                            Margin="0"
                             HorizontalAlignment="Stretch"
                             VerticalAlignment="Stretch"/>
         </Grid>
