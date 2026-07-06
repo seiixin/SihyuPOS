@@ -11,6 +11,7 @@ using System.Windows.Media.Imaging;
 using SihyuPOSPayroll.Models;
 using SihyuPOSPayroll.Services;
 using SihyuPOSPayroll.Views.Admin.Attendance;
+using SihyuPOSPayroll.Views.Admin.Categories;
 using SihyuPOSPayroll.Views.Admin.Dashboard;
 using SihyuPOSPayroll.Views.Admin.Employees;
 using SihyuPOSPayroll.Views.Admin.Inventory;
@@ -260,6 +261,7 @@ namespace SihyuPOSPayroll.ViewModels
                     MenuItems.Add("Attendance");
                     MenuItems.Add("Menu");
                     MenuItems.Add("Inventory");
+                    MenuItems.Add("Categories");
                     MenuItems.Add("POS");
                     MenuItems.Add("Orders");
                     MenuItems.Add("Receipts");
@@ -273,8 +275,9 @@ namespace SihyuPOSPayroll.ViewModels
                         Header = "INFRASTRUCTURE",
                         Items = new List<SidebarMenuItem>
                         {
-                            MakeItem("Dashboard",  "\uE80F"),
-                            MakeItem("Inventory",  "\uE8B4"),
+                            MakeItem("Dashboard",   "\uE80F"),
+                            MakeItem("Inventory",   "\uE8B4"),
+                            MakeItem("Categories",  "\uE8FD"),
                         }
                     });
                     MenuGroups.Add(new SidebarMenuGroup
@@ -521,16 +524,17 @@ namespace SihyuPOSPayroll.ViewModels
             "Employees"       => "Employees",
             "Payroll"         => "Payroll",
             "Payslip Requests"=> "PayslipRequests",
-            "Payslip"         => "PayslipRequests",   // Employee role label
+            "Payslip"         => "PayslipRequests",
             "Attendance"      => "Attendance",
             "Menu"            => "Menu",
             "Inventory"       => "Inventory",
+            "Categories"      => "Inventory",   // same visibility key as Inventory
             "Orders"          => "Orders",
             "Receipts"        => "Receipts",
             "Tables"          => "Tables",
             "Sales & Reports" => "Sales",
             "Settings"        => "Settings",
-            _                 => string.Empty,        // Logout, Profile, POS, Orders, etc.
+            _                 => string.Empty,
         };
 
         /// <summary>
@@ -621,6 +625,10 @@ namespace SihyuPOSPayroll.ViewModels
                 case "inventory":
                     if (IsAdmin) CurrentView = new Inventory();
                     else if (IsCashier) CurrentView = new InventoryView();
+                    break;
+
+                case "categories":
+                    if (IsAdmin) CurrentView = new CategoriesView();
                     break;
 
                 case "orders":

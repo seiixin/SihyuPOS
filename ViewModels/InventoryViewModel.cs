@@ -117,10 +117,11 @@ namespace SihyuPOSPayroll.ViewModels
                 var src = (AddEditInventoryDialog)sender;
                 var newItem = new InventoryItem
                 {
-                    ProductName = src.ProductName,
+                    ProductName  = src.ProductName,
                     CategoryName = src.CategoryName,
-                    Quantity = src.Quantity,
-                    ExpiryDate = src.ExpiryDate
+                    Quantity     = src.Quantity,
+                    ExpiryDate   = src.ExpiryDate,
+                    ImagePath    = src.ImagePath,
                 };
 
                 try
@@ -157,10 +158,11 @@ namespace SihyuPOSPayroll.ViewModels
                 if (!saved) return;
 
                 var src = (AddEditInventoryDialog)sender;
-                item.ProductName = src.ProductName;
+                item.ProductName  = src.ProductName;
                 item.CategoryName = src.CategoryName;
-                item.Quantity = src.Quantity;
-                item.ExpiryDate = src.ExpiryDate;
+                item.Quantity     = src.Quantity;
+                item.ExpiryDate   = src.ExpiryDate;
+                item.ImagePath    = src.ImagePath;
 
                 try
                 {

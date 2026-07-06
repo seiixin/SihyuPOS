@@ -11,6 +11,48 @@ namespace SihyuPOSPayroll.Services
     {
         private readonly string connectionString = "server=localhost;user=root;password=;database=sihyu_pos;";
 
+        public InventoryService()
+        {
+            // Run schema migration immediately so ImagePath column always exists
+            // before any SELECT is executed.
+            EnsureImagePathColumn();
+        }
+
+        /// <summary>
+        /// Adds ImagePath column to inventory_items if it doesn't exist yet.
+        /// Safe to call multiple times — uses IF NOT EXISTS (MySQL 8+/MariaDB).
+        /// </summary>
+        private void EnsureImagePathColumn()
+        {
+            try
+            {
+                using var conn = new MySqlConnection(connectionString);
+                conn.Open();
+
+                // Check whether column already exists to avoid ALTER on every open
+                const string checkSql = @"
+                    SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME   = 'inventory_items'
+                      AND COLUMN_NAME  = 'ImagePath';";
+
+                using var checkCmd = new MySqlCommand(checkSql, conn);
+                var count = Convert.ToInt32(checkCmd.ExecuteScalar());
+
+                if (count == 0)
+                {
+                    using var alterCmd = new MySqlCommand(
+                        "ALTER TABLE inventory_items ADD COLUMN ImagePath VARCHAR(512) AFTER ExpiryDate;",
+                        conn);
+                    alterCmd.ExecuteNonQuery();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[InventoryService] EnsureImagePathColumn: {ex.Message}");
+            }
+        }
+
         public ObservableCollection<InventoryItem> GetAllItems()
         {
             var items = new ObservableCollection<InventoryItem>();
@@ -18,7 +60,7 @@ namespace SihyuPOSPayroll.Services
             using (var connection = new MySqlConnection(connectionString))
             {
                 connection.Open();
-                string query = @"SELECT Id, ProductName, CategoryName, Quantity, ExpiryDate 
+                string query = @"SELECT Id, ProductName, CategoryName, Quantity, ExpiryDate, ImagePath
                                 FROM inventory_items ORDER BY ProductName";
 
                 using (var command = new MySqlCommand(query, connection))
@@ -28,11 +70,12 @@ namespace SihyuPOSPayroll.Services
                     {
                         items.Add(new InventoryItem
                         {
-                            Id = reader.GetInt32("Id"),
-                            ProductName = reader.GetString("ProductName"),
+                            Id           = reader.GetInt32("Id"),
+                            ProductName  = reader.GetString("ProductName"),
                             CategoryName = reader.IsDBNull("CategoryName") ? null : reader.GetString("CategoryName"),
-                            Quantity = reader.GetInt32("Quantity"),
-                            ExpiryDate = reader.IsDBNull("ExpiryDate") ? null : reader.GetDateTime("ExpiryDate")
+                            Quantity     = reader.GetInt32("Quantity"),
+                            ExpiryDate   = reader.IsDBNull("ExpiryDate")   ? null : reader.GetDateTime("ExpiryDate"),
+                            ImagePath    = reader.IsDBNull("ImagePath")    ? null : reader.GetString("ImagePath"),
                         });
                     }
                 }
@@ -80,15 +123,16 @@ namespace SihyuPOSPayroll.Services
                 using (var connection = new MySqlConnection(connectionString))
                 {
                     connection.Open();
-                    string query = @"INSERT INTO inventory_items (ProductName, CategoryName, Quantity, ExpiryDate) 
-                                    VALUES (@ProductName, @CategoryName, @Quantity, @ExpiryDate)";
+                    string query = @"INSERT INTO inventory_items (ProductName, CategoryName, Quantity, ExpiryDate, ImagePath) 
+                                    VALUES (@ProductName, @CategoryName, @Quantity, @ExpiryDate, @ImagePath)";
 
                     using (var command = new MySqlCommand(query, connection))
                     {
-                        command.Parameters.AddWithValue("@ProductName", item.ProductName);
+                        command.Parameters.AddWithValue("@ProductName",  item.ProductName);
                         command.Parameters.AddWithValue("@CategoryName", item.CategoryName ?? (object)DBNull.Value);
-                        command.Parameters.AddWithValue("@Quantity", item.Quantity);
-                        command.Parameters.AddWithValue("@ExpiryDate", item.ExpiryDate ?? (object)DBNull.Value);
+                        command.Parameters.AddWithValue("@Quantity",     item.Quantity);
+                        command.Parameters.AddWithValue("@ExpiryDate",   item.ExpiryDate  ?? (object)DBNull.Value);
+                        command.Parameters.AddWithValue("@ImagePath",    item.ImagePath   ?? (object)DBNull.Value);
 
                         int result = command.ExecuteNonQuery();
                         return result > 0;
@@ -97,7 +141,6 @@ namespace SihyuPOSPayroll.Services
             }
             catch (Exception ex)
             {
-                // Log error or handle as needed
                 System.Diagnostics.Debug.WriteLine($"Error adding item: {ex.Message}");
                 return false;
             }
@@ -113,19 +156,21 @@ namespace SihyuPOSPayroll.Services
                 {
                     connection.Open();
                     string query = @"UPDATE inventory_items 
-                                    SET ProductName = @ProductName, 
-                                        CategoryName = @CategoryName, 
-                                        Quantity = @Quantity, 
-                                        ExpiryDate = @ExpiryDate 
+                                    SET ProductName  = @ProductName,
+                                        CategoryName = @CategoryName,
+                                        Quantity     = @Quantity,
+                                        ExpiryDate   = @ExpiryDate,
+                                        ImagePath    = @ImagePath
                                     WHERE Id = @Id";
 
                     using (var command = new MySqlCommand(query, connection))
                     {
-                        command.Parameters.AddWithValue("@Id", updatedItem.Id);
-                        command.Parameters.AddWithValue("@ProductName", updatedItem.ProductName);
+                        command.Parameters.AddWithValue("@Id",           updatedItem.Id);
+                        command.Parameters.AddWithValue("@ProductName",  updatedItem.ProductName);
                         command.Parameters.AddWithValue("@CategoryName", updatedItem.CategoryName ?? (object)DBNull.Value);
-                        command.Parameters.AddWithValue("@Quantity", updatedItem.Quantity);
-                        command.Parameters.AddWithValue("@ExpiryDate", updatedItem.ExpiryDate ?? (object)DBNull.Value);
+                        command.Parameters.AddWithValue("@Quantity",     updatedItem.Quantity);
+                        command.Parameters.AddWithValue("@ExpiryDate",   updatedItem.ExpiryDate  ?? (object)DBNull.Value);
+                        command.Parameters.AddWithValue("@ImagePath",    updatedItem.ImagePath   ?? (object)DBNull.Value);
 
                         int result = command.ExecuteNonQuery();
                         return result > 0;
@@ -134,7 +179,6 @@ namespace SihyuPOSPayroll.Services
             }
             catch (Exception ex)
             {
-                // Log error or handle as needed
                 System.Diagnostics.Debug.WriteLine($"Error updating item: {ex.Message}");
                 return false;
             }
@@ -175,7 +219,7 @@ namespace SihyuPOSPayroll.Services
             using (var connection = new MySqlConnection(connectionString))
             {
                 connection.Open();
-                string query = @"SELECT Id, ProductName, CategoryName, Quantity, ExpiryDate 
+                string query = @"SELECT Id, ProductName, CategoryName, Quantity, ExpiryDate, ImagePath
                                 FROM inventory_items 
                                 WHERE ProductName LIKE @SearchText 
                                    OR CategoryName LIKE @SearchText 
@@ -190,11 +234,12 @@ namespace SihyuPOSPayroll.Services
                         {
                             items.Add(new InventoryItem
                             {
-                                Id = reader.GetInt32("Id"),
-                                ProductName = reader.GetString("ProductName"),
+                                Id           = reader.GetInt32("Id"),
+                                ProductName  = reader.GetString("ProductName"),
                                 CategoryName = reader.IsDBNull("CategoryName") ? null : reader.GetString("CategoryName"),
-                                Quantity = reader.GetInt32("Quantity"),
-                                ExpiryDate = reader.IsDBNull("ExpiryDate") ? null : reader.GetDateTime("ExpiryDate")
+                                Quantity     = reader.GetInt32("Quantity"),
+                                ExpiryDate   = reader.IsDBNull("ExpiryDate")   ? null : reader.GetDateTime("ExpiryDate"),
+                                ImagePath    = reader.IsDBNull("ImagePath")    ? null : reader.GetString("ImagePath"),
                             });
                         }
                     }
@@ -280,33 +325,32 @@ namespace SihyuPOSPayroll.Services
                 {
                     connection.Open();
 
-                    // Create table if it doesn't exist
+                    // Create table if it doesn't exist (includes ImagePath)
                     string createTableQuery = @"
                         CREATE TABLE IF NOT EXISTS inventory_items (
-                            Id INT AUTO_INCREMENT PRIMARY KEY,
+                            Id          INT AUTO_INCREMENT PRIMARY KEY,
                             ProductName VARCHAR(255) NOT NULL,
                             CategoryName VARCHAR(255),
-                            Quantity INT NOT NULL DEFAULT 0,
-                            ExpiryDate DATE,
-                            CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                            UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                            Quantity    INT NOT NULL DEFAULT 0,
+                            ExpiryDate  DATE,
+                            ImagePath   VARCHAR(512),
+                            CreatedAt   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            UpdatedAt   TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
                         )";
 
                     using (var command = new MySqlCommand(createTableQuery, connection))
-                    {
                         command.ExecuteNonQuery();
-                    }
 
-                    // Check if table is empty and add sample data
+                    // Seed sample data if empty
                     string countQuery = "SELECT COUNT(*) FROM inventory_items";
                     using (var countCommand = new MySqlCommand(countQuery, connection))
                     {
                         int count = Convert.ToInt32(countCommand.ExecuteScalar());
-                        if (count == 0)
-                        {
-                            InsertSampleData(connection);
-                        }
+                        if (count == 0) InsertSampleData(connection);
                     }
+
+                    // Ensure categories table exists
+                    CategoryService.EnsureTable();
                 }
             }
             catch (Exception ex)

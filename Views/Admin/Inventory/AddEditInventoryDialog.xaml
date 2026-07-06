@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              Background="Transparent">
 
-    <Border Style="{StaticResource CardBorder}" Width="450" VerticalAlignment="Center" HorizontalAlignment="Center">
+    <Border Style="{StaticResource CardBorder}" Width="480" VerticalAlignment="Center" HorizontalAlignment="Center">
         <Grid Margin="20">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -12,72 +12,112 @@
             </Grid.RowDefinitions>
 
             <!-- Header -->
-            <TextBlock Text="Product Information"
-                       FontSize="20"
-                       FontWeight="Bold"
+            <TextBlock x:Name="DialogTitle"
+                       Text="Product Information"
+                       FontSize="20" FontWeight="Bold"
                        Foreground="{StaticResource TextPrimaryBrush}"
                        Margin="0,0,0,24"/>
 
             <!-- Form Fields -->
             <StackPanel Grid.Row="1" Orientation="Vertical" VerticalAlignment="Top">
+
                 <!-- Product Name -->
-                <StackPanel Margin="0,0,0,20">
+                <StackPanel Margin="0,0,0,16">
                     <TextBlock Text="Product Name *"
                                Foreground="{StaticResource TextSecondaryBrush}"
-                               FontWeight="Medium"
-                               Margin="0,0,0,4"/>
-                    <TextBox x:Name="ProductNameTextBox"
-                             Height="40"/>
+                               FontWeight="Medium" Margin="0,0,0,4"/>
+                    <TextBox x:Name="ProductNameTextBox" Height="40"/>
                 </StackPanel>
 
-                <!-- Category Name -->
-                <StackPanel Margin="0,0,0,20">
+                <!-- Category (loaded from DB) -->
+                <StackPanel Margin="0,0,0,16">
                     <TextBlock Text="Category"
                                Foreground="{StaticResource TextSecondaryBrush}"
-                               FontWeight="Medium"
-                               Margin="0,0,0,4"/>
+                               FontWeight="Medium" Margin="0,0,0,4"/>
                     <ComboBox x:Name="CategoryComboBox"
                               Height="40"
-                              IsEditable="True">
-                        <ComboBoxItem>Beverages</ComboBoxItem>
-                        <ComboBoxItem>Dairy</ComboBoxItem>
-                        <ComboBoxItem>Sweeteners</ComboBoxItem>
-                        <ComboBoxItem>Bakery</ComboBoxItem>
-                        <ComboBoxItem>Meat</ComboBoxItem>
-                        <ComboBoxItem>Vegetables</ComboBoxItem>
-                        <ComboBoxItem>Fruits</ComboBoxItem>
-                        <ComboBoxItem>Condiments</ComboBoxItem>
-                        <ComboBoxItem>Snacks</ComboBoxItem>
-                    </ComboBox>
+                              IsEditable="True"/>
                 </StackPanel>
 
                 <!-- Quantity -->
-                <StackPanel Margin="0,0,0,20">
+                <StackPanel Margin="0,0,0,16">
                     <TextBlock Text="Quantity *"
                                Foreground="{StaticResource TextSecondaryBrush}"
-                               FontWeight="Medium"
-                               Margin="0,0,0,4"/>
+                               FontWeight="Medium" Margin="0,0,0,4"/>
                     <TextBox x:Name="QuantityTextBox"
                              Height="40"
                              PreviewTextInput="NumberValidationTextBox"/>
                 </StackPanel>
 
                 <!-- Expiry Date -->
-                <StackPanel Margin="0,0,0,20">
+                <StackPanel Margin="0,0,0,16">
                     <TextBlock Text="Expiry Date (Optional)"
                                Foreground="{StaticResource TextSecondaryBrush}"
-                               FontWeight="Medium"
-                               Margin="0,0,0,4"/>
-                    <DatePicker x:Name="ExpiryDatePicker"
-                                Height="40"/>
+                               FontWeight="Medium" Margin="0,0,0,4"/>
+                    <DatePicker x:Name="ExpiryDatePicker" Height="40"/>
                 </StackPanel>
+
+                <!-- Image Upload (Optional) -->
+                <StackPanel Margin="0,0,0,8">
+                    <TextBlock Text="Product Image (Optional)"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               FontWeight="Medium" Margin="0,0,0,8"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="90"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Image preview -->
+                        <Border Grid.Column="0"
+                                Width="80" Height="80"
+                                CornerRadius="8"
+                                Background="#0D0F1A"
+                                BorderBrush="#1A1D2E"
+                                BorderThickness="1"
+                                ClipToBounds="True">
+                            <Grid>
+                                <TextBlock Text="&#xE8B9;"
+                                           FontFamily="Segoe MDL2 Assets"
+                                           FontSize="28"
+                                           Foreground="#1A1D2E"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"/>
+                                <Image x:Name="ImagePreview"
+                                       Stretch="UniformToFill"
+                                       Visibility="Collapsed"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- Path + buttons -->
+                        <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                            <TextBox x:Name="ImagePathBox"
+                                     Height="36"
+                                     IsReadOnly="True"
+                                     Margin="0,0,0,8"/>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="Browse…"
+                                        Style="{StaticResource SecondaryButton}"
+                                        Padding="12,6"
+                                        Margin="0,0,8,0"
+                                        Click="BrowseImage_Click"/>
+                                <Button Content="Clear"
+                                        Style="{StaticResource SecondaryButton}"
+                                        Padding="12,6"
+                                        Click="ClearImage_Click"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+
             </StackPanel>
 
             <!-- Buttons -->
             <StackPanel Grid.Row="2"
                         Orientation="Horizontal"
                         HorizontalAlignment="Right"
-                        Margin="0,12,0,0">
+                        Margin="0,20,0,0">
                 <Button Content="Save"
                         Click="SaveButton_Click"
                         Style="{StaticResource PrimaryButton}"

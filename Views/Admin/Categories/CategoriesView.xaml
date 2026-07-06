@@ -1,0 +1,106 @@
+<UserControl x:Class="SihyuPOSPayroll.Views.Admin.Categories.CategoriesView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="#000000">
+
+    <Grid Margin="28,24,28,24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border BorderBrush="#072219" BorderThickness="0,0,0,1"
+                Margin="0,0,0,20" Padding="0,0,0,14">
+            <TextBlock Text="Inventory Categories"
+                       FontSize="26" FontWeight="Bold" Foreground="#477C60"/>
+        </Border>
+
+        <!-- Toolbar -->
+        <Grid Grid.Row="1" Margin="0,0,0,14">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="Manage categories used in the Inventory module."
+                       Foreground="#6B7280" FontSize="13" VerticalAlignment="Center"/>
+            <Button Grid.Column="1"
+                    Content="+ Add Category"
+                    Style="{StaticResource PrimaryButton}"
+                    Click="AddCategory_Click"/>
+        </Grid>
+
+        <!-- Categories list -->
+        <Border Grid.Row="2" Background="#090B17" CornerRadius="10" Padding="0">
+            <DataGrid x:Name="CategoriesGrid"
+                      AutoGenerateColumns="False"
+                      CanUserAddRows="False"
+                      IsReadOnly="True"
+                      BorderThickness="0"
+                      Background="#090B17"
+                      ColumnHeaderHeight="44"
+                      RowHeight="48"
+                      SelectionMode="Single"
+                      SelectionUnit="FullRow">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="ID"       Binding="{Binding Id}"   Width="80"/>
+                    <DataGridTextColumn Header="Category Name" Binding="{Binding Name}" Width="*"/>
+                    <DataGridTemplateColumn Header="Actions" Width="180">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <Button Content="Edit"
+                                            Style="{StaticResource SecondaryButton}"
+                                            Margin="0,0,6,0"
+                                            Click="EditCategory_Click"/>
+                                    <Button Content="Delete"
+                                            Style="{StaticResource DangerButton}"
+                                            Click="DeleteCategory_Click"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+
+        <!-- Add/Edit overlay -->
+        <Grid x:Name="EditorPanel"
+              Visibility="Collapsed"
+              Background="#AA000000"
+              Grid.RowSpan="3">
+            <Border Background="#090B17"
+                    BorderBrush="#072219"
+                    BorderThickness="1"
+                    CornerRadius="12"
+                    Padding="28"
+                    Width="360"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center">
+                <StackPanel>
+                    <TextBlock x:Name="EditorTitle"
+                               Text="Add Category"
+                               FontSize="18" FontWeight="Bold"
+                               Foreground="#477C60"
+                               Margin="0,0,0,20"/>
+
+                    <TextBlock Text="Category Name *"
+                               Foreground="#9CA3AF" FontSize="13"
+                               Margin="0,0,0,6"/>
+                    <TextBox x:Name="CategoryNameBox" Height="40" Margin="0,0,0,20"/>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="Cancel"
+                                Style="{StaticResource SecondaryButton}"
+                                Margin="0,0,8,0"
+                                Click="CancelEditor_Click"/>
+                        <Button Content="Save"
+                                Style="{StaticResource PrimaryButton}"
+                                Click="SaveEditor_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

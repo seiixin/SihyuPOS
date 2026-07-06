@@ -4,11 +4,13 @@ namespace SihyuPOSPayroll.Models
 {
     public class InventoryItem
     {
-        public int Id { get; set; }                
-        public string ProductName { get; set; }    
-        public string? CategoryName { get; set; }  
-        public int Quantity { get; set; }          
-        public DateTime? ExpiryDate { get; set; }  
+        public int      Id           { get; set; }
+        public string   ProductName  { get; set; } = string.Empty;
+        public string?  CategoryName { get; set; }
+        public int      Quantity     { get; set; }
+        public DateTime? ExpiryDate  { get; set; }
+        /// <summary>Optional local file path or URL for the product image.</summary>
+        public string?  ImagePath    { get; set; }
 
         public string Status
         {
