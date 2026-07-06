@@ -78,5 +78,39 @@ namespace SihyuPOSPayroll.Services
 
             cmd.ExecuteNonQuery();
         }
+
+        /// <summary>Inserts a new table row.</summary>
+        public static void AddTable(string tableNumber)
+        {
+            using var conn = new MySqlConnection(ConnectionString);
+            conn.Open();
+            using var cmd = new MySqlCommand(
+                "INSERT INTO cafe_tables (table_number, is_available) VALUES (@tn, 1);", conn);
+            cmd.Parameters.AddWithValue("@tn", tableNumber);
+            cmd.ExecuteNonQuery();
+        }
+
+        /// <summary>Renames an existing table.</summary>
+        public static void UpdateTable(int tableId, string tableNumber)
+        {
+            using var conn = new MySqlConnection(ConnectionString);
+            conn.Open();
+            using var cmd = new MySqlCommand(
+                "UPDATE cafe_tables SET table_number = @tn WHERE id = @id;", conn);
+            cmd.Parameters.AddWithValue("@tn", tableNumber);
+            cmd.Parameters.AddWithValue("@id", tableId);
+            cmd.ExecuteNonQuery();
+        }
+
+        /// <summary>Deletes a table. Caller should confirm first.</summary>
+        public static void DeleteTable(int tableId)
+        {
+            using var conn = new MySqlConnection(ConnectionString);
+            conn.Open();
+            using var cmd = new MySqlCommand(
+                "DELETE FROM cafe_tables WHERE id = @id;", conn);
+            cmd.Parameters.AddWithValue("@id", tableId);
+            cmd.ExecuteNonQuery();
+        }
     }
 }

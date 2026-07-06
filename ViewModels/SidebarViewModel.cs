@@ -261,6 +261,7 @@ namespace SihyuPOSPayroll.ViewModels
                     MenuItems.Add("Menu");
                     MenuItems.Add("Inventory");
                     MenuItems.Add("POS");
+                    MenuItems.Add("Orders");
                     MenuItems.Add("Receipts");
                     MenuItems.Add("Tables");
                     MenuItems.Add("Sales & Reports");
@@ -303,6 +304,7 @@ namespace SihyuPOSPayroll.ViewModels
                         {
                             MakeItem("Payslip Requests", "\uE7C3"),
                             MakeItem("Receipts",         "\uE9F9"),
+                            MakeItem("Orders",           "\uE8A5"),
                             MakeItem("POS",              "\uE8C9"),
                             MakeItem("Tables",           "\uE7EF"),
                             MakeItem("Sales & Reports",  "\uE9D9"),
@@ -321,6 +323,8 @@ namespace SihyuPOSPayroll.ViewModels
                     // "Settings" and "Dashboard" are always kept regardless of visibility.
                     {
                         var visibility = SettingsService.Instance.ModuleVisibility;
+                        bool isStoreModeAdmin = SettingsService.Instance.CurrentMode == SystemMode.StoreMode;
+
                         foreach (var group in MenuGroups)
                         {
                             group.Items.RemoveAll(item =>
@@ -330,6 +334,12 @@ namespace SihyuPOSPayroll.ViewModels
                                     string.Equals(item.Label, "Dashboard", StringComparison.OrdinalIgnoreCase) ||
                                     string.Equals(item.Label, "POS", StringComparison.OrdinalIgnoreCase))
                                     return false;
+
+                                // In StoreMode, always hide Tables and Menu for Admin too
+                                if (isStoreModeAdmin &&
+                                    (string.Equals(item.Label, "Tables", StringComparison.OrdinalIgnoreCase) ||
+                                     string.Equals(item.Label, "Menu",   StringComparison.OrdinalIgnoreCase)))
+                                    return true;
 
                                 // Map label to visibility key
                                 string moduleKey = LabelToModuleKey(item.Label);
@@ -515,6 +525,7 @@ namespace SihyuPOSPayroll.ViewModels
             "Attendance"      => "Attendance",
             "Menu"            => "Menu",
             "Inventory"       => "Inventory",
+            "Orders"          => "Orders",
             "Receipts"        => "Receipts",
             "Tables"          => "Tables",
             "Sales & Reports" => "Sales",
@@ -542,6 +553,7 @@ namespace SihyuPOSPayroll.ViewModels
                 AttendanceAdminView              => "Attendance",
                 MenuView                         => "Menu",
                 Inventory                        => "Inventory",
+                Orders                           => "Orders",
                 Receipts                         => "Receipts",
                 Tables                           => "Tables",
                 Sales                            => "Sales",
@@ -612,7 +624,8 @@ namespace SihyuPOSPayroll.ViewModels
                     break;
 
                 case "orders":
-                    if (IsCashier) CurrentView = new OrdersView();
+                    if (IsAdmin) CurrentView = new Orders();
+                    else if (IsCashier) CurrentView = new OrdersView();
                     break;
 
                 case "receipts":

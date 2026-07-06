@@ -397,10 +397,18 @@ namespace SihyuPOSPayroll.Services
         }
 
         // ---------------- Availability helpers ----------------
+        /// <summary>
+        /// Validates table availability. Table is OPTIONAL in two scenarios:
+        ///   1. StoreMode — no tables concept at all.
+        ///   2. RestaurantMode TakeOut — customer takes food away, no table needed.
+        /// If tableNumber is supplied, it must not be occupied by another open order.
+        /// </summary>
         private void EnsureTableAvailable(MySqlConnection conn, MySqlTransaction? tx, string? tableNumber, int? ignoreOrderId)
         {
+            // Table is optional — skip the null guard entirely.
+            // Only validate occupancy when a table number was actually provided.
             if (string.IsNullOrWhiteSpace(tableNumber))
-                throw new InvalidOperationException("Please select a table.");
+                return;
 
             if (IsTableOccupied(conn, tx, tableNumber!, ignoreOrderId))
                 throw new InvalidOperationException($"Table {tableNumber} is currently occupied.");
