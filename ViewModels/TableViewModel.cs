@@ -9,7 +9,7 @@ using System.Windows;
 using System.Windows.Input;
 
 // Alias the service model so there's no ambiguity with any other TableModel
-using TableDto = HillsCafeManagement.Services.TableModel;
+using TableDto = SihyuPOSPayroll.Services.TableModel;
 
 namespace SihyuPOSPayroll.ViewModels
 {

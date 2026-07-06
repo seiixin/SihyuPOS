@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using SihyuPOSPayroll.Helpers;
 using SihyuPOSPayroll.Models;
 using MySql.Data.MySqlClient;
 
@@ -17,7 +16,7 @@ namespace SihyuPOSPayroll.Services
         public WorkScheduleService(string? connectionString = null)
         {
             _cs = string.IsNullOrWhiteSpace(connectionString)
-                ? ConfigurationHelper.GetConnectionString()
+                ? "server=localhost;user=root;password=;database=sihyu_pos;"
                 : connectionString!;
         }
 
@@ -88,8 +87,8 @@ namespace SihyuPOSPayroll.Services
 
                 var now = DateTime.Now;
 
-                // Mon–Fri : 1111100 (bits 0..6 = Mon..Sun)
-                InsertRaw(conn, "Mon–Fri", mask: (byte)((1 << 0) | (1 << 1) | (1 << 2) | (1 << 3) | (1 << 4)), isActive: true, now);
+                // Mon�Fri : 1111100 (bits 0..6 = Mon..Sun)
+                InsertRaw(conn, "Mon�Fri", mask: (byte)((1 << 0) | (1 << 1) | (1 << 2) | (1 << 3) | (1 << 4)), isActive: true, now);
                 // MWF     : 1010100
                 InsertRaw(conn, "MWF", mask: (byte)((1 << 0) | (1 << 2) | (1 << 4)), isActive: true, now);
                 // TTh     : 0101000

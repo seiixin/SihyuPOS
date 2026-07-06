@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using SihyuPOSPayroll.Helpers;
 using SihyuPOSPayroll.Models;
 using MySql.Data.MySqlClient;
 
@@ -9,7 +8,7 @@ namespace SihyuPOSPayroll.Services
 {
     public static class ReceiptsServices
     {
-        private static string GetConnectionString() => ConfigurationHelper.GetConnectionString();
+        private const string ConnectionString = "server=localhost;user=root;password=;database=sihyu_pos;";
 
         // ======================================================
         // BASIC CRUD + SEARCH
@@ -23,7 +22,7 @@ namespace SihyuPOSPayroll.Services
         {
             var receipts = new List<ReceiptsModel>();
 
-            using var conn = new MySqlConnection(GetConnectionString());
+            using var conn = new MySqlConnection(ConnectionString);
             conn.Open();
 
             var sql = @"
@@ -68,7 +67,7 @@ namespace SihyuPOSPayroll.Services
         /// </summary>
         public static ReceiptsModel? GetById(int id)
         {
-            using var conn = new MySqlConnection(GetConnectionString());
+            using var conn = new MySqlConnection(ConnectionString);
             conn.Open();
 
             var sql = @"
@@ -95,7 +94,7 @@ namespace SihyuPOSPayroll.Services
         /// </summary>
         public static ReceiptsModel? GetByOrderId(int orderId)
         {
-            using var conn = new MySqlConnection(GetConnectionString());
+            using var conn = new MySqlConnection(ConnectionString);
             conn.Open();
 
             var sql = @"
@@ -122,7 +121,7 @@ namespace SihyuPOSPayroll.Services
         /// </summary>
         public static int Create(ReceiptsModel model)
         {
-            using var conn = new MySqlConnection(GetConnectionString());
+            using var conn = new MySqlConnection(ConnectionString);
             conn.Open();
 
             const string sql = @"
@@ -142,7 +141,7 @@ namespace SihyuPOSPayroll.Services
         /// </summary>
         public static void Update(ReceiptsModel model)
         {
-            using var conn = new MySqlConnection(GetConnectionString());
+            using var conn = new MySqlConnection(ConnectionString);
             conn.Open();
 
             const string sql = @"
@@ -164,7 +163,7 @@ namespace SihyuPOSPayroll.Services
         /// </summary>
         public static void Delete(int id)
         {
-            using var conn = new MySqlConnection(GetConnectionString());
+            using var conn = new MySqlConnection(ConnectionString);
             conn.Open();
 
             const string sql = "DELETE FROM receipts WHERE id = @id;";
@@ -178,7 +177,7 @@ namespace SihyuPOSPayroll.Services
         /// </summary>
         public static void DeleteByOrderId(int orderId)
         {
-            using var conn = new MySqlConnection(GetConnectionString());
+            using var conn = new MySqlConnection(ConnectionString);
             conn.Open();
 
             const string sql = "DELETE FROM receipts WHERE order_id = @oid;";
@@ -197,7 +196,7 @@ namespace SihyuPOSPayroll.Services
         /// </summary>
         public static int? EnsureForPaidOrder(int orderId)
         {
-            using var conn = new MySqlConnection(GetConnectionString());
+            using var conn = new MySqlConnection(ConnectionString);
             conn.Open();
 
             // 1) Check order payment status + total
@@ -250,7 +249,7 @@ namespace SihyuPOSPayroll.Services
         /// </summary>
         public static void SyncForOrder(int orderId)
         {
-            using var conn = new MySqlConnection(GetConnectionString());
+            using var conn = new MySqlConnection(ConnectionString);
             conn.Open();
 
             string? paymentStatus = null;
@@ -276,7 +275,7 @@ namespace SihyuPOSPayroll.Services
         /// </summary>
         public static int EnsureAllForPaidOrders()
         {
-            using var conn = new MySqlConnection(GetConnectionString());
+            using var conn = new MySqlConnection(ConnectionString);
             conn.Open();
 
             const string sql = @"
@@ -296,10 +295,10 @@ namespace SihyuPOSPayroll.Services
 
         public static ReceiptDetailsModel? GetDetailsByReceiptId(int receiptId)
         {
-            using var conn = new MySqlConnection(GetConnectionString());
+            using var conn = new MySqlConnection(ConnectionString);
             conn.Open();
 
-            // 1) Header (table_number may be string in DB; we’ll parse to int)
+            // 1) Header (table_number may be string in DB; we�ll parse to int)
             const string headerSql = @"
                 SELECT 
                     r.id                                  AS ReceiptId,

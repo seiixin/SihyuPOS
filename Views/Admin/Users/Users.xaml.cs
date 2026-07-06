@@ -1,5 +1,6 @@
 using SihyuPOSPayroll.Models;
 using SihyuPOSPayroll.Services;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -10,6 +11,7 @@ namespace SihyuPOSPayroll.Views.Admin.Users
     public partial class Users : UserControl
     {
         private readonly UserService _userService = new();
+        private readonly EmployeeService _employeeService = new();
         private List<UserModel> _allUsers = new();
 
         public Users()
@@ -20,19 +22,28 @@ namespace SihyuPOSPayroll.Views.Admin.Users
 
         private void LoadUsers()
         {
-            _allUsers = _userService.GetAllUsers();
-            UserDataGrid.ItemsSource = _allUsers;
+            try
+            {
+                _allUsers = _userService.GetAllUsers();
+                UserDataGrid.ItemsSource = _allUsers;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Failed to load users.\n\n" + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            string search = SearchBox.Text.Trim().ToLower();
+            string query = SearchBox.Text.Trim().ToLower();
 
-            var filtered = _allUsers.Where(u =>
-                (u.Email?.ToLower().Contains(search) ?? false) ||
-                (u.Role?.ToLower().Contains(search) ?? false) ||
-                (u.Employee?.FullName?.ToLower().Contains(search) ?? false)
-            ).ToList();
+            var filtered = string.IsNullOrWhiteSpace(query)
+                ? _allUsers
+                : _allUsers.Where(user =>
+                    (!string.IsNullOrEmpty(user.Email) && user.Email.ToLower().Contains(query)) ||
+                    (!string.IsNullOrEmpty(user.Role) && user.Role.ToLower().Contains(query)) ||
+                    (user.Employee != null && !string.IsNullOrEmpty(user.Employee.FullName) && user.Employee.FullName.ToLower().Contains(query))
+                ).ToList();
 
             UserDataGrid.ItemsSource = filtered;
         }
@@ -40,13 +51,7 @@ namespace SihyuPOSPayroll.Views.Admin.Users
         private void AddUser_Click(object sender, RoutedEventArgs e)
         {
             var addUserPopup = new AddEditUser();
-
-            addUserPopup.OnUserSaved += () =>
-            {
-                LoadUsers();
-            };
-
-            // add to RootGrid (which we’ll add to XAML below)
+            addUserPopup.OnUserSaved += () => LoadUsers();
             RootGrid.Children.Add(addUserPopup);
         }
 
@@ -54,32 +59,35 @@ namespace SihyuPOSPayroll.Views.Admin.Users
         {
             if (sender is Button btn && btn.DataContext is UserModel user)
             {
-                var editUserPopup = new AddEditUser(user); // pass user to edit
-
-                editUserPopup.OnUserSaved += () =>
-                {
-                    LoadUsers(); // refresh list after update
-                };
-
+                var editUserPopup = new AddEditUser(user);
+                editUserPopup.OnUserSaved += () => LoadUsers();
                 RootGrid.Children.Add(editUserPopup);
             }
         }
-
 
         private void DeleteUser_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button btn && btn.DataContext is UserModel user)
             {
-                var confirm = MessageBox.Show($"Delete {user.Email}?", "Confirm", MessageBoxButton.YesNo);
+                var confirm = MessageBox.Show($"Are you sure you want to delete {user.Email}?", "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Warning);
                 if (confirm == MessageBoxResult.Yes)
                 {
-                    if (_userService.DeleteUserById(user.Id))
+                    try
                     {
-                        LoadUsers();
+                        bool success = _userService.DeleteUserById(user.Id);
+                        if (success)
+                        {
+                            MessageBox.Show($"Deleted user: {user.Email}");
+                            LoadUsers();
+                        }
+                        else
+                        {
+                            MessageBox.Show("Failed to delete user.");
+                        }
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        MessageBox.Show("Failed to delete.");
+                        MessageBox.Show("Error deleting user:\n" + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                 }
             }

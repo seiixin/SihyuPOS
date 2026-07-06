@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using SihyuPOSPayroll.Helpers;
 using SihyuPOSPayroll.Models;
 using MySql.Data.MySqlClient;
 
@@ -9,11 +8,11 @@ namespace SihyuPOSPayroll.Services
 {
     public static class SalesService
     {
-        private static string GetConnectionString() => ConfigurationHelper.GetConnectionString();
+        private const string ConnectionString = "server=localhost;user=root;password=;database=sihyu_pos;";
 
         public static List<SalesRow> GetSales(ReportPeriod period)
         {
-            using var conn = new MySqlConnection(GetConnectionString());
+            using var conn = new MySqlConnection(ConnectionString);
             conn.Open();
 
             string sql = period switch

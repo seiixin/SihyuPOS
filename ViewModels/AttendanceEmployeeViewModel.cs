@@ -1,4 +1,3 @@
-#nullable enable
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -17,9 +16,9 @@ namespace SihyuPOSPayroll.ViewModels
     /// Employee Attendance VM:
     /// - Loads EmployeeName + UserId and exposes EmployeeDisplay: "Name (User #123)"
     /// - Builds a per-day calendar between FilterFromDate..FilterToDate
-    ///   * "Present"   => ONLY if BOTH TimeIn and TimeOut exist for that date
-    ///   * "No Record" => scheduled workday but missing one/both logs
-    ///   * "Day Off"   => not scheduled on that calendar day
+    ///   * "Present"  => only if BOTH TimeIn and TimeOut exist for that date
+    ///   * "No Record" => no logs but date is a scheduled workday
+    ///   * "Day Off"   => date is not in the assigned work schedule (days_mask)
     /// - Days worked (payroll) still rely on complete pairs only.
     /// </summary>
     public class AttendanceEmployeeViewModel : INotifyPropertyChanged
@@ -290,8 +289,11 @@ namespace SihyuPOSPayroll.ViewModels
             {
                 if (CurrentEmployeeId is null) return;
 
+                // Fetch name + user id (via EmployeeService)
                 var empId = CurrentEmployeeId.Value;
 
+                // These methods are expected to be provided by EmployeeService.
+                // If they return null/empty, EmployeeDisplay will gracefully degrade.
                 EmployeeName = await Task.Run(() => _employeeService.GetEmployeeFullName(empId) ?? string.Empty);
                 UserId = await Task.Run(() => _employeeService.GetUserIdByEmployeeId(empId));
             }
@@ -336,9 +338,9 @@ namespace SihyuPOSPayroll.ViewModels
                 var empId = CurrentEmployeeId.Value;
 
                 if (IsManualMode && TryGetManualDateTime(out var ts))
-                    _attendanceService.ClockIn(empId, ts);
+                    _attendanceService.ClockIn(empId, ts);   // <-- EMPLOYEE ID
                 else
-                    _attendanceService.ClockIn(empId);
+                    _attendanceService.ClockIn(empId);        // <-- EMPLOYEE ID
 
                 LastMessage = $"? Clock In successful! ({DateTime.Now:hh:mm:ss tt})";
                 await RefreshAttendanceAsync();
@@ -360,9 +362,9 @@ namespace SihyuPOSPayroll.ViewModels
                 var empId = CurrentEmployeeId.Value;
 
                 if (IsManualMode && TryGetManualDateTime(out var ts))
-                    _attendanceService.ClockOut(empId, ts);
+                    _attendanceService.ClockOut(empId, ts);   // <-- EMPLOYEE ID
                 else
-                    _attendanceService.ClockOut(empId);
+                    _attendanceService.ClockOut(empId);        // <-- EMPLOYEE ID
 
                 LastMessage = $"? Clock Out successful! ({DateTime.Now:hh:mm:ss tt})";
                 await RefreshAttendanceAsync();
@@ -416,50 +418,52 @@ namespace SihyuPOSPayroll.ViewModels
                     .GroupBy(a => a.Date.Date)
                     .ToDictionary(g => g.Key, g => g.ToList());
 
+                // Obtain work schedule days_mask via EmployeeService (nullable => assume all days workdays)
+                int? daysMask = null;
+                try { daysMask = _employeeService.GetWorkScheduleDaysMask(empId); } catch { /* optional */ }
+
                 // Build calendar rows day-by-day
                 Attendances.Clear();
 
                 for (var d = from; d <= to; d = d.AddDays(1))
                 {
-                    var isWorkday = _attendanceService.IsScheduledWorkDay(empId, d);
-                    byDate.TryGetValue(d, out var logsForDay);
+                    var isWorkday = IsScheduledWorkday(daysMask, d);
+                    var hasLogs = byDate.TryGetValue(d, out var logsForDay);
 
-                    // Compute earliest TimeIn and latest TimeOut even if not a complete pair
-                    TimeSpan? firstIn = null;
-                    TimeSpan? lastOut = null;
+                    TimeSpan? timeIn = null;
+                    TimeSpan? timeOut = null;
+                    string displayStatus;
 
-                    if (logsForDay != null && logsForDay.Count > 0)
+                    if (hasLogs && logsForDay != null)
                     {
-                        foreach (var row in logsForDay)
+                        // Consider ONLY complete pairs (both in & out) for "Present"
+                        var complete = logsForDay
+                            .Where(x => x.TimeIn.HasValue && x.TimeOut.HasValue)
+                            .ToList();
+
+                        if (complete.Any())
                         {
-                            if (row.TimeIn.HasValue)
-                            {
-                                if (!firstIn.HasValue || row.TimeIn.Value < firstIn.Value)
-                                    firstIn = row.TimeIn.Value;
-                            }
-                            if (row.TimeOut.HasValue)
-                            {
-                                if (!lastOut.HasValue || row.TimeOut.Value > lastOut.Value)
-                                    lastOut = row.TimeOut.Value;
-                            }
+                            timeIn = complete.Min(x => x.TimeIn!.Value);
+                            timeOut = complete.Max(x => x.TimeOut!.Value);
+                            displayStatus = "Present";
+                        }
+                        else
+                        {
+                            // Incomplete / no valid pair -> treat as missing record on a workday
+                            displayStatus = isWorkday ? "No Record" : "Day Off";
                         }
                     }
-
-                    // Display rules
-                    string displayStatus;
-                    if (!isWorkday)
-                        displayStatus = "Day Off";
-                    else if (firstIn.HasValue && lastOut.HasValue)
-                        displayStatus = "Present";
                     else
-                        displayStatus = "No Record";
+                    {
+                        displayStatus = isWorkday ? "No Record" : "Day Off";
+                    }
 
                     Attendances.Add(new AttendanceDayRow
                     {
                         EmployeeDisplay = EmployeeDisplay,
                         Date = d,
-                        TimeIn = firstIn,   // visible even without TimeOut
-                        TimeOut = lastOut,
+                        TimeIn = timeIn,
+                        TimeOut = timeOut,
                         DisplayStatus = displayStatus
                     });
                 }
@@ -666,6 +670,25 @@ namespace SihyuPOSPayroll.ViewModels
         private async Task ClearMessageAfterDelay(int ms = 4000)
         {
             try { await Task.Delay(ms); LastMessage = string.Empty; } catch { }
+        }
+
+        private static int DayOfWeekToBit(DayOfWeek d) => d switch
+        {
+            DayOfWeek.Monday => 0,
+            DayOfWeek.Tuesday => 1,
+            DayOfWeek.Wednesday => 2,
+            DayOfWeek.Thursday => 3,
+            DayOfWeek.Friday => 4,
+            DayOfWeek.Saturday => 5,
+            DayOfWeek.Sunday => 6,
+            _ => 0
+        };
+
+        private static bool IsScheduledWorkday(int? daysMask, DateTime date)
+        {
+            if (!daysMask.HasValue) return true; // fallback: assume workday if schedule not available
+            var bit = DayOfWeekToBit(date.DayOfWeek);
+            return (daysMask.Value & (1 << bit)) != 0;
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using SihyuPOSPayroll.Helpers;
 using SihyuPOSPayroll.Models;
 using MySql.Data.MySqlClient;
 
@@ -31,14 +30,7 @@ namespace SihyuPOSPayroll.Services
 
     public sealed class LeaveRequestService : ILeaveRequestService
     {
-        private readonly string _cs;
-
-        public LeaveRequestService(string? connectionString = null)
-        {
-            _cs = string.IsNullOrWhiteSpace(connectionString)
-                ? ConfigurationHelper.GetConnectionString()
-                : connectionString!;
-        }
+        private readonly string _cs = "server=localhost;user=root;password=;database=sihyu_pos;";
 
         // ===== user -> employee resolver (reads users.employee_id) =====
         private int GetEmployeeIdOrThrow(int userId)

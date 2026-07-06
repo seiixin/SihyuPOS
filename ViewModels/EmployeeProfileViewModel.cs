@@ -9,8 +9,8 @@ using SihyuPOSPayroll.Services;
 using SihyuPOSPayroll.Helpers; // RelayCommand
 
 // Alias the *Services* interface/implementation to avoid namespace ambiguity
-using IEmployeeService = HillsCafeManagement.Services.IEmployeeService;
-using EmployeeService = HillsCafeManagement.Services.EmployeeService;
+using IEmployeeService = SihyuPOSPayroll.Services.IEmployeeService;
+using EmployeeService = SihyuPOSPayroll.Services.EmployeeService;
 
 namespace SihyuPOSPayroll.ViewModels
 {

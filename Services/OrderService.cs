@@ -1,4 +1,3 @@
-using SihyuPOSPayroll.Helpers;
 using SihyuPOSPayroll.Models;
 using MySql.Data.MySqlClient;
 using System;
@@ -9,12 +8,8 @@ namespace SihyuPOSPayroll.Services
 {
     public class OrderService
     {
-        private readonly string _connectionString;
-
-        public OrderService()
-        {
-            _connectionString = ConfigurationHelper.GetConnectionString();
-        }
+        private readonly string _connectionString =
+            "server=localhost;user=root;password=;database=sihyu_pos;";
 
         // ---------------- Table dropdown model ----------------
         public sealed class TableOption
@@ -30,7 +25,7 @@ namespace SihyuPOSPayroll.Services
         // ---------------- TABLES for the picker ----------------
         /// <summary>
         /// Returns all cafe tables with derived status. If currentOrderId is provided,
-        /// occupancy by that order is ignored so its current table won’t appear “blocked”.
+        /// occupancy by that order is ignored so its current table won�t appear �blocked�.
         /// </summary>
         public List<TableOption> GetTablesForPicker(int? currentOrderId = null)
         {
@@ -277,7 +272,7 @@ namespace SihyuPOSPayroll.Services
                         prevPaymentStatus = Convert.ToString(obj) ?? "Unpaid";
                 }
 
-                // Guard: table must be available; ignore current order’s own lock
+                // Guard: table must be available; ignore current order�s own lock
                 EnsureTableAvailable(connection, tx, order.TableNumber, ignoreOrderId: order.Id);
 
                 const string updateOrder = @"
@@ -321,12 +316,12 @@ namespace SihyuPOSPayroll.Services
 
                 if (!wasPaid && nowPaid)
                 {
-                    // Transitioned to Paid → ensure receipt exists
+                    // Transitioned to Paid ? ensure receipt exists
                     EnsureReceiptExists(connection, tx, order.Id, order.TotalAmount);
                 }
                 else if (wasPaid && !nowPaid)
                 {
-                    // Transitioned to Unpaid → decide policy
+                    // Transitioned to Unpaid ? decide policy
                     // Uncomment to remove the receipt when reverting to Unpaid:
                     // RemoveReceiptIfAny(connection, tx, order.Id);
                 }

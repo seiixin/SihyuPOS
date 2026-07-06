@@ -1,4 +1,3 @@
-using SihyuPOSPayroll.Helpers;
 using SihyuPOSPayroll.Models;
 using MySql.Data.MySqlClient;
 using System;
@@ -9,14 +8,7 @@ namespace SihyuPOSPayroll.Services
 {
     public class PayslipService
     {
-        private readonly string _connectionString;
-
-        public PayslipService(string? connectionString = null)
-        {
-            _connectionString = string.IsNullOrWhiteSpace(connectionString)
-                ? ConfigurationHelper.GetConnectionString()
-                : connectionString!;
-        }
+        private readonly string _connectionString = "server=localhost;user=root;password=;database=sihyu_pos;";
         private const int CommandTimeoutSeconds = 15;
 
         // ------------------------------------------------------------
@@ -25,16 +17,13 @@ namespace SihyuPOSPayroll.Services
         // Or run the equivalent SQL once manually and NEVER call this.
         // ------------------------------------------------------------
         private static bool _schemaChecked = false;
-        public static void EnsureSchemaAtStartup(string? connectionString = null)
+        public static void EnsureSchemaAtStartup(string connectionString = "server=localhost;user=root;password=;database=sihyu_pos;")
         {
             if (_schemaChecked) return;
 
             try
             {
-                string cs = string.IsNullOrWhiteSpace(connectionString)
-                    ? ConfigurationHelper.GetConnectionString()
-                    : connectionString!;
-                using var conn = new MySqlConnection(cs);
+                using var conn = new MySqlConnection(connectionString);
                 conn.Open();
 
                 var existing = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -70,7 +59,7 @@ namespace SihyuPOSPayroll.Services
             }
             catch (Exception ex)
             {
-                // Log only; do NOT rethrow — receipts/others must continue to work.
+                // Log only; do NOT rethrow � receipts/others must continue to work.
                 Console.Error.WriteLine($"[PayslipService] EnsureSchemaAtStartup warning: {ex.Message}");
             }
         }

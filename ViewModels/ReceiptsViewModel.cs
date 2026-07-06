@@ -192,7 +192,7 @@ namespace SihyuPOSPayroll.ViewModels
                     return;
                 }
 
-                // Info popup (optional — keep if you want)
+                // Info popup (optional ï¿½ keep if you want)
                 var h = details.Header;
                 var info =
                     $"Receipt ID : {h.ReceiptId}\n" +
@@ -293,7 +293,7 @@ namespace SihyuPOSPayroll.ViewModels
 
             var title = new TextBlock
             {
-                Text = "Hills Café — Receipt",
+                Text = "SihyuPOSï¿½ ï¿½ Receipt",
                 FontSize = 24,
                 FontWeight = FontWeights.Bold,
                 Margin = new Thickness(0, 0, 0, 16)
@@ -389,7 +389,7 @@ namespace SihyuPOSPayroll.ViewModels
                 TextAlignment = TextAlignment.Left
             };
 
-            var title = new Paragraph(new Bold(new Run("Hills Café — Receipt")))
+            var title = new Paragraph(new Bold(new Run("SihyuPOSï¿½ ï¿½ Receipt")))
             { FontSize = 18, TextAlignment = TextAlignment.Center, Margin = new Thickness(0, 0, 0, 10) };
             fd.Blocks.Add(title);
 

@@ -7,7 +7,7 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Text="?? Cashier — Tables"
+        <TextBlock Text="Cashier - Tables"
                    FontSize="20"
                    FontWeight="SemiBold"
                    Margin="0,0,0,8" />

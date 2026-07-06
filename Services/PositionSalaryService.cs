@@ -1,4 +1,4 @@
-// HillsCafeManagement.Services.PositionSalaryService (refactored, safer init)
+// SihyuPOSPayroll.Services.PositionSalaryService (refactored, safer init)
 // - No schema work in constructor
 // - TryEnsureSchema() + IsDbReady() expose errors without throwing
 // - Load() never throws; it sets LastError and returns whatever it could load
@@ -13,12 +13,11 @@ using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using MySql.Data.MySqlClient;
-using SihyuPOSPayroll.Helpers;
 
 namespace SihyuPOSPayroll.Services
 {
     /// <summary>
-    /// DB-backed service for managing Position → Daily Rate presets.
+    /// DB-backed service for managing Position ? Daily Rate presets.
     /// Table: `position_salary`
     /// </summary>
     public sealed class PositionSalaryService
@@ -65,9 +64,9 @@ namespace SihyuPOSPayroll.Services
         public PositionSalaryService(string? connectionString = null)
         {
             _connectionString = string.IsNullOrWhiteSpace(connectionString)
-                ? ConfigurationHelper.GetConnectionString()
+                ? "server=localhost;user=root;password=;database=sihyu_pos;"
                 : connectionString!;
-            // IMPORTANT: no EnsureSchema() here — avoid side effects in ctor
+            // IMPORTANT: no EnsureSchema() here � avoid side effects in ctor
         }
 
         /// <summary>
@@ -138,7 +137,7 @@ namespace SihyuPOSPayroll.Services
         }
 
         /// <summary>
-        /// Quick probe — never throws. Returns true if SELECT works.
+        /// Quick probe � never throws. Returns true if SELECT works.
         /// </summary>
         public bool IsDbReady()
         {
@@ -191,7 +190,7 @@ namespace SihyuPOSPayroll.Services
             }
             catch (Exception ex)
             {
-                // Do not throw — let the UI stay open and show a message
+                // Do not throw � let the UI stay open and show a message
                 LastError = ex.Message;
             }
 

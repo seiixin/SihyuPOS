@@ -1,7 +1,7 @@
 -- Create database if not exists
-CREATE DATABASE IF NOT EXISTS hillscafe_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE IF NOT EXISTS sihyu_pos CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
-USE hillscafe_db;
+USE sihyu_pos;
 
 -- 1. employees table
 CREATE TABLE IF NOT EXISTS employees (

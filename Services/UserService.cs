@@ -1,4 +1,3 @@
-using SihyuPOSPayroll.Helpers;
 using SihyuPOSPayroll.Models;
 using MySql.Data.MySqlClient;
 using System;
@@ -8,12 +7,7 @@ namespace SihyuPOSPayroll.Services
 {
     public class UserService
     {
-        private readonly string _connectionString;
-
-        public UserService()
-        {
-            _connectionString = ConfigurationHelper.GetConnectionString();
-        }
+        private readonly string _connectionString = "server=localhost;user=root;password=;database=sihyu_pos;";
 
         #region READ
 
@@ -83,16 +77,13 @@ namespace SihyuPOSPayroll.Services
                 using var connection = new MySqlConnection(_connectionString);
                 connection.Open();
 
-                // Hash the password
-                string hashedPassword = DatabaseService.HashPassword(user.Password ?? string.Empty);
-
                 const string query = @"
                     INSERT INTO users (email, password, role, employee_id)
                     VALUES (@Email, @Password, @Role, @EmployeeId)";
 
                 using var cmd = new MySqlCommand(query, connection);
                 cmd.Parameters.AddWithValue("@Email", user.Email);
-                cmd.Parameters.AddWithValue("@Password", hashedPassword);
+                cmd.Parameters.AddWithValue("@Password", user.Password);
                 cmd.Parameters.AddWithValue("@Role", user.Role);
                 if (user.EmployeeId.HasValue)
                     cmd.Parameters.AddWithValue("@EmployeeId", user.EmployeeId);
@@ -122,29 +113,6 @@ namespace SihyuPOSPayroll.Services
                 using var connection = new MySqlConnection(_connectionString);
                 connection.Open();
 
-                // Hash password only if it's not empty (assuming empty means don't change)
-                string passwordToUse = user.Password ?? string.Empty;
-                if (!string.IsNullOrWhiteSpace(passwordToUse))
-                {
-                    // Check if it looks like a BCrypt hash (starts with $2a$, $2b$, or $2y$)
-                    if (!passwordToUse.StartsWith("$2a$") && 
-                        !passwordToUse.StartsWith("$2b$") && 
-                        !passwordToUse.StartsWith("$2y$"))
-                    {
-                        passwordToUse = DatabaseService.HashPassword(passwordToUse);
-                    }
-                }
-                else
-                {
-                    // If password is empty, keep the existing one
-                    // First get the current password hash from DB
-                    const string getPassQuery = "SELECT password FROM users WHERE id = @Id LIMIT 1";
-                    using var getPassCmd = new MySqlCommand(getPassQuery, connection);
-                    getPassCmd.Parameters.AddWithValue("@Id", user.Id);
-                    var result = getPassCmd.ExecuteScalar();
-                    passwordToUse = result?.ToString() ?? string.Empty;
-                }
-
                 const string query = @"
                     UPDATE users 
                     SET email = @Email, password = @Password, role = @Role, employee_id = @EmployeeId
@@ -152,7 +120,7 @@ namespace SihyuPOSPayroll.Services
 
                 using var cmd = new MySqlCommand(query, connection);
                 cmd.Parameters.AddWithValue("@Email", user.Email);
-                cmd.Parameters.AddWithValue("@Password", passwordToUse);
+                cmd.Parameters.AddWithValue("@Password", user.Password);
                 cmd.Parameters.AddWithValue("@Role", user.Role);
                 cmd.Parameters.AddWithValue("@Id", user.Id);
                 if (user.EmployeeId.HasValue)

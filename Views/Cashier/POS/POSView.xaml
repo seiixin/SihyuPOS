@@ -13,7 +13,7 @@
         <!-- ===================== Left: Product List ===================== -->
         <StackPanel Margin="0,0,10,0">
             <TextBlock FontSize="24" FontWeight="Bold" Foreground="White"
-                       Text="?? POS Panel" Margin="0,0,0,20"/>
+                       Text="POS Panel" Margin="0,0,0,20"/>
 
             <!-- Table picker (admin VM data) -->
             <TextBlock FontWeight="Bold" FontSize="16" Foreground="White" Text="Table Number:"/>
@@ -32,7 +32,7 @@
                     <DataTemplate>
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="{Binding TableNumber}" FontWeight="Bold"/>
-                            <TextBlock Text="  •  "/>
+                            <TextBlock Text="  -  "/>
                             <TextBlock Text="{Binding Status}"/>
                         </StackPanel>
                     </DataTemplate>
@@ -95,7 +95,7 @@
                 <TextBlock Text="Create Order" FontSize="20" FontWeight="Bold" Margin="0,0,12,0"/>
 
                 <!-- Table -->
-                <TextBlock Text="•  Table:" VerticalAlignment="Center" Margin="12,0,4,0" Foreground="White"/>
+                <TextBlock Text="ï¿½  Table:" VerticalAlignment="Center" Margin="12,0,4,0" Foreground="White"/>
                 <ComboBox Width="180"
                           ItemsSource="{Binding TablesForPicker}"
                           SelectedValuePath="TableNumber"
@@ -112,7 +112,7 @@
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="{Binding TableNumber}" FontWeight="Bold"/>
-                                <TextBlock Text="  •  "/>
+                                <TextBlock Text="  ï¿½  "/>
                                 <TextBlock Text="{Binding Status}"/>
                             </StackPanel>
                         </DataTemplate>
@@ -120,19 +120,19 @@
                 </ComboBox>
 
                 <!-- Payment -->
-                <TextBlock Text="•  Payment:" VerticalAlignment="Center" Margin="12,0,4,0" Foreground="White"/>
+                <TextBlock Text="ï¿½  Payment:" VerticalAlignment="Center" Margin="12,0,4,0" Foreground="White"/>
                 <ComboBox Width="120"
                           ItemsSource="{Binding PaymentStatuses}"
                           SelectedItem="{Binding EditingOrder.PaymentStatus, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 
                 <!-- Status -->
-                <TextBlock Text="•  Status:" VerticalAlignment="Center" Margin="12,0,4,0" Foreground="White"/>
+                <TextBlock Text="ï¿½  Status:" VerticalAlignment="Center" Margin="12,0,4,0" Foreground="White"/>
                 <ComboBox Width="140"
                           ItemsSource="{Binding OrderStatuses}"
                           SelectedItem="{Binding EditingOrder.OrderStatus, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 
                 <!-- Total -->
-                <TextBlock Text="•  Total:" VerticalAlignment="Center" Margin="12,0,4,0" Foreground="White"/>
+                <TextBlock Text="ï¿½  Total:" VerticalAlignment="Center" Margin="12,0,4,0" Foreground="White"/>
                 <TextBlock Text="{Binding EditingOrder.TotalAmount, StringFormat=\{0:0.##\}}"
                            FontWeight="Bold" VerticalAlignment="Center" Foreground="White"/>
             </StackPanel>

@@ -29,11 +29,10 @@ using SihyuPOSPayroll.Views.Cashier.Tables;
 using SihyuPOSPayroll.Views.Employee.Attendance;
 using SihyuPOSPayroll.Views.Employee.Payslip;
 using SihyuPOSPayroll.Views.Employee.Profile;
-using SihyuPOSPayroll.Views.Employee.Payroll; // ? NEW (PayrollRecords)
 
 // alias the service types (same technique as your EmployeeProfileViewModel)
-using IEmployeeService = HillsCafeManagement.Services.IEmployeeService;
-using EmployeeService = HillsCafeManagement.Services.EmployeeService;
+using IEmployeeService = SihyuPOSPayroll.Services.IEmployeeService;
+using EmployeeService = SihyuPOSPayroll.Services.EmployeeService;
 
 namespace SihyuPOSPayroll.ViewModels
 {
@@ -258,7 +257,6 @@ namespace SihyuPOSPayroll.ViewModels
                 default:
                     MenuItems.Add("Attendance");
                     MenuItems.Add("Payslip");
-                    MenuItems.Add("Payroll Records");   // ? NEW
                     MenuItems.Add("Profile");
                     MenuItems.Add("Logout");
                     break;
@@ -352,10 +350,6 @@ namespace SihyuPOSPayroll.ViewModels
                     if (IsEmployee) CurrentView = new PayslipView();
                     break;
 
-                case "payroll records":                 // ? NEW
-                    if (IsEmployee) CurrentView = new PayrollRecords(_employeeId);
-                    break;
-
                 case "profile":
                     if (IsEmployee) CurrentView = MakeEmployeeProfileViewOrFallback();
                     break;
@@ -417,10 +411,10 @@ namespace SihyuPOSPayroll.ViewModels
         private readonly Action<T?> _execute;
         private readonly Func<T?, bool>? _canExecute;
 
-        public RelayCommand(Action<T?> execute, Func<T?, bool>? _canExecute = null)
+        public RelayCommand(Action<T?> execute, Func<T?, bool>? canExecute = null)
         {
-            this._execute = execute ?? throw new ArgumentNullException(nameof(execute));
-            this._canExecute = _canExecute;
+            _execute = execute ?? throw new ArgumentNullException(nameof(execute));
+            _canExecute = canExecute;
         }
 
         public bool CanExecute(object? parameter) => _canExecute == null || _canExecute((T?)parameter);

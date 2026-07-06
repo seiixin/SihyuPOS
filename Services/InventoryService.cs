@@ -4,18 +4,12 @@ using System.Linq;
 using System.Data;
 using MySql.Data.MySqlClient;
 using SihyuPOSPayroll.Models;
-using SihyuPOSPayroll.Helpers;
 
 namespace SihyuPOSPayroll.Services
 {
     public class InventoryService
     {
-        private readonly string connectionString;
-
-        public InventoryService()
-        {
-            connectionString = ConfigurationHelper.GetConnectionString();
-        }
+        private readonly string connectionString = "server=localhost;user=root;password=;database=sihyu_pos;";
 
         public ObservableCollection<InventoryItem> GetAllItems()
         {

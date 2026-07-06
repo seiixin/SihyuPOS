@@ -6,7 +6,6 @@
 using System;
 using System.Collections.Generic;
 using MySql.Data.MySqlClient;
-using SihyuPOSPayroll.Helpers;
 using SihyuPOSPayroll.Models;
 
 namespace SihyuPOSPayroll.Services
@@ -20,7 +19,7 @@ namespace SihyuPOSPayroll.Services
         public PayrollService(string? connectionString = null)
         {
             _connectionString = string.IsNullOrWhiteSpace(connectionString)
-                ? ConfigurationHelper.GetConnectionString()
+                ? "server=localhost;user=root;password=;database=sihyu_pos;"
                 : connectionString!;
             _attendanceService = new AttendanceService(_connectionString);
         }

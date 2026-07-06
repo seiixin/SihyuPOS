@@ -33,7 +33,7 @@
                 <!-- Helper note for auto-fill -->
                 <Border Background="#F1F5FF" CornerRadius="8" Padding="10" Margin="0,0,0,12">
                     <TextBlock
-                        Text="Tip: Selecting a Position will auto-fill Salary Per Day from Payroll → Positions &amp; Salaries. Enable Manual Override to edit salary."
+                        Text="Tip: Selecting a Position will auto-fill Salary Per Day from Payroll ? Positions &amp; Salaries. Enable Manual Override to edit salary."
                         Foreground="#223"
                         TextWrapping="Wrap"/>
                 </Border>
@@ -74,7 +74,7 @@
                           StaysOpenOnEdit="True"
                           IsTextSearchEnabled="True"
                           SelectionChanged="PositionComboBox_SelectionChanged"/>
-                <TextBlock Text="(Start typing to search…)"
+                <TextBlock Text="(Start typing to search...)"
                            Foreground="#777" FontSize="11" Margin="0,0,0,10"/>
 
                 <!-- Salary Per Day + manual override -->
@@ -153,25 +153,6 @@
                 <!-- Account Status (AFTER details) -->
                 <!-- ========================= -->
                 <Separator Margin="0,5,0,10"/>
-                
-                <CheckBox x:Name="CreateUserAccountCheckBox" 
-                          Content="Create User Account" 
-                          Margin="0,0,0,10" 
-                          IsChecked="True"/>
-                
-                <TextBlock Text="Email:" FontWeight="Bold" />
-                <TextBox x:Name="EmailTextBox" Margin="0,0,0,10" />
-                
-                <TextBlock Text="Password:" FontWeight="Bold" />
-                <PasswordBox x:Name="PasswordBox" Margin="0,0,0,10" />
-                
-                <TextBlock Text="Role:" FontWeight="Bold" />
-                <ComboBox x:Name="RoleComboBox" Margin="0,0,0,10" SelectedIndex="0">
-                    <ComboBoxItem Content="Admin" />
-                    <ComboBoxItem Content="Cashier" />
-                    <ComboBoxItem Content="Employee" />
-                </ComboBox>
-                
                 <TextBlock Text="Account Status:" FontWeight="Bold" />
                 <ComboBox x:Name="StatusComboBox"
                           Margin="0,0,0,15"

@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:components="clr-namespace:HillsCafeManagement.Views.Components"
+             xmlns:components="clr-namespace:SihyuPOSPayroll.Views.Components"
              mc:Ignorable="d" 
              d:DesignHeight="600" d:DesignWidth="1000">
 
@@ -21,33 +21,21 @@
                             DataContext="{Binding}" />
 
         <!-- Main Content Area -->
-        <Grid Grid.Column="1" Background="#2A2B40">
+        <Grid Grid.Column="1" Background="{StaticResource BackgroundDarkBrush}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
             <!-- Toggle Button -->
-            <Button Content="?"
+            <Button Content="☰"
                     Width="40"
                     Height="40"
                     Margin="10"
                     HorizontalAlignment="Left"
                     VerticalAlignment="Top"
                     Click="ToggleSidebar_Click"
-                    Background="#6378FF"
-                    Foreground="White"
-                    FontWeight="Bold"
-                    BorderThickness="0"
-                    Cursor="Hand">
-                <Button.Template>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}" CornerRadius="8">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                    </ControlTemplate>
-                </Button.Template>
-            </Button>
+                    Style="{StaticResource SecondaryButton}"/>
 
             <!-- Main Content View -->
             <ContentControl Grid.Row="1"

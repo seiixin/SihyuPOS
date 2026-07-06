@@ -1,5 +1,7 @@
+#nullable enable
 using SihyuPOSPayroll.Models;
 using SihyuPOSPayroll.Services;
+using System;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
@@ -9,37 +11,28 @@ namespace SihyuPOSPayroll.Views.Admin.Users
     public partial class AddEditUser : UserControl
     {
         private readonly UserService _userService = new();
-        private readonly EmployeeService _EmployeeService = new();
+        private readonly EmployeeService _employeeService = new();
 
         private readonly bool _isEditMode;
         private readonly UserModel? _editingUser;
 
-        public List<string> Roles { get; set; } = new() { "Admin", "Cashier", "Employee" };
-        public List<EmployeeModel> Employees { get; set; } = new();
-
-        // Event to notify parent when saved
         public delegate void UserSavedHandler();
         public event UserSavedHandler? OnUserSaved;
 
         public AddEditUser(UserModel? user = null)
         {
             InitializeComponent();
-
-            DataContext = this;
-
-            // Load employees for linking
-            Employees = _EmployeeService.GetAllEmployees();
-            EmployeeComboBox.ItemsSource = Employees;
+            PopulateRoles();
+            PopulateEmployees();
 
             if (user != null)
             {
                 _isEditMode = true;
                 _editingUser = user;
-
                 TitleText.Text = "Edit User";
-                EmailTextBox.Text = user.Email;
-                PasswordBox.Password = user.Password;
-                RoleComboBox.SelectedItem = user.Role;
+                EmailTextBox.Text = user.Email ?? string.Empty;
+                PasswordBox.Password = user.Password ?? string.Empty;
+                RoleComboBox.Text = user.Role ?? string.Empty;
                 if (user.EmployeeId.HasValue)
                     EmployeeComboBox.SelectedValue = user.EmployeeId.Value;
             }
@@ -50,73 +43,72 @@ namespace SihyuPOSPayroll.Views.Admin.Users
             }
         }
 
+        private void PopulateRoles()
+        {
+            RoleComboBox.ItemsSource = new List<string> { "Admin", "Employee", "Cashier" };
+        }
+
+        private void PopulateEmployees()
+        {
+            try
+            {
+                EmployeeComboBox.ItemsSource = _employeeService.GetAllEmployees();
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine("Failed to load employees: " + ex.Message);
+            }
+        }
+
         private void Cancel_Click(object sender, RoutedEventArgs e)
         {
-            // Remove or hide this UserControl
-            var parent = this.Parent as Panel;
-            parent?.Children.Remove(this);
+            if (Parent is Panel parent)
+                parent.Children.Remove(this);
         }
 
         private void Save_Click(object sender, RoutedEventArgs e)
         {
-            var email = EmailTextBox.Text.Trim();
-            var password = PasswordBox.Password;
-            var role = RoleComboBox.SelectedItem?.ToString();
-            var employeeId = EmployeeComboBox.SelectedValue as int?;
-
-            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password) || string.IsNullOrEmpty(role))
+            if (string.IsNullOrWhiteSpace(EmailTextBox.Text) || string.IsNullOrWhiteSpace(RoleComboBox.Text))
             {
-                MessageBox.Show("Please fill required fields.");
+                MessageBox.Show("Please fill in Email and Role.", "Validation", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
+            var user = new UserModel
+            {
+                Email = EmailTextBox.Text.Trim(),
+                Password = PasswordBox.Password.Trim(),
+                Role = RoleComboBox.Text.Trim(),
+                EmployeeId = EmployeeComboBox.SelectedValue is int id ? id : (int?)null
+            };
+
             if (_isEditMode && _editingUser != null)
             {
-                // Update existing user
-                var updatedUser = new UserModel
-                {
-                    Id = _editingUser.Id,
-                    Email = email,
-                    Password = password,
-                    Role = role,
-                    EmployeeId = employeeId
-                };
-
-                bool success = _userService.UpdateUser(updatedUser);
-
+                user.Id = _editingUser.Id;
+                bool success = _userService.UpdateUser(user);
                 if (success)
                 {
-                    MessageBox.Show("User updated successfully.");
+                    MessageBox.Show("User updated successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
                     OnUserSaved?.Invoke();
                     Cancel_Click(sender, e);
                 }
                 else
                 {
-                    MessageBox.Show("Failed to update user.");
+                    MessageBox.Show("Failed to update user.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
             else
             {
-                // Add new user
-                var newUser = new UserModel
-                {
-                    Email = email,
-                    Password = password,
-                    Role = role,
-                    EmployeeId = employeeId
-                };
-
-                bool success = _userService.AddUser(newUser);
-
+                bool success = _userService.AddUser(user);
                 if (success)
                 {
-                    MessageBox.Show("User added successfully.");
+                    MessageBox.Show("User added successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
                     OnUserSaved?.Invoke();
                     Cancel_Click(sender, e);
                 }
                 else
                 {
-                    MessageBox.Show("Failed to add user.");
+                    MessageBox.Show("Failed to add user.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
         }

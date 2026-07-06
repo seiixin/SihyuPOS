@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using SihyuPOSPayroll.Helpers;
 using MySql.Data.MySqlClient;
 
 namespace SihyuPOSPayroll.Services
@@ -16,17 +15,17 @@ namespace SihyuPOSPayroll.Services
 
     public static class TableService
     {
-        private static string GetConnectionString() => ConfigurationHelper.GetConnectionString();
+        private const string ConnectionString = "server=localhost;user=root;password=;database=sihyu_pos;";
 
         /// <summary>
-        /// Fetch all café tables with derived status ("Available"/"Occupied").
+        /// Fetch all caf� tables with derived status ("Available"/"Occupied").
         /// Status is computed from active (unpaid + open) orders.
         /// </summary>
         public static List<TableModel> GetAllTables()
         {
             var tables = new List<TableModel>();
 
-            using var conn = new MySqlConnection(GetConnectionString());
+            using var conn = new MySqlConnection(ConnectionString);
             conn.Open();
 
             var sql = @"
@@ -69,7 +68,7 @@ namespace SihyuPOSPayroll.Services
         /// </summary>
         public static void SetAvailabilityManual(int tableId, bool available)
         {
-            using var conn = new MySqlConnection(GetConnectionString());
+            using var conn = new MySqlConnection(ConnectionString);
             conn.Open();
 
             var sql = "UPDATE cafe_tables SET is_available = @avail WHERE id = @id;";

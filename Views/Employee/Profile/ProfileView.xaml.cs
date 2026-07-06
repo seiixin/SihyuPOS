@@ -5,8 +5,8 @@ using System.Windows.Controls;
 
 using SihyuPOSPayroll.ViewModels;
 // If you want to new-up the service explicitly here, you can alias like this:
-// using IEmployeeService = HillsCafeManagement.Services.IEmployeeService;
-// using EmployeeService  = HillsCafeManagement.Services.EmployeeService;
+// using IEmployeeService = SihyuPOSPayroll.Services.IEmployeeService;
+// using EmployeeService  = SihyuPOSPayroll.Services.EmployeeService;
 
 namespace SihyuPOSPayroll.Views.Employee.Profile
 {

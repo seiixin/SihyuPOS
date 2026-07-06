@@ -1,5 +1,4 @@
 #nullable enable
-using SihyuPOSPayroll.Helpers;
 using SihyuPOSPayroll.Models;
 using MySql.Data.MySqlClient;
 using System;
@@ -20,7 +19,7 @@ namespace SihyuPOSPayroll.Services
         // Existing: map logged-in user (users.id) -> employees.id
         int? GetEmployeeIdByUserId(int userId);
 
-        // NEW: header & schedule helpers (employeeId → info)
+        // NEW: header & schedule helpers (employeeId ? info)
         string? GetEmployeeFullName(int employeeId);
         int? GetUserIdByEmployeeId(int employeeId);
         int? GetWorkScheduleDaysMask(int employeeId);
@@ -37,7 +36,7 @@ namespace SihyuPOSPayroll.Services
         public EmployeeService(string? connectionString = null)
         {
             _connectionString = string.IsNullOrWhiteSpace(connectionString)
-                ? ConfigurationHelper.GetConnectionString()
+                ? "server=localhost;user=root;password=;database=sihyu_pos;"
                 : connectionString!;
         }
 
@@ -312,7 +311,7 @@ namespace SihyuPOSPayroll.Services
         }
 
         // =====================================================================
-        // USER ↔ EMPLOYEE MAPPING
+        // USER ? EMPLOYEE MAPPING
         // =====================================================================
 
         public int? GetEmployeeIdByUserId(int userId)
@@ -331,7 +330,7 @@ namespace SihyuPOSPayroll.Services
             return empId == 0 ? (int?)null : empId;
         }
 
-        // NEW: employeeId → userId
+        // NEW: employeeId ? userId
         public int? GetUserIdByEmployeeId(int employeeId)
         {
             using var connection = new MySqlConnection(_connectionString);

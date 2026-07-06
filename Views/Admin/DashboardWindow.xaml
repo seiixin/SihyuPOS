@@ -1,52 +1,29 @@
 <Window x:Class="SihyuPOSPayroll.Views.Admin.DashboardWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Admin Dashboard - Sihyu POS & Payroll"
+        Title="Admin Dashboard - SihyuPOS &amp; Payroll"
         WindowStartupLocation="CenterScreen"
         WindowState="Maximized"
-        ResizeMode="CanResize"
-        Background="{StaticResource BackgroundDarkBrush}">
+        ResizeMode="CanResize">
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="280"/>
+            <ColumnDefinition Width="260"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
         <!-- Sidebar -->
-        <Border Background="{StaticResource SurfaceDarkBrush}"
-                BorderBrush="{StaticResource SurfaceLighterBrush}"
-                BorderThickness="0,0,1,0">
-            <StackPanel Margin="20">
-                <!-- Logo/Branding -->
-                <TextBlock Text="Sihyu POS & Payroll"
-                           FontSize="20"
-                           FontWeight="Bold"
-                           Foreground="{StaticResource AccentEmeraldBrush}"
-                           Margin="0,10,0,30"/>
+        <Border Background="{StaticResource SurfaceDarkBrush}">
+            <StackPanel Margin="0,30" HorizontalAlignment="Center">
+                <Ellipse Width="68" Height="62" Fill="{StaticResource SurfaceLighterBrush}"/>
+                <TextBlock Text="ADMIN" FontWeight="Bold" FontSize="16" Margin="0,10,0,0" TextAlignment="Center" Foreground="{StaticResource TextPrimaryBrush}"/>
+                <TextBlock Text="(First Last)" FontSize="12" HorizontalAlignment="Center" Margin="0,0,0,20" Foreground="{StaticResource TextSecondaryBrush}"/>
 
-                <!-- User Profile -->
-                <Border Background="{StaticResource BackgroundDarkBrush}"
-                        CornerRadius="8"
-                        Padding="16"
-                        Margin="0,0,0,20">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <Ellipse Width="48" Height="48" Fill="{StaticResource SurfaceLighterBrush}" Grid.Column="0"/>
-                        <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
-                            <TextBlock Text="ADMIN" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" FontSize="14"/>
-                            <TextBlock Text="Admin User" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"/>
-                        </StackPanel>
-                    </Grid>
-                </Border>
-
-                <!-- Navigation List -->
+                <!-- Simplified ListBox using Items -->
                 <ListBox Background="Transparent"
                          BorderThickness="0"
-                         Padding="0">
+                         Width="220"
+                         HorizontalAlignment="Center">
                     <ListBoxItem Content="Dashboard"/>
                     <ListBoxItem Content="Users"/>
                     <ListBoxItem Content="Employees"/>
@@ -65,10 +42,11 @@
         </Border>
 
         <!-- Main Content -->
-        <Border Grid.Column="1" Background="{StaticResource BackgroundDarkBrush}" Padding="24">
+        <Border Grid.Column="1" Background="{StaticResource BackgroundDarkBrush}" Margin="15">
             <TextBlock Text="Select a page from the sidebar"
-                       Foreground="{StaticResource TextSecondaryBrush}"
-                       FontSize="18"
+                       Foreground="{StaticResource TextPrimaryBrush}"
+                       FontSize="28"
+                       FontWeight="Bold"
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"/>
         </Border>

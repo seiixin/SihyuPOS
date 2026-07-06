@@ -2,8 +2,8 @@
     x:Class="SihyuPOSPayroll.Views.Admin.Payslip_Requests.Payslip"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:vm="clr-namespace:HillsCafeManagement.ViewModels"
-    xmlns:local="clr-namespace:HillsCafeManagement.Helpers"
+    xmlns:vm="clr-namespace:SihyuPOSPayroll.ViewModels"
+    xmlns:local="clr-namespace:SihyuPOSPayroll.Helpers"
     Background="#2A2B40">
 
     <UserControl.Resources>

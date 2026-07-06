@@ -1,4 +1,3 @@
-using SihyuPOSPayroll.Helpers;
 using SihyuPOSPayroll.Models;
 using MySql.Data.MySqlClient;
 using System;
@@ -13,7 +12,7 @@ namespace SihyuPOSPayroll.Services
 
         public MenuService()
         {
-            _connectionString = ConfigurationHelper.GetConnectionString();
+            _connectionString = "server=localhost;user=root;password=;database=sihyu_pos;";
         }
 
         public List<MenuModel> GetAllMenuItems()

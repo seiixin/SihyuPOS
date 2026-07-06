@@ -45,7 +45,7 @@
                 </StackPanel>
 
                 <!-- Tip -->
-                <TextBlock Text="Tip: Label can be 'MWF', 'TTh', or any name. Double-click the Days cell (or click ??) to edit Mon–Sun."
+                <TextBlock Text="Tip: Label can be 'MWF', 'TTh', or any name. Double-click the Days cell (or click Edit) to edit Mon-Sun."
                            Foreground="#666"
                            Margin="0,0,0,8"/>
 
@@ -121,20 +121,20 @@
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                                         <!-- Edit: begin editing this row -->
-                                        <Button Content="??"
+                                        <Button Content="Edit"
                                                 ToolTip="Edit"
                                                 Background="Transparent"
                                                 BorderThickness="0"
-                                                FontSize="16"
+                                                FontSize="14"
                                                 Click="EditRow_Click"
                                                 Margin="0,0,6,0"/>
 
                                         <!-- Delete: remove from grid; persists after Save -->
-                                        <Button Content="??"
+                                        <Button Content="Delete"
                                                 ToolTip="Delete"
                                                 Background="Transparent"
                                                 BorderThickness="0"
-                                                FontSize="16"
+                                                FontSize="14"
                                                 Click="DeleteRow_Click"/>
                                     </StackPanel>
                                 </DataTemplate>

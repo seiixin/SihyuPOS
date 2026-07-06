@@ -163,17 +163,17 @@
                             <TextBlock Text="Order Details" FontSize="20" FontWeight="Bold" />
                             <TextBlock Margin="0,6,0,0">
                                 <Run Text="Order #"/> <Run Text="{Binding InfoOrder.Id}" FontWeight="Bold"/>
-                                <Run Text=" • Date:"/> <Run Text="{Binding InfoOrder.CreatedAt, StringFormat=\{0:MM/dd/yy HH:mm\}}"/>
-                                <Run Text=" • Table:"/> <Run Text="{Binding InfoOrder.TableNumber}"/>
+                                <Run Text=" - Date:"/> <Run Text="{Binding InfoOrder.CreatedAt, StringFormat=\{0:MM/dd/yy HH:mm\}}"/>
+                                <Run Text=" - Table:"/> <Run Text="{Binding InfoOrder.TableNumber}"/>
                             </TextBlock>
                             <TextBlock Margin="0,2,0,0">
                                 <Run Text="Payment:"/> <Run Text="{Binding InfoOrder.PaymentStatus}" FontWeight="Bold"/>
-                                <Run Text=" • Status:"/> <Run Text="{Binding InfoOrder.OrderStatus}" FontWeight="Bold"/>
-                                <Run Text=" • Total:"/> <Run Text="{Binding InfoOrder.TotalAmount, StringFormat=\{0:0.##\}}" FontWeight="Bold"/>
+                                <Run Text=" - Status:"/> <Run Text="{Binding InfoOrder.OrderStatus}" FontWeight="Bold"/>
+                                <Run Text=" - Total:"/> <Run Text="{Binding InfoOrder.TotalAmount, StringFormat=\{0:0.##\}}" FontWeight="Bold"/>
                             </TextBlock>
                         </StackPanel>
 
-                        <Button Grid.Column="1" Content="?" Width="28" Height="28" VerticalAlignment="Top" Click="CloseInfo_Click"/>
+                        <Button Grid.Column="1" Content="X" Width="28" Height="28" VerticalAlignment="Top" Click="CloseInfo_Click"/>
                     </Grid>
 
                     <DataGrid Grid.Row="1"
@@ -217,7 +217,7 @@
                         <TextBlock Text="Edit Order" FontSize="20" FontWeight="Bold" Margin="0,0,12,0"/>
 
                         <!-- Table -->
-                        <TextBlock Text="•  Table:" VerticalAlignment="Center" Margin="12,0,4,0"/>
+                        <TextBlock Text="ï¿½  Table:" VerticalAlignment="Center" Margin="12,0,4,0"/>
                         <ComboBox Width="180"
                                   ItemsSource="{Binding TablesForPicker}"
                                   SelectedValuePath="TableNumber"
@@ -234,7 +234,7 @@
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="{Binding TableNumber}" FontWeight="Bold"/>
-                                        <TextBlock Text="  •  "/>
+                                        <TextBlock Text="  ï¿½  "/>
                                         <TextBlock Text="{Binding Status}"/>
                                     </StackPanel>
                                 </DataTemplate>
@@ -242,19 +242,19 @@
                         </ComboBox>
 
                         <!-- Payment -->
-                        <TextBlock Text="•  Payment:" VerticalAlignment="Center" Margin="12,0,4,0"/>
+                        <TextBlock Text="ï¿½  Payment:" VerticalAlignment="Center" Margin="12,0,4,0"/>
                         <ComboBox Width="120"
                                   ItemsSource="{Binding PaymentStatuses}"
                                   SelectedItem="{Binding EditingOrder.PaymentStatus, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 
                         <!-- Status -->
-                        <TextBlock Text="•  Status:" VerticalAlignment="Center" Margin="12,0,4,0"/>
+                        <TextBlock Text="ï¿½  Status:" VerticalAlignment="Center" Margin="12,0,4,0"/>
                         <ComboBox Width="140"
                                   ItemsSource="{Binding OrderStatuses}"
                                   SelectedItem="{Binding EditingOrder.OrderStatus, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 
                         <!-- Total -->
-                        <TextBlock Text="•  Total:" VerticalAlignment="Center" Margin="12,0,4,0"/>
+                        <TextBlock Text="ï¿½  Total:" VerticalAlignment="Center" Margin="12,0,4,0"/>
                         <TextBlock Text="{Binding EditingOrder.TotalAmount, StringFormat=\{0:0.##\}}"
                                    FontWeight="Bold" VerticalAlignment="Center"/>
                     </StackPanel>
