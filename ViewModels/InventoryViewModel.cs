@@ -32,6 +32,18 @@ namespace SihyuPOSPayroll.ViewModels
             LoadInventoryItems();
         }
 
+        /// <summary>
+        /// True when the system is running in StoreMode.
+        /// Used to hide expiry-related UI that only applies to RestaurantMode.
+        /// </summary>
+        public bool IsStoreMode => SettingsService.Instance.CurrentMode == SystemMode.StoreMode;
+
+        /// <summary>
+        /// True when the system is running in RestaurantMode.
+        /// Used to show expiry-related UI.
+        /// </summary>
+        public bool IsRestaurantMode => !IsStoreMode;
+
         public ObservableCollection<InventoryItem> FilteredItems
         {
             get => _filteredItems;

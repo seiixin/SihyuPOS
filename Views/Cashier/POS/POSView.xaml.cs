@@ -139,6 +139,7 @@ namespace SihyuPOSPayroll.Views.Cashier.POS
         {
             try
             {
+                Vm.EditingOrder!.OrderType = Vm.SelectedOrderType;
                 Vm.SaveEditing();   // persist order
                 Vm.BeginAdd();      // ready for next order
             }

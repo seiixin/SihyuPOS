@@ -9,6 +9,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 using SihyuPOSPayroll.Models;
+using SihyuPOSPayroll.Services;
 using SihyuPOSPayroll.Views.Admin.Attendance;
 using SihyuPOSPayroll.Views.Admin.Dashboard;
 using SihyuPOSPayroll.Views.Admin.Employees;
@@ -19,6 +20,7 @@ using SihyuPOSPayroll.Views.Admin.Payroll;
 using SihyuPOSPayroll.Views.Admin.Payslip_Requests;
 using SihyuPOSPayroll.Views.Admin.Receipts;
 using SihyuPOSPayroll.Views.Admin.Sales;
+using SihyuPOSPayroll.Views.Admin.Settings;
 using SihyuPOSPayroll.Views.Admin.Tables;
 using SihyuPOSPayroll.Views.Admin.Users;
 using SihyuPOSPayroll.Views.Cashier.Inventory;
@@ -81,6 +83,9 @@ namespace SihyuPOSPayroll.ViewModels
             NavigateCommand = new RelayCommand<string?>(Navigate);
             ReloadProfileCommand = new RelayCommand<object?>(_ => LoadEmployee(_employeeId));
             RefreshAvatarCommand = new RelayCommand<object?>(_ => RefreshAvatar());
+
+            // Subscribe to settings changes so the sidebar refreshes when an admin saves settings
+            SettingsService.Instance.SettingsChanged += InitializeMenuItems;
 
             _employeeId = employeeId;
             LoadEmployee(_employeeId); // pulls name/role/avatar from DB and sets menu + default view
@@ -255,10 +260,11 @@ namespace SihyuPOSPayroll.ViewModels
                     MenuItems.Add("Attendance");
                     MenuItems.Add("Menu");
                     MenuItems.Add("Inventory");
-                    MenuItems.Add("Orders");
+                    MenuItems.Add("POS");
                     MenuItems.Add("Receipts");
                     MenuItems.Add("Tables");
                     MenuItems.Add("Sales & Reports");
+                    MenuItems.Add("Settings");
                     MenuItems.Add("Logout");
 
                     MenuGroups.Add(new SidebarMenuGroup
@@ -277,6 +283,7 @@ namespace SihyuPOSPayroll.ViewModels
                         {
                             MakeItem("Users", "\uE716"),
                             MakeItem("Menu",  "\uE8A5"),
+                            MakeItem("Settings", "\uE713"),
                         }
                     });
                     MenuGroups.Add(new SidebarMenuGroup
@@ -296,7 +303,7 @@ namespace SihyuPOSPayroll.ViewModels
                         {
                             MakeItem("Payslip Requests", "\uE7C3"),
                             MakeItem("Receipts",         "\uE9F9"),
-                            MakeItem("Orders",           "\uE8A5"),
+                            MakeItem("POS",              "\uE8C9"),
                             MakeItem("Tables",           "\uE7EF"),
                             MakeItem("Sales & Reports",  "\uE9D9"),
                         }
@@ -309,12 +316,55 @@ namespace SihyuPOSPayroll.ViewModels
                             MakeItem("Logout", "\uF3B1"),
                         }
                     });
+
+                    // Task 6.3: Filter MenuGroups based on ModuleVisibility.
+                    // "Settings" and "Dashboard" are always kept regardless of visibility.
+                    {
+                        var visibility = SettingsService.Instance.ModuleVisibility;
+                        foreach (var group in MenuGroups)
+                        {
+                            group.Items.RemoveAll(item =>
+                            {
+                                // Never remove "Settings" or "Dashboard" for Admin
+                                if (string.Equals(item.Label, "Settings", StringComparison.OrdinalIgnoreCase) ||
+                                    string.Equals(item.Label, "Dashboard", StringComparison.OrdinalIgnoreCase) ||
+                                    string.Equals(item.Label, "POS", StringComparison.OrdinalIgnoreCase))
+                                    return false;
+
+                                // Map label to visibility key
+                                string moduleKey = LabelToModuleKey(item.Label);
+                                if (string.IsNullOrEmpty(moduleKey)) return false;
+
+                                // Remove item if module is disabled
+                                return visibility.TryGetValue(moduleKey, out bool isEnabled) && !isEnabled;
+                            });
+                        }
+
+                        // Remove empty non-ACCOUNT groups (keep ACCOUNT for Logout)
+                        for (int i = MenuGroups.Count - 1; i >= 0; i--)
+                        {
+                            if (MenuGroups[i].Items.Count == 0 &&
+                                !string.Equals(MenuGroups[i].Header, "ACCOUNT", StringComparison.OrdinalIgnoreCase))
+                            {
+                                MenuGroups.RemoveAt(i);
+                            }
+                        }
+
+                        // Task 6.3: If CurrentView is a now-excluded module view, navigate to Dashboard
+                        if (_currentView != null && !(_currentView is Dashboard) && !(_currentView is UserControl uc && uc.Content == null))
+                        {
+                            bool currentViewExcluded = IsCurrentViewExcluded(visibility);
+                            if (currentViewExcluded)
+                            {
+                                CurrentView = new Dashboard();
+                            }
+                        }
+                    }
                     break;
 
                 case "CASHIER":
                     MenuItems.Add("POS");
                     MenuItems.Add("Inventory");
-                    MenuItems.Add("Orders");
                     MenuItems.Add("Receipts");
                     MenuItems.Add("Tables");
                     MenuItems.Add("Logout");
@@ -326,7 +376,6 @@ namespace SihyuPOSPayroll.ViewModels
                         {
                             MakeItem("POS",       "\uE8C9"),
                             MakeItem("Inventory", "\uE8B4"),
-                            MakeItem("Orders",    "\uE8A5"),
                             MakeItem("Receipts",  "\uE9F9"),
                             MakeItem("Tables",    "\uE7EF"),
                         }
@@ -339,6 +388,45 @@ namespace SihyuPOSPayroll.ViewModels
                             MakeItem("Logout", "\uF3B1"),
                         }
                     });
+
+                    // Task 7.1: Filter Cashier MenuGroups based on ModuleVisibility and SystemMode.
+                    // "POS" is always kept regardless of visibility.
+                    {
+                        var visibility = SettingsService.Instance.ModuleVisibility;
+                        bool isStoreMode = SettingsService.Instance.CurrentMode == SystemMode.StoreMode;
+
+                        foreach (var group in MenuGroups)
+                        {
+                            group.Items.RemoveAll(item =>
+                            {
+                                // Never remove "POS" for Cashier
+                                if (string.Equals(item.Label, "POS", StringComparison.OrdinalIgnoreCase))
+                                    return false;
+
+                                // In StoreMode, always exclude Tables and Menu
+                                if (isStoreMode &&
+                                    (string.Equals(item.Label, "Tables", StringComparison.OrdinalIgnoreCase) ||
+                                     string.Equals(item.Label, "Menu", StringComparison.OrdinalIgnoreCase)))
+                                    return true;
+
+                                // Remove item if module is disabled in visibility config
+                                string moduleKey = LabelToModuleKey(item.Label);
+                                if (string.IsNullOrEmpty(moduleKey)) return false;
+
+                                return visibility.TryGetValue(moduleKey, out bool isEnabled) && !isEnabled;
+                            });
+                        }
+
+                        // Remove empty non-ACCOUNT groups
+                        for (int i = MenuGroups.Count - 1; i >= 0; i--)
+                        {
+                            if (MenuGroups[i].Items.Count == 0 &&
+                                !string.Equals(MenuGroups[i].Header, "ACCOUNT", StringComparison.OrdinalIgnoreCase))
+                            {
+                                MenuGroups.RemoveAt(i);
+                            }
+                        }
+                    }
                     break;
 
                 case "EMPLOYEE":
@@ -366,6 +454,39 @@ namespace SihyuPOSPayroll.ViewModels
                             MakeItem("Logout", "\uF3B1"),
                         }
                     });
+
+                    // Task 7.3: Filter Employee MenuGroups based on ModuleVisibility.
+                    // Only "Attendance" and "PayslipRequests" are subject to visibility control.
+                    {
+                        var visibility = SettingsService.Instance.ModuleVisibility;
+
+                        foreach (var group in MenuGroups)
+                        {
+                            group.Items.RemoveAll(item =>
+                            {
+                                // "Profile" and "Logout" are always kept
+                                if (string.Equals(item.Label, "Profile", StringComparison.OrdinalIgnoreCase) ||
+                                    string.Equals(item.Label, "Logout", StringComparison.OrdinalIgnoreCase))
+                                    return false;
+
+                                // Map "Payslip" label → "PayslipRequests" visibility key
+                                string moduleKey = LabelToModuleKey(item.Label);
+                                if (string.IsNullOrEmpty(moduleKey)) return false;
+
+                                return visibility.TryGetValue(moduleKey, out bool isEnabled) && !isEnabled;
+                            });
+                        }
+
+                        // Remove empty non-ACCOUNT groups
+                        for (int i = MenuGroups.Count - 1; i >= 0; i--)
+                        {
+                            if (MenuGroups[i].Items.Count == 0 &&
+                                !string.Equals(MenuGroups[i].Header, "ACCOUNT", StringComparison.OrdinalIgnoreCase))
+                            {
+                                MenuGroups.RemoveAt(i);
+                            }
+                        }
+                    }
                     break;
             }
         }
@@ -377,6 +498,60 @@ namespace SihyuPOSPayroll.ViewModels
             Icon    = icon,
             Command = new RelayCommand<object?>(_ => Navigate(label)),
         };
+
+        /// <summary>
+        /// Maps a sidebar label to the corresponding ModuleVisibility key.
+        /// Returns an empty string for items that have no corresponding module key
+        /// (e.g., Logout, Profile) and should never be filtered.
+        /// </summary>
+        private static string LabelToModuleKey(string label) => label.Trim() switch
+        {
+            "Dashboard"       => "Dashboard",
+            "Users"           => "Users",
+            "Employees"       => "Employees",
+            "Payroll"         => "Payroll",
+            "Payslip Requests"=> "PayslipRequests",
+            "Payslip"         => "PayslipRequests",   // Employee role label
+            "Attendance"      => "Attendance",
+            "Menu"            => "Menu",
+            "Inventory"       => "Inventory",
+            "Receipts"        => "Receipts",
+            "Tables"          => "Tables",
+            "Sales & Reports" => "Sales",
+            "Settings"        => "Settings",
+            _                 => string.Empty,        // Logout, Profile, POS, Orders, etc.
+        };
+
+        /// <summary>
+        /// Returns true if the current view corresponds to a module that is now disabled.
+        /// Always returns false for Dashboard and SettingsView (protected views).
+        /// </summary>
+        private bool IsCurrentViewExcluded(IReadOnlyDictionary<string, bool> visibility)
+        {
+            // Never exclude the Dashboard or Settings view
+            if (_currentView is Dashboard || _currentView is SettingsView)
+                return false;
+
+            // Map current view type to module key
+            string moduleKey = _currentView switch
+            {
+                Views.Admin.Users.Users          => "Users",
+                Employees                        => "Employees",
+                Payroll                          => "Payroll",
+                Payslip                          => "PayslipRequests",
+                AttendanceAdminView              => "Attendance",
+                MenuView                         => "Menu",
+                Inventory                        => "Inventory",
+                Receipts                         => "Receipts",
+                Tables                           => "Tables",
+                Sales                            => "Sales",
+                _                                => string.Empty,
+            };
+
+            if (string.IsNullOrEmpty(moduleKey)) return false;
+
+            return visibility.TryGetValue(moduleKey, out bool isEnabled) && !isEnabled;
+        }
 
         private void SetDefaultView()
         {
@@ -437,8 +612,7 @@ namespace SihyuPOSPayroll.ViewModels
                     break;
 
                 case "orders":
-                    if (IsAdmin) CurrentView = new Orders();
-                    else if (IsCashier) CurrentView = new OrdersView();
+                    if (IsCashier) CurrentView = new OrdersView();
                     break;
 
                 case "receipts":
@@ -455,9 +629,14 @@ namespace SihyuPOSPayroll.ViewModels
                     if (IsAdmin) CurrentView = new Sales();
                     break;
 
-                // CASHIER
+                // SETTINGS (admin only)
+                case "settings":
+                    if (IsAdmin) CurrentView = new SettingsView();
+                    break;
+
+                // CASHIER / ADMIN POS
                 case "pos":
-                    if (IsCashier) CurrentView = new POSView();
+                    if (IsAdmin || IsCashier) CurrentView = new POSView();
                     break;
 
                 // EMPLOYEE

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Windows;              // MessageBox
 using System.Windows.Input;        // ICommand
@@ -22,6 +23,38 @@ namespace SihyuPOSPayroll.ViewModels
         // NEW: enum lists for editor dropdowns
         public Array PaymentStatuses => Enum.GetValues(typeof(PaymentStatus));
         public Array OrderStatuses => Enum.GetValues(typeof(OrderStatus));
+
+        // ===== OrderType selection (Task 12.2) =====
+        private OrderType _selectedOrderType = OrderType.NotApplicable;
+
+        /// <summary>
+        /// The order type selected by the cashier (DineIn / TakeOut).
+        /// Relevant only when <see cref="IsOrderTypeRequired"/> is true.
+        /// </summary>
+        public OrderType SelectedOrderType
+        {
+            get => _selectedOrderType;
+            set
+            {
+                if (_selectedOrderType == value) return;
+                _selectedOrderType = value;
+                OnPropertyChanged(nameof(SelectedOrderType));
+                OnPropertyChanged(nameof(CanConfirmOrder));
+            }
+        }
+
+        /// <summary>
+        /// Returns true when the system is in RestaurantMode, making OrderType mandatory.
+        /// </summary>
+        public bool IsOrderTypeRequired =>
+            SettingsService.Instance.CurrentMode == SystemMode.RestaurantMode;
+
+        /// <summary>
+        /// Returns false when in RestaurantMode and no OrderType has been chosen yet,
+        /// blocking the Save button.
+        /// </summary>
+        public bool CanConfirmOrder =>
+            !IsOrderTypeRequired || SelectedOrderType != OrderType.NotApplicable;
 
         // ----- Inline editor state -----
         public OrderModel? EditingOrder { get; set; }
@@ -109,8 +142,13 @@ namespace SihyuPOSPayroll.ViewModels
             EditingItems = new ObservableCollection<OrderItemModel>();
             LoadTablesForPicker(currentOrderId: null, includeOccupied: false);
 
+            // Reset order type selection for the new order
+            SelectedOrderType = OrderType.NotApplicable;
+
             OnPropertyChanged(nameof(EditingOrder));
             OnPropertyChanged(nameof(EditingItems));
+            OnPropertyChanged(nameof(IsOrderTypeRequired));
+            OnPropertyChanged(nameof(CanConfirmOrder));
         }
 
         public void BeginEdit(OrderModel source)
@@ -239,6 +277,7 @@ namespace SihyuPOSPayroll.ViewModels
         /// <summary>
         /// Ask for confirmation and update the order's payment status immediately.
         /// If <paramref name="target"/> is null, it tries to use EditingOrder.
+        /// When transitioning to Paid, runs the DeductionEngine to update inventory.
         /// </summary>
         public void RequestPaymentStatusChange(OrderModel? target, PaymentStatus newStatus)
         {
@@ -267,6 +306,30 @@ namespace SihyuPOSPayroll.ViewModels
                 order.PaymentStatus = newStatus;
 
                 _orderService.UpdateOrder(order);
+
+                // ── Task 12.1: run DeductionEngine when an order becomes Paid ──
+                if (newStatus == PaymentStatus.Paid)
+                {
+                    var engine = new DeductionEngine();
+
+                    engine.LowStockDetected += alert =>
+                    {
+                        MessageBox.Show(
+                            $"Low Stock Alert: {alert.ProductName} has only {alert.RemainingQuantity} remaining.",
+                            "Low Stock",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Warning);
+                    };
+
+                    try
+                    {
+                        engine.Apply(order.Id, order.Items, order.OrderType);
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[DeductionEngine] Error: {ex.Message}");
+                    }
+                }
 
                 LoadOrders();
                 // Refresh add-mode picker to reflect availability changes

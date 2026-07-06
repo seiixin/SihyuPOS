@@ -30,6 +30,7 @@ namespace SihyuPOSPayroll.Models
         public int? CashRegisterId { get; set; }
         public OrderStatus OrderStatus { get; set; } = OrderStatus.Pending;
         public int? OrderedByUserId { get; set; }
+        public OrderType OrderType { get; set; } = OrderType.NotApplicable;
 
         // Navigation: list of order items
         public List<OrderItemModel> Items { get; set; } = new();

@@ -8,6 +8,7 @@
 
     <UserControl.Resources>
         <helpers:EmptyStringToVisibilityConverter x:Key="EmptyStringToVisibilityConverter"/>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
     </UserControl.Resources>
 
     <UserControl.DataContext>
@@ -22,10 +23,20 @@
 
         <!-- Page Header -->
         <Border BorderBrush="#072219" BorderThickness="0,0,0,1" Margin="0,0,0,20" Padding="0,0,0,14">
-            <TextBlock Text="Inventory &amp; Expiry Alerts"
-                       FontSize="26"
+            <TextBlock FontSize="26"
                        FontWeight="Bold"
-                       Foreground="#477C60"/>
+                       Foreground="#477C60">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Text" Value="Inventory &amp; Expiry Alerts"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsStoreMode}" Value="True">
+                                <Setter Property="Text" Value="Inventory"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
         </Border>
 
         <!-- Main content area -->
@@ -118,7 +129,8 @@
                 </Border>
 
                 <!-- Expiry Alerts Header -->
-                <Grid Margin="0,0,0,12">
+                <Grid Margin="0,0,0,12"
+                      Visibility="{Binding IsRestaurantMode, Converter={StaticResource BoolToVisibilityConverter}}">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
@@ -139,7 +151,8 @@
                 </Grid>
 
                 <!-- Expiry Alerts Table -->
-                <Border Background="#090B17" CornerRadius="10">
+                <Border Background="#090B17" CornerRadius="10"
+                        Visibility="{Binding IsRestaurantMode, Converter={StaticResource BoolToVisibilityConverter}}">
                     <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="200">
                         <DataGrid ItemsSource="{Binding InventoryItems}"
                                   AutoGenerateColumns="False"
