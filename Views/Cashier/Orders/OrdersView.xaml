@@ -222,16 +222,16 @@
                         </ComboBox>
 
                         <!-- Payment -->
-                        <TextBlock Text="�  Payment:" VerticalAlignment="Center" Margin="12,0,4,0"/>
+                        <TextBlock Text="  Payment:" VerticalAlignment="Center" Margin="12,0,4,0"/>
                         <ComboBox Width="120"
                                   ItemsSource="{Binding PaymentStatuses}"
-                                  SelectedItem="{Binding EditingOrder.PaymentStatus, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                  SelectedItem="{Binding EditingPaymentStatus, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 
                         <!-- Status -->
-                        <TextBlock Text="�  Status:" VerticalAlignment="Center" Margin="12,0,4,0"/>
+                        <TextBlock Text="  Status:" VerticalAlignment="Center" Margin="12,0,4,0"/>
                         <ComboBox Width="140"
                                   ItemsSource="{Binding OrderStatuses}"
-                                  SelectedItem="{Binding EditingOrder.OrderStatus, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                  SelectedItem="{Binding EditingOrderStatus, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 
                         <!-- Total -->
                         <TextBlock Text="�  Total:" VerticalAlignment="Center" Margin="12,0,4,0"/>

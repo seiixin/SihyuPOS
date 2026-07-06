@@ -1,20 +1,26 @@
 <UserControl x:Class="SihyuPOSPayroll.Views.Admin.Dashboard.Dashboard"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:oxy="http://oxyplot.org/wpf"
              Background="#000000">
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" Background="#000000">
-        <StackPanel Margin="28,24,28,28" Orientation="Vertical" VerticalAlignment="Top" HorizontalAlignment="Stretch">
+        <StackPanel Margin="28,24,28,28" Orientation="Vertical">
 
             <!-- Page Header -->
-            <Border BorderBrush="#072219" BorderThickness="0,0,0,1" Margin="0,0,0,20" Padding="0,0,0,14">
-                <TextBlock Text="Dashboard"
-                           FontSize="26"
-                           FontWeight="Bold"
-                           Foreground="#477C60"/>
+            <Border BorderBrush="#072219" BorderThickness="0,0,0,1"
+                    Margin="0,0,0,20" Padding="0,0,0,14">
+                <Grid>
+                    <TextBlock Text="Dashboard"
+                               FontSize="26" FontWeight="Bold" Foreground="#477C60"/>
+                    <Button Content="Refresh"
+                            Style="{StaticResource SecondaryButton}"
+                            HorizontalAlignment="Right"
+                            Click="Refresh_Click"/>
+                </Grid>
             </Border>
 
-            <!-- Stats Cards Row -->
+            <!-- ── Stat Cards ─────────────────────────────────────────── -->
             <Grid Margin="0,0,0,20">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -22,119 +28,184 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="12"/>
                     <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="12"/>
+                    <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- Total Sales Card -->
+                <!-- Total Sales Today -->
                 <Border Grid.Column="0" Background="#090B17" CornerRadius="10" Padding="20">
                     <StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                            <Border Width="36" Height="36" Background="#072219" CornerRadius="8">
-                                <TextBlock Text="&#xE8EC;"
-                                           FontFamily="Segoe MDL2 Assets"
-                                           FontSize="16"
-                                           Foreground="#128854"
-                                           HorizontalAlignment="Center"
-                                           VerticalAlignment="Center"/>
-                            </Border>
-                        </StackPanel>
-                        <TextBlock Text="254,021.24 PHP"
-                                   FontSize="20"
-                                   FontWeight="Bold"
-                                   Foreground="#128854"
-                                   Margin="0,0,0,4"/>
+                        <Border Width="36" Height="36" Background="#072219"
+                                CornerRadius="8" HorizontalAlignment="Left"
+                                Margin="0,0,0,12">
+                            <TextBlock Text="&#xE8EC;"
+                                       FontFamily="Segoe MDL2 Assets" FontSize="16"
+                                       Foreground="#10B981"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Text="{Binding TotalSalesToday}"
+                                   FontSize="20" FontWeight="Bold"
+                                   Foreground="#10B981" Margin="0,0,0,4"/>
                         <TextBlock Text="Total Sales Today"
-                                   FontSize="12"
-                                   Foreground="#477C60"/>
+                                   FontSize="12" Foreground="#477C60"/>
+                        <TextBlock Text="{Binding SalesTrend}"
+                                   FontSize="11"
+                                   Foreground="{Binding SalesTrendBrush}"
+                                   Margin="0,4,0,0" TextWrapping="Wrap"/>
                     </StackPanel>
                 </Border>
 
-                <!-- Active Employees Card -->
+                <!-- Total Orders Today -->
                 <Border Grid.Column="2" Background="#090B17" CornerRadius="10" Padding="20">
                     <StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                            <Border Width="36" Height="36" Background="#1A0A0A" CornerRadius="8">
-                                <TextBlock Text="&#xE716;"
-                                           FontFamily="Segoe MDL2 Assets"
-                                           FontSize="16"
-                                           Foreground="#F87171"
-                                           HorizontalAlignment="Center"
-                                           VerticalAlignment="Center"/>
-                            </Border>
-                        </StackPanel>
-                        <TextBlock Text="29"
-                                   FontSize="20"
-                                   FontWeight="Bold"
-                                   Foreground="#F87171"
-                                   Margin="0,0,0,4"/>
-                        <TextBlock Text="Active Employees"
-                                   FontSize="12"
-                                   Foreground="#9CA3AF"/>
+                        <Border Width="36" Height="36" Background="#0A1A2A"
+                                CornerRadius="8" HorizontalAlignment="Left"
+                                Margin="0,0,0,12">
+                            <TextBlock Text="&#xE8A5;"
+                                       FontFamily="Segoe MDL2 Assets" FontSize="16"
+                                       Foreground="#60A5FA"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Text="{Binding TodayOrderCount}"
+                                   FontSize="20" FontWeight="Bold"
+                                   Foreground="#60A5FA" Margin="0,0,0,4"/>
+                        <TextBlock Text="Orders Today"
+                                   FontSize="12" Foreground="#9CA3AF"/>
                     </StackPanel>
                 </Border>
 
-                <!-- Low Inventory Card -->
+                <!-- Active Employees -->
                 <Border Grid.Column="4" Background="#090B17" CornerRadius="10" Padding="20">
                     <StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                            <Border Width="36" Height="36" Background="#0A1020" CornerRadius="8">
-                                <TextBlock Text="&#xE8F1;"
-                                           FontFamily="Segoe MDL2 Assets"
-                                           FontSize="16"
-                                           Foreground="#60A5FA"
-                                           HorizontalAlignment="Center"
-                                           VerticalAlignment="Center"/>
-                            </Border>
-                        </StackPanel>
-                        <TextBlock Text="14"
-                                   FontSize="20"
-                                   FontWeight="Bold"
-                                   Foreground="#60A5FA"
-                                   Margin="0,0,0,4"/>
-                        <TextBlock Text="Inventory Low Items"
-                                   FontSize="12"
-                                   Foreground="#9CA3AF"/>
+                        <Border Width="36" Height="36" Background="#1A0A0A"
+                                CornerRadius="8" HorizontalAlignment="Left"
+                                Margin="0,0,0,12">
+                            <TextBlock Text="&#xE716;"
+                                       FontFamily="Segoe MDL2 Assets" FontSize="16"
+                                       Foreground="#F87171"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Text="{Binding ActiveEmployees}"
+                                   FontSize="20" FontWeight="Bold"
+                                   Foreground="#F87171" Margin="0,0,0,4"/>
+                        <TextBlock Text="Active Employees"
+                                   FontSize="12" Foreground="#9CA3AF"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Low Stock Items -->
+                <Border Grid.Column="6" Background="#090B17" CornerRadius="10" Padding="20">
+                    <StackPanel>
+                        <Border Width="36" Height="36" Background="#1A1000"
+                                CornerRadius="8" HorizontalAlignment="Left"
+                                Margin="0,0,0,12">
+                            <TextBlock Text="&#xE8F1;"
+                                       FontFamily="Segoe MDL2 Assets" FontSize="16"
+                                       Foreground="#FBBF24"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Text="{Binding LowStockCount}"
+                                   FontSize="20" FontWeight="Bold"
+                                   Foreground="#FBBF24" Margin="0,0,0,4"/>
+                        <TextBlock Text="Low Stock Items"
+                                   FontSize="12" Foreground="#9CA3AF"/>
+                        <TextBlock Text="{Binding LowStockTrend}"
+                                   FontSize="11"
+                                   Foreground="{Binding LowStockTrendBrush}"
+                                   Margin="0,4,0,0"/>
                     </StackPanel>
                 </Border>
             </Grid>
 
-            <!-- Monthly Sales Chart -->
+            <!-- ── Monthly Sales Chart ────────────────────────────────── -->
             <Border Background="#090B17" CornerRadius="10" Padding="20">
                 <StackPanel>
+                    <!-- Chart header: title + month picker -->
                     <DockPanel Margin="0,0,0,16">
-                        <TextBlock Text="SihyuPOS Monthly Sales"
-                                   FontSize="16"
-                                   FontWeight="SemiBold"
+                        <TextBlock Text="Monthly Sales"
+                                   FontSize="16" FontWeight="SemiBold"
                                    Foreground="#F3F4F6"
-                                   DockPanel.Dock="Left"
-                                   VerticalAlignment="Center"/>
-                        <ComboBox Width="140"
+                                   VerticalAlignment="Center"
+                                   DockPanel.Dock="Left"/>
+                        <ComboBox Width="150"
                                   DockPanel.Dock="Right"
                                   HorizontalAlignment="Right"
-                                  SelectedIndex="0">
-                            <ComboBoxItem Content="January"/>
-                            <ComboBoxItem Content="February"/>
-                            <ComboBoxItem Content="March"/>
-                            <ComboBoxItem Content="April"/>
-                            <ComboBoxItem Content="May"/>
-                            <ComboBoxItem Content="June"/>
-                            <ComboBoxItem Content="July"/>
-                            <ComboBoxItem Content="August"/>
-                            <ComboBoxItem Content="September"/>
-                            <ComboBoxItem Content="October"/>
-                            <ComboBoxItem Content="November"/>
-                            <ComboBoxItem Content="December"/>
-                        </ComboBox>
+                                  ItemsSource="{Binding MonthNames}"
+                                  SelectedIndex="{Binding SelectedMonth, Mode=TwoWay}"/>
                     </DockPanel>
-                    <Border Height="220" Background="#000000" CornerRadius="8" HorizontalAlignment="Stretch"
-                            BorderBrush="#072219" BorderThickness="1">
-                        <TextBlock Text="(Chart placeholder)"
-                                   Foreground="#477C60"
-                                   VerticalAlignment="Center"
-                                   HorizontalAlignment="Center"
-                                   FontSize="14"/>
+
+                    <!-- Chart (OxyPlot) -->
+                    <Border Height="240" CornerRadius="8"
+                            Background="#000000"
+                            BorderBrush="#072219" BorderThickness="1"
+                            Visibility="{Binding ChartVisibility}">
+                        <oxy:PlotView Model="{Binding SalesChartModel}"
+                                      Background="Transparent"/>
+                    </Border>
+
+                    <!-- No-data placeholder -->
+                    <Border Height="240" CornerRadius="8"
+                            Background="#000000"
+                            BorderBrush="#072219" BorderThickness="1"
+                            Visibility="{Binding NoDataVisibility}">
+                        <StackPanel HorizontalAlignment="Center"
+                                    VerticalAlignment="Center">
+                            <TextBlock Text="&#xE8F1;"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="32"
+                                       Foreground="#1A1D2E"
+                                       HorizontalAlignment="Center"
+                                       Margin="0,0,0,10"/>
+                            <TextBlock Text="No sales data for this month"
+                                       Foreground="#6B7280"
+                                       FontSize="14"
+                                       HorizontalAlignment="Center"/>
+                        </StackPanel>
                     </Border>
                 </StackPanel>
             </Border>
+
+            <!-- ── Recent Orders ──────────────────────────────────────── -->
+            <Border Background="#090B17" CornerRadius="10" Padding="20" Margin="0,16,0,0">
+                <StackPanel>
+                    <TextBlock Text="Recent Orders"
+                               FontSize="16" FontWeight="SemiBold"
+                               Foreground="#F3F4F6" Margin="0,0,0,14"/>
+                    <DataGrid x:Name="RecentOrdersGrid"
+                              ItemsSource="{Binding RecentOrders}"
+                              AutoGenerateColumns="False"
+                              CanUserAddRows="False"
+                              IsReadOnly="True"
+                              BorderThickness="0"
+                              Background="Transparent"
+                              ColumnHeaderHeight="40"
+                              RowHeight="44"
+                              MaxHeight="260">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Date"
+                                                Binding="{Binding CreatedAt, StringFormat=\{0:MM/dd HH:mm\}}"
+                                                Width="1.4*"/>
+                            <DataGridTextColumn Header="Table"
+                                                Binding="{Binding TableNumber}"
+                                                Width="*"/>
+                            <DataGridTextColumn Header="Total"
+                                                Binding="{Binding TotalAmount, StringFormat=₱{0:N2}}"
+                                                Width="1.2*"/>
+                            <DataGridTextColumn Header="Payment"
+                                                Binding="{Binding PaymentStatus}"
+                                                Width="*"/>
+                            <DataGridTextColumn Header="Status"
+                                                Binding="{Binding OrderStatus}"
+                                                Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </StackPanel>
+            </Border>
+
         </StackPanel>
     </ScrollViewer>
 </UserControl>

@@ -118,6 +118,29 @@ namespace SihyuPOSPayroll.Views.Cashier.POS
             }
         }
 
+        private void DecrQty_Click(object sender, RoutedEventArgs e)
+        {
+            if ((sender as Button)?.DataContext is not OrderItemModel item) return;
+            if (item.Quantity <= 1)
+            {
+                Vm.RemoveLine(item);
+            }
+            else
+            {
+                item.Quantity -= 1;
+                Vm.RecalcEditingTotal();
+                ItemsGrid.Items.Refresh();
+            }
+        }
+
+        private void IncrQty_Click(object sender, RoutedEventArgs e)
+        {
+            if ((sender as Button)?.DataContext is not OrderItemModel item) return;
+            item.Quantity += 1;
+            Vm.RecalcEditingTotal();
+            ItemsGrid.Items.Refresh();
+        }
+
         private void ItemsGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e) => Vm.RecalcEditingTotal();
 
         // When product changes in the grid, set fields from menu

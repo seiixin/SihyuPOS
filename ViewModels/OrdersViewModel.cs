@@ -60,6 +60,37 @@ namespace SihyuPOSPayroll.ViewModels
         public OrderModel? EditingOrder { get; set; }
         public ObservableCollection<OrderItemModel> EditingItems { get; set; } = new();
 
+        // ── Flat proxy properties for ComboBox binding ──────────────────────────
+        // Binding to EditingOrder.PaymentStatus two levels deep is unreliable
+        // because OrderModel doesn't implement INotifyPropertyChanged.
+        // These proxies sit directly on the ViewModel and round-trip cleanly.
+
+        private PaymentStatus _editingPaymentStatus = PaymentStatus.Paid;
+        public PaymentStatus EditingPaymentStatus
+        {
+            get => _editingPaymentStatus;
+            set
+            {
+                if (_editingPaymentStatus == value) return;
+                _editingPaymentStatus = value;
+                if (EditingOrder != null) EditingOrder.PaymentStatus = value;
+                OnPropertyChanged(nameof(EditingPaymentStatus));
+            }
+        }
+
+        private OrderStatus _editingOrderStatus = OrderStatus.Pending;
+        public OrderStatus EditingOrderStatus
+        {
+            get => _editingOrderStatus;
+            set
+            {
+                if (_editingOrderStatus == value) return;
+                _editingOrderStatus = value;
+                if (EditingOrder != null) EditingOrder.OrderStatus = value;
+                OnPropertyChanged(nameof(EditingOrderStatus));
+            }
+        }
+
         // ----- READ-ONLY info (??) -----
         public OrderModel? InfoOrder { get; set; }
         public ObservableCollection<OrderItemModel> InfoItems { get; set; } = new();
@@ -134,15 +165,20 @@ namespace SihyuPOSPayroll.ViewModels
             EditingOrder = new OrderModel
             {
                 CreatedAt = DateTime.Now,
-                PaymentStatus = PaymentStatus.Unpaid,
+                PaymentStatus = PaymentStatus.Paid,
                 OrderStatus = OrderStatus.Pending,
                 TableNumber = null
             };
 
+            // Sync proxy properties so ComboBoxes update
+            _editingPaymentStatus = PaymentStatus.Paid;
+            _editingOrderStatus   = OrderStatus.Pending;
+            OnPropertyChanged(nameof(EditingPaymentStatus));
+            OnPropertyChanged(nameof(EditingOrderStatus));
+
             EditingItems = new ObservableCollection<OrderItemModel>();
             LoadTablesForPicker(currentOrderId: null, includeOccupied: false);
 
-            // Reset order type selection for the new order
             SelectedOrderType = OrderType.NotApplicable;
 
             OnPropertyChanged(nameof(EditingOrder));
@@ -184,6 +220,12 @@ namespace SihyuPOSPayroll.ViewModels
             );
 
             LoadTablesForPicker(currentOrderId: source.Id, includeOccupied: true);
+
+            // Sync proxy properties
+            _editingPaymentStatus = EditingOrder.PaymentStatus;
+            _editingOrderStatus   = EditingOrder.OrderStatus;
+            OnPropertyChanged(nameof(EditingPaymentStatus));
+            OnPropertyChanged(nameof(EditingOrderStatus));
 
             OnPropertyChanged(nameof(EditingOrder));
             OnPropertyChanged(nameof(EditingItems));
@@ -234,6 +276,9 @@ namespace SihyuPOSPayroll.ViewModels
 
             try
             {
+                // Ensure proxy values are flushed to EditingOrder
+                EditingOrder.PaymentStatus = _editingPaymentStatus;
+                EditingOrder.OrderStatus   = _editingOrderStatus;
                 EditingOrder.Items = new List<OrderItemModel>(EditingItems);
                 EditingOrder.RecalculateTotal();
 

@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
+using System.Windows.Threading;
 using OxyPlot;
 using OxyPlot.Axes;
 using OxyPlot.Series;
@@ -17,29 +19,30 @@ namespace SihyuPOSPayroll.ViewModels
     public class DashboardViewModel : INotifyPropertyChanged
     {
         // ── Services ───────────────────────────────────────────────────────────
-        private readonly IEmployeeService  _employeeService;
-        private readonly InventoryService  _inventoryService;
+        private readonly IEmployeeService _employeeService;
+        private readonly InventoryService _inventoryService;
+        private readonly OrderService     _orderService = new();
 
         // ── Stat card backing fields ───────────────────────────────────────────
-        private string  _totalSalesToday  = "₱0.00";
-        private int     _activeEmployees;
-        private int     _lowStockCount;
+        private string _totalSalesToday = "₱0.00";
+        private int    _activeEmployees;
+        private int    _lowStockCount;
 
-        private string  _salesTrend       = "";
-        private string  _employeeTrend    = "";
-        private string  _lowStockTrend    = "";
+        private string _salesTrend    = "";
+        private string _employeeTrend = "";
+        private string _lowStockTrend = "";
 
-        private SolidColorBrush _salesTrendBrush     = new(Color.FromRgb(0x6B, 0x72, 0x80));
-        private SolidColorBrush _employeeTrendBrush  = new(Color.FromRgb(0x6B, 0x72, 0x80));
-        private SolidColorBrush _lowStockTrendBrush  = new(Color.FromRgb(0x6B, 0x72, 0x80));
+        private SolidColorBrush _salesTrendBrush    = new(Color.FromRgb(0x6B, 0x72, 0x80));
+        private SolidColorBrush _employeeTrendBrush = new(Color.FromRgb(0x6B, 0x72, 0x80));
+        private SolidColorBrush _lowStockTrendBrush = new(Color.FromRgb(0x6B, 0x72, 0x80));
 
         // ── Chart backing fields ───────────────────────────────────────────────
-        private PlotModel?   _salesChartModel;
-        private int          _selectedMonth;
-        private Visibility   _chartVisibility   = Visibility.Collapsed;
-        private Visibility   _noDataVisibility  = Visibility.Visible;
+        private PlotModel? _salesChartModel;
+        private int        _selectedMonth;
+        private Visibility _chartVisibility  = Visibility.Collapsed;
+        private Visibility _noDataVisibility = Visibility.Visible;
 
-        // ── Accent / red brushes (reused) ──────────────────────────────────────
+        // ── Accent brushes (reused) ────────────────────────────────────────────
         private static readonly SolidColorBrush EmeraldBrush = new(Color.FromRgb(0x12, 0x88, 0x54));
         private static readonly SolidColorBrush RedBrush     = new(Color.FromRgb(0xEF, 0x44, 0x44));
         private static readonly SolidColorBrush MutedBrush   = new(Color.FromRgb(0x6B, 0x72, 0x80));
@@ -117,7 +120,7 @@ namespace SihyuPOSPayroll.ViewModels
             }
         }
 
-        public List<string> MonthNames { get; } = new List<string>
+        public List<string> MonthNames { get; } = new()
         {
             "January","February","March","April","May","June",
             "July","August","September","October","November","December"
@@ -135,6 +138,16 @@ namespace SihyuPOSPayroll.ViewModels
             private set { _noDataVisibility = value; OnPropertyChanged(); }
         }
 
+        // ── Recent Orders ──────────────────────────────────────────────────────
+        public ObservableCollection<OrderModel> RecentOrders { get; } = new();
+
+        private int _todayOrderCount;
+        public int TodayOrderCount
+        {
+            get => _todayOrderCount;
+            private set { _todayOrderCount = value; OnPropertyChanged(); }
+        }
+
         // ── Constructor ────────────────────────────────────────────────────────
         public DashboardViewModel(IEmployeeService? employeeService = null,
                                   InventoryService? inventoryService = null)
@@ -149,114 +162,158 @@ namespace SihyuPOSPayroll.ViewModels
         // ── Data loading ───────────────────────────────────────────────────────
         public async Task LoadDataAsync()
         {
+            // Fetch everything on a background thread…
+            string          totalSalesToday = "₱0.00";
+            string          salesTrend      = "";
+            SolidColorBrush salesBrush      = MutedBrush;
+            int             activeEmployees = 0;
+            int             lowStockCount   = 0;
+            SolidColorBrush lowStockBrush   = MutedBrush;
+            PlotModel?      chartModel      = null;
+            Visibility      chartVis        = Visibility.Collapsed;
+            Visibility      noDataVis       = Visibility.Visible;
+            List<OrderModel> recentOrders   = new();
+            int             todayOrderCount = 0;
+
             await Task.Run(() =>
             {
                 try
                 {
-                    LoadStats();
-                    LoadChart();
+                    // ── Sales today (direct DB query — no receipts dependency) ──
+                    decimal todayTotal    = SalesService.GetTodayTotal();
+                    decimal yesterday     = SalesService.GetYesterdayTotal();
+                    totalSalesToday       = $"₱{todayTotal:N2}";
+                    salesTrend            = ComputeTrend(todayTotal, yesterday, out salesBrush);
+
+                    // ── Employee stats ─────────────────────────────────────────
+                    var employees   = _employeeService.GetAllEmployees();
+                    activeEmployees = employees.Count(e => e.IsActive == true);
+
+                    // ── Inventory low-stock ────────────────────────────────────
+                    var lowStock  = _inventoryService.GetLowStockItems();
+                    lowStockCount = lowStock.Count;
+                    lowStockBrush = lowStockCount > 0 ? RedBrush : MutedBrush;
+
+                    // ── Chart: daily data for selected month ───────────────────
+                    int year      = DateTime.Now.Year;
+                    int month     = _selectedMonth + 1;
+                    var monthData = SalesService.GetDailySalesForMonth(year, month);
+
+                    if (monthData.Count == 0)
+                    {
+                        chartModel = null;
+                        chartVis   = Visibility.Collapsed;
+                        noDataVis  = Visibility.Visible;
+                    }
+                    else
+                    {
+                        chartModel = BuildChartModel(monthData);
+                        chartVis   = Visibility.Visible;
+                        noDataVis  = Visibility.Collapsed;
+                    }
+
+                    // ── Recent orders (last 10) + today count ─────────────────
+                    var allOrders   = _orderService.GetAllOrders();
+                    todayOrderCount = allOrders.Count(o => o.CreatedAt.Date == DateTime.Today);
+                    recentOrders    = allOrders
+                        .OrderByDescending(o => o.CreatedAt)
+                        .Take(10)
+                        .ToList();
                 }
                 catch (Exception ex)
                 {
                     System.Diagnostics.Debug.WriteLine($"DashboardViewModel.LoadDataAsync: {ex.Message}");
                 }
             });
-        }
 
-        private void LoadStats()
-        {
-            // ── Sales today ────────────────────────────────────────────────────
-            var dailySales = SalesService.GetSales(ReportPeriod.Daily);
-            var today      = DateTime.Today;
-            var todayRow   = dailySales.FirstOrDefault(r => r.StartDate.Date == today);
-            decimal todayTotal    = todayRow?.TotalAmount ?? 0m;
-            TotalSalesToday = $"₱{todayTotal:N2}";
-
-            // Trend: compare today vs yesterday
-            var yesterdayRow  = dailySales.FirstOrDefault(r => r.StartDate.Date == today.AddDays(-1));
-            decimal yesterday = yesterdayRow?.TotalAmount ?? 0m;
-            SalesTrend        = ComputeTrend(todayTotal, yesterday, out var salesBrush);
-            SalesTrendBrush   = salesBrush;
-
-            // ── Active employees ───────────────────────────────────────────────
-            var employees    = _employeeService.GetAllEmployees();
-            ActiveEmployees  = employees.Count(e => e.IsActive == true);
-            EmployeeTrend    = "";
-            EmployeeTrendBrush = MutedBrush;
-
-            // ── Low-stock items ────────────────────────────────────────────────
-            var lowStock    = _inventoryService.GetLowStockItems();
-            LowStockCount   = lowStock.Count;
-            LowStockTrend   = "";
-            LowStockTrendBrush = LowStockCount > 0 ? RedBrush : MutedBrush;
-        }
-
-        private void LoadChart()
-        {
-            // Build daily data for the selected month in the current year
-            var allDaily = SalesService.GetSales(ReportPeriod.Daily);
-            int year     = DateTime.Now.Year;
-            int month    = _selectedMonth + 1; // convert 0-index → 1-index
-
-            var monthData = allDaily
-                .Where(r => r.StartDate.Year == year && r.StartDate.Month == month)
-                .OrderBy(r => r.StartDate)
-                .ToList();
-
-            if (monthData.Count == 0)
+            // Push results back to UI thread
+            Application.Current?.Dispatcher.Invoke(() =>
             {
-                ChartVisibility  = Visibility.Collapsed;
-                NoDataVisibility = Visibility.Visible;
-                SalesChartModel  = null;
-                return;
-            }
+                TotalSalesToday    = totalSalesToday;
+                SalesTrend         = salesTrend;
+                SalesTrendBrush    = salesBrush;
+                ActiveEmployees    = activeEmployees;
+                TodayOrderCount    = todayOrderCount;
+                LowStockCount      = lowStockCount;
+                LowStockTrendBrush = lowStockBrush;
+                SalesChartModel    = chartModel;
+                ChartVisibility    = chartVis;
+                NoDataVisibility   = noDataVis;
 
-            ChartVisibility  = Visibility.Visible;
-            NoDataVisibility = Visibility.Collapsed;
-            SalesChartModel  = BuildChartModel(monthData);
+                RecentOrders.Clear();
+                foreach (var o in recentOrders)
+                    RecentOrders.Add(o);
+            });
         }
 
-        private PlotModel BuildChartModel(List<SalesRow> data)
+        // ── Chart builder — modern dark sparkline ─────────────────────────────
+        private static PlotModel BuildChartModel(List<SalesRow> data)
         {
             var model = new PlotModel
             {
                 PlotAreaBackground  = OxyColors.Transparent,
                 Background          = OxyColors.Transparent,
                 TextColor           = OxyColor.Parse("#9CA3AF"),
-                PlotAreaBorderColor = OxyColor.Parse("#1A1D2E"),
+                PlotAreaBorderColor = OxyColors.Transparent,
+                Padding             = new OxyThickness(8, 8, 8, 8),
             };
 
-            var xAxis = new LinearAxis
+            // X axis — days of month, no grid lines
+            model.Axes.Add(new LinearAxis
             {
-                Position           = AxisPosition.Bottom,
-                AxislineColor      = OxyColor.Parse("#1A1D2E"),
-                MajorGridlineStyle = LineStyle.None,
-                TextColor          = OxyColor.Parse("#9CA3AF"),
-                Title              = "Day",
-            };
-            var yAxis = new LinearAxis
-            {
-                Position           = AxisPosition.Left,
-                AxislineColor      = OxyColor.Parse("#1A1D2E"),
-                MajorGridlineStyle = LineStyle.Dot,
-                MajorGridlineColor = OxyColor.Parse("#0F1220"),
-                TextColor          = OxyColor.Parse("#9CA3AF"),
-                Title              = "PHP",
-                StringFormat       = "N0",
-            };
-            model.Axes.Add(xAxis);
-            model.Axes.Add(yAxis);
+                Position              = AxisPosition.Bottom,
+                AxislineColor         = OxyColor.Parse("#1A1D2E"),
+                AxislineStyle         = LineStyle.Solid,
+                AxislineThickness     = 1,
+                MajorGridlineStyle    = LineStyle.None,
+                MinorGridlineStyle    = LineStyle.None,
+                TicklineColor         = OxyColor.Parse("#1A1D2E"),
+                TextColor             = OxyColor.Parse("#6B7280"),
+                FontSize              = 11,
+                Minimum               = 1,
+                AbsoluteMinimum       = 1,
+            });
 
-            var line = new LineSeries
+            // Y axis — subtle dotted grid
+            model.Axes.Add(new LinearAxis
             {
-                Color           = OxyColor.Parse("#128854"),
-                StrokeThickness = 2,
-            };
+                Position              = AxisPosition.Left,
+                AxislineColor         = OxyColor.Parse("#1A1D2E"),
+                AxislineStyle         = LineStyle.Solid,
+                AxislineThickness     = 1,
+                MajorGridlineStyle    = LineStyle.Dot,
+                MajorGridlineColor    = OxyColor.Parse("#1A1D2E"),
+                MinorGridlineStyle    = LineStyle.None,
+                TicklineColor         = OxyColors.Transparent,
+                TextColor             = OxyColor.Parse("#6B7280"),
+                FontSize              = 11,
+                StringFormat          = "₱#,0",
+                AbsoluteMinimum       = 0,
+            });
+
+            // Gradient fill area under the line
             var area = new AreaSeries
             {
-                Fill            = OxyColor.FromArgb(32, 18, 136, 84),
+                Fill            = OxyColor.FromArgb(50, 18, 136, 84),
                 Color           = OxyColors.Transparent,
+                Color2          = OxyColors.Transparent,
                 StrokeThickness = 0,
+                RenderInLegend  = false,
+            };
+
+            // Main line — emerald, smooth
+            var line = new LineSeries
+            {
+                Color              = OxyColor.Parse("#10B981"),
+                StrokeThickness    = 2.5,
+                MarkerType         = MarkerType.Circle,
+                MarkerSize         = 4.5,
+                MarkerFill         = OxyColor.Parse("#10B981"),
+                MarkerStroke       = OxyColor.Parse("#000000"),
+                MarkerStrokeThickness = 1.5,
+                LineStyle          = LineStyle.Solid,
+                RenderInLegend     = false,
+                TrackerFormatString = "Day {2:0}\n₱{4:N2}",
             };
 
             foreach (var row in data)
@@ -280,26 +337,14 @@ namespace SihyuPOSPayroll.ViewModels
             if (previous == 0)
             {
                 brush = MutedBrush;
-                return "";
+                return current > 0 ? "First sale today!" : "";
             }
 
             double pct = (double)((current - previous) / previous * 100);
 
-            if (pct > 0)
-            {
-                brush = EmeraldBrush;
-                return $"↑ {pct:F1}% vs yesterday";
-            }
-            else if (pct < 0)
-            {
-                brush = RedBrush;
-                return $"↓ {Math.Abs(pct):F1}% vs yesterday";
-            }
-            else
-            {
-                brush = MutedBrush;
-                return "No change vs yesterday";
-            }
+            if (pct > 0)      { brush = EmeraldBrush; return $"↑ {pct:F1}% vs yesterday"; }
+            else if (pct < 0) { brush = RedBrush;     return $"↓ {Math.Abs(pct):F1}% vs yesterday"; }
+            else              { brush = MutedBrush;   return "No change vs yesterday"; }
         }
 
         // ── INotifyPropertyChanged ─────────────────────────────────────────────

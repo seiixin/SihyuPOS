@@ -101,5 +101,143 @@ namespace SihyuPOSPayroll.Services
 
             return rows;
         }
+        /// <summary>
+        /// Returns total sales for today from the receipts table.
+        /// Falls back to summing paid orders if receipts table is empty.
+        /// </summary>
+        public static decimal GetTodayTotal()
+        {
+            using var conn = new MySqlConnection(ConnectionString);
+            conn.Open();
+
+            // Primary: sum receipts issued today
+            const string receiptSql = @"
+                SELECT COALESCE(SUM(r.amount_paid), 0)
+                FROM receipts r
+                WHERE DATE(r.issued_at) = CURDATE();";
+
+            using (var cmd = new MySqlCommand(receiptSql, conn))
+            {
+                var obj = cmd.ExecuteScalar();
+                decimal fromReceipts = (obj == null || obj == DBNull.Value) ? 0m : Convert.ToDecimal(obj);
+                if (fromReceipts > 0) return fromReceipts;
+            }
+
+            // Fallback: sum paid orders created today (in case receipt row is missing)
+            const string orderSql = @"
+                SELECT COALESCE(SUM(total_amount), 0)
+                FROM orders
+                WHERE payment_status = 'Paid'
+                  AND DATE(created_at) = CURDATE();";
+
+            using (var cmd2 = new MySqlCommand(orderSql, conn))
+            {
+                var obj2 = cmd2.ExecuteScalar();
+                return (obj2 == null || obj2 == DBNull.Value) ? 0m : Convert.ToDecimal(obj2);
+            }
+        }
+
+        /// <summary>
+        /// Returns total sales for yesterday (same dual-source logic).
+        /// </summary>
+        public static decimal GetYesterdayTotal()
+        {
+            using var conn = new MySqlConnection(ConnectionString);
+            conn.Open();
+
+            const string receiptSql = @"
+                SELECT COALESCE(SUM(r.amount_paid), 0)
+                FROM receipts r
+                WHERE DATE(r.issued_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY);";
+
+            using (var cmd = new MySqlCommand(receiptSql, conn))
+            {
+                var obj = cmd.ExecuteScalar();
+                decimal fromReceipts = (obj == null || obj == DBNull.Value) ? 0m : Convert.ToDecimal(obj);
+                if (fromReceipts > 0) return fromReceipts;
+            }
+
+            const string orderSql = @"
+                SELECT COALESCE(SUM(total_amount), 0)
+                FROM orders
+                WHERE payment_status = 'Paid'
+                  AND DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY);";
+
+            using (var cmd2 = new MySqlCommand(orderSql, conn))
+            {
+                var obj2 = cmd2.ExecuteScalar();
+                return (obj2 == null || obj2 == DBNull.Value) ? 0m : Convert.ToDecimal(obj2);
+            }
+        }
+
+        /// <summary>
+        /// Returns daily sales rows for a given month/year, reading from both
+        /// receipts (primary) and paid orders (fallback/merge).
+        /// </summary>
+        public static List<SalesRow> GetDailySalesForMonth(int year, int month)
+        {
+            using var conn = new MySqlConnection(ConnectionString);
+            conn.Open();
+
+            // Try receipts first
+            const string receiptSql = @"
+                SELECT DATE(r.issued_at) AS sdate,
+                       SUM(r.amount_paid) AS total,
+                       COUNT(*) AS cnt
+                FROM receipts r
+                WHERE YEAR(r.issued_at) = @yr AND MONTH(r.issued_at) = @mo
+                GROUP BY DATE(r.issued_at)
+                ORDER BY sdate;";
+
+            var rows = new List<SalesRow>();
+            using (var cmd = new MySqlCommand(receiptSql, conn))
+            {
+                cmd.Parameters.AddWithValue("@yr", year);
+                cmd.Parameters.AddWithValue("@mo", month);
+                using var rd = cmd.ExecuteReader();
+                while (rd.Read())
+                {
+                    rows.Add(new SalesRow
+                    {
+                        StartDate    = rd.GetDateTime("sdate"),
+                        EndDate      = rd.GetDateTime("sdate"),
+                        TotalAmount  = rd.IsDBNull(rd.GetOrdinal("total")) ? 0m : rd.GetDecimal("total"),
+                        ReceiptCount = rd.IsDBNull(rd.GetOrdinal("cnt"))   ? 0   : rd.GetInt32("cnt"),
+                    });
+                }
+            }
+
+            if (rows.Count > 0) return rows;
+
+            // Fallback: paid orders
+            const string orderSql = @"
+                SELECT DATE(created_at) AS sdate,
+                       SUM(total_amount) AS total,
+                       COUNT(*) AS cnt
+                FROM orders
+                WHERE payment_status = 'Paid'
+                  AND YEAR(created_at) = @yr AND MONTH(created_at) = @mo
+                GROUP BY DATE(created_at)
+                ORDER BY sdate;";
+
+            using (var cmd2 = new MySqlCommand(orderSql, conn))
+            {
+                cmd2.Parameters.AddWithValue("@yr", year);
+                cmd2.Parameters.AddWithValue("@mo", month);
+                using var rd2 = cmd2.ExecuteReader();
+                while (rd2.Read())
+                {
+                    rows.Add(new SalesRow
+                    {
+                        StartDate    = rd2.GetDateTime("sdate"),
+                        EndDate      = rd2.GetDateTime("sdate"),
+                        TotalAmount  = rd2.IsDBNull(rd2.GetOrdinal("total")) ? 0m : rd2.GetDecimal("total"),
+                        ReceiptCount = rd2.IsDBNull(rd2.GetOrdinal("cnt"))   ? 0   : rd2.GetInt32("cnt"),
+                    });
+                }
+            }
+
+            return rows;
+        }
     }
 }

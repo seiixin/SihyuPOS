@@ -85,18 +85,6 @@
     </Style>
 
     <!--  ComboBox ControlTemplate (2.4) — dark-themed with emerald focus ring  -->
-    <ControlTemplate x:Key="ComboBoxToggleButton" TargetType="ToggleButton">
-        <Border x:Name="Border"
-                Background="Transparent"
-                BorderThickness="0">
-            <Path x:Name="Arrow"
-                  HorizontalAlignment="Center"
-                  VerticalAlignment="Center"
-                  Data="M0,0 L4,4 L8,0 Z"
-                  Fill="{StaticResource TextSecondaryBrush}"/>
-        </Border>
-    </ControlTemplate>
-
     <Style TargetType="ComboBox">
         <Setter Property="Background"      Value="{StaticResource SurfaceDarkBrush}"/>
         <Setter Property="Foreground"      Value="{StaticResource TextPrimaryBrush}"/>
@@ -105,85 +93,118 @@
         <Setter Property="Padding"         Value="8,6"/>
         <Setter Property="FontFamily"      Value="{StaticResource PrimaryFontFamily}"/>
         <Setter Property="FontSize"        Value="{StaticResource FontSizeNormal}"/>
+        <Setter Property="Cursor"          Value="Hand"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ComboBox">
-                    <Grid>
-                        <Border x:Name="OuterBorder"
-                                Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="{StaticResource ControlCornerRadius}">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="24"/>
-                                </Grid.ColumnDefinitions>
-                                <!--  Hidden editable text box (required PART)  -->
-                                <TextBox x:Name="PART_EditableTextBox"
-                                         Grid.Column="0"
-                                         Padding="{TemplateBinding Padding}"
-                                         Background="Transparent"
-                                         BorderThickness="0"
-                                         Foreground="{TemplateBinding Foreground}"
-                                         IsReadOnly="True"
-                                         Focusable="False"
-                                         Visibility="Hidden"/>
-                                <!--  Selected item display  -->
-                                <ContentPresenter Grid.Column="0"
-                                                  Margin="{TemplateBinding Padding}"
-                                                  HorizontalAlignment="Left"
+                    <Grid x:Name="Root">
+                        <!-- PART_ToggleButton must be named exactly this — WPF wires click→IsDropDownOpen -->
+                        <ToggleButton x:Name="PART_ToggleButton"
+                                      IsChecked="{Binding IsDropDownOpen, Mode=TwoWay,
+                                                  RelativeSource={RelativeSource TemplatedParent}}"
+                                      Focusable="False"
+                                      ClickMode="Press">
+                            <ToggleButton.Template>
+                                <ControlTemplate TargetType="ToggleButton">
+                                    <Border x:Name="Bd"
+                                            Background="{Binding Background, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                            BorderBrush="{Binding BorderBrush, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                            BorderThickness="{Binding BorderThickness, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                            CornerRadius="6">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="24"/>
+                                            </Grid.ColumnDefinitions>
+                                            <!-- arrow -->
+                                            <Path Grid.Column="1"
+                                                  HorizontalAlignment="Center"
                                                   VerticalAlignment="Center"
-                                                  Content="{TemplateBinding SelectionBoxItem}"
-                                                  ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
-                                                  ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"/>
-                                <!--  Drop-down arrow  -->
-                                <Path Grid.Column="1"
-                                      HorizontalAlignment="Center"
-                                      VerticalAlignment="Center"
-                                      Data="M0,0 L4,4 L8,0 Z"
-                                      Fill="{StaticResource TextSecondaryBrush}"/>
-                            </Grid>
-                        </Border>
-                        <!--  Popup (required PART)  -->
+                                                  Data="M0,0 L4,4 L8,0 Z"
+                                                  Fill="{StaticResource TextSecondaryBrush}"/>
+                                        </Grid>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Bd" Property="BorderBrush"
+                                                    Value="{StaticResource AccentEmeraldBrush}"/>
+                                        </Trigger>
+                                        <Trigger Property="IsChecked" Value="True">
+                                            <Setter TargetName="Bd" Property="BorderBrush"
+                                                    Value="{StaticResource AccentEmeraldBrush}"/>
+                                            <Setter TargetName="Bd" Property="BorderThickness" Value="1.5"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </ToggleButton.Template>
+                        </ToggleButton>
+
+                        <!-- Selected item display (sits on top of the toggle button) -->
+                        <ContentPresenter x:Name="ContentSite"
+                                          Margin="{TemplateBinding Padding}"
+                                          HorizontalAlignment="Left"
+                                          VerticalAlignment="Center"
+                                          IsHitTestVisible="False"
+                                          Content="{TemplateBinding SelectionBoxItem}"
+                                          ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                          ContentStringFormat="{}{0}"
+                                          ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"/>
+
+                        <!-- PART_Popup — required named part -->
                         <Popup x:Name="PART_Popup"
                                AllowsTransparency="True"
                                IsOpen="{TemplateBinding IsDropDownOpen}"
                                Placement="Bottom"
                                PlacementTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}"
-                               PopupAnimation="Slide">
-                            <Border Background="{StaticResource SurfaceLighterBrush}"
-                                    BorderBrush="{StaticResource BorderSubtleBrush}"
+                               PopupAnimation="Fade">
+                            <Border Background="{StaticResource SurfaceDarkBrush}"
+                                    BorderBrush="{StaticResource AccentEmeraldBrush}"
                                     BorderThickness="1"
                                     CornerRadius="6"
                                     MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
                                     MaxHeight="{TemplateBinding MaxDropDownHeight}">
-                                <ScrollViewer>
+                                <ScrollViewer VerticalScrollBarVisibility="Auto">
                                     <ItemsPresenter/>
                                 </ScrollViewer>
                             </Border>
                         </Popup>
                     </Grid>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsFocused" Value="True">
-                            <Setter TargetName="OuterBorder" Property="BorderBrush"
-                                    Value="{StaticResource AccentEmeraldBrush}"/>
-                            <Setter TargetName="OuterBorder" Property="BorderThickness" Value="1.5"/>
-                        </Trigger>
-                        <Trigger Property="IsDropDownOpen" Value="True">
-                            <Setter TargetName="OuterBorder" Property="BorderBrush"
-                                    Value="{StaticResource AccentEmeraldBrush}"/>
-                            <Setter TargetName="OuterBorder" Property="BorderThickness" Value="1.5"/>
-                        </Trigger>
-                        <Trigger Property="IsKeyboardFocusWithin" Value="True">
-                            <Setter TargetName="OuterBorder" Property="BorderBrush"
-                                    Value="{StaticResource AccentEmeraldBrush}"/>
-                            <Setter TargetName="OuterBorder" Property="BorderThickness" Value="1.5"/>
-                        </Trigger>
-                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+        <!-- Style ComboBoxItems inside -->
+        <Style.Resources>
+            <Style TargetType="ComboBoxItem">
+                <Setter Property="Foreground"  Value="{StaticResource TextPrimaryBrush}"/>
+                <Setter Property="Background"  Value="Transparent"/>
+                <Setter Property="Padding"     Value="10,7"/>
+                <Setter Property="FontFamily"  Value="{StaticResource PrimaryFontFamily}"/>
+                <Setter Property="FontSize"    Value="{StaticResource FontSizeNormal}"/>
+                <Setter Property="Cursor"      Value="Hand"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ComboBoxItem">
+                            <Border x:Name="Bd"
+                                    Background="{TemplateBinding Background}"
+                                    Padding="{TemplateBinding Padding}">
+                                <ContentPresenter ContentStringFormat="{}{0}"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsHighlighted" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="#072219"/>
+                                    <Setter Property="Foreground" Value="#10B981"/>
+                                </Trigger>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="#072219"/>
+                                    <Setter Property="Foreground" Value="#10B981"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </Style.Resources>
     </Style>
 
     <!--  DatePicker ControlTemplate (2.5) — dark-themed with emerald focus ring  -->
