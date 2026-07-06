@@ -24,17 +24,14 @@
                     BorderBrush="#0D1117"
                     BorderThickness="0,0,0,1">
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <!-- Green accent square logo -->
-                    <Border Width="30" Height="30"
-                            Background="#128854"
+                    <!-- Logo image instead of letter -->
+                    <Border Width="32" Height="32"
                             CornerRadius="6"
-                            Margin="0,0,10,0">
-                        <TextBlock Text="S"
-                                   FontSize="16"
-                                   FontWeight="Bold"
-                                   Foreground="#000000"
-                                   HorizontalAlignment="Center"
-                                   VerticalAlignment="Center"/>
+                            Margin="0,0,10,0"
+                            ClipToBounds="True">
+                        <Image Source="pack://application:,,,/assets/SihyuPOS-Logo.jpg"
+                               Stretch="UniformToFill"
+                               RenderOptions.BitmapScalingMode="HighQuality"/>
                     </Border>
                     <TextBlock Text="SihyuPOS"
                                FontSize="17"

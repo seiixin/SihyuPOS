@@ -1,6 +1,9 @@
+using System;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using SihyuPOSPayroll.ViewModels;
 
 namespace SihyuPOSPayroll
@@ -8,9 +11,12 @@ namespace SihyuPOSPayroll
     public partial class MainWindow : Window
     {
         private const string EmailPlaceholder = "admin@sihyupos.com";
-        private static readonly Brush PlaceholderBrush = new SolidColorBrush(Color.FromRgb(107, 114, 128)); // #6B7280
-        private static readonly Brush InputBrush = new SolidColorBrush(Color.FromRgb(243, 244, 246)); // #F3F4F6
+        private static readonly Brush PlaceholderBrush = new SolidColorBrush(Color.FromRgb(107, 114, 128));
+        private static readonly Brush InputBrush = new SolidColorBrush(Color.FromRgb(243, 244, 246));
         private bool _isPasswordVisible = false;
+
+        [DllImport("dwmapi.dll")]
+        private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
 
         public MainWindow()
         {
@@ -18,6 +24,22 @@ namespace SihyuPOSPayroll
             DataContext = new LoginViewModel();
             EmailPlaceholderText.Text = EmailPlaceholder;
             EmailPlaceholderText.Visibility = Visibility.Visible;
+
+            // Set window icon from embedded resource
+            try
+            {
+                var logoUri = new Uri("pack://application:,,,/assets/SihyuPOS-Logo.jpg", UriKind.Absolute);
+                Icon = new BitmapImage(logoUri);
+            }
+            catch { /* fallback: no icon */ }
+
+            // Enable dark title bar
+            SourceInitialized += (_, __) =>
+            {
+                var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+                int dark = 1;
+                DwmSetWindowAttribute(hwnd, 20, ref dark, sizeof(int));
+            };
         }
 
         private void Input_GotFocus(object sender, RoutedEventArgs e)

@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
 using SihyuPOSPayroll.Helpers;
@@ -13,6 +14,9 @@ namespace SihyuPOSPayroll.ViewModels
 {
     public class LoginViewModel : INotifyPropertyChanged
     {
+        // Win32: enable dark title bar on Windows 10/11
+        [DllImport("dwmapi.dll")]
+        private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
         private string? _email;
         private string? _password;
         private string? _errorMessage;
@@ -71,14 +75,41 @@ namespace SihyuPOSPayroll.ViewModels
                     DataContext = new SidebarViewModel(user)
                 };
 
+                // Load the app logo for the window icon
+                var logoUri = new Uri("pack://application:,,,/assets/SihyuPOS-Logo.jpg", UriKind.Absolute);
+                var logoImage = new System.Windows.Media.Imaging.BitmapImage(logoUri);
+
                 var window = new Window
                 {
-                    Title = "Dashboard",
+                    Title = "Dashboard - SihyuPOS",
                     Content = mainLayout,
                     Width = 1024,
                     Height = 768,
-                    WindowStartupLocation = WindowStartupLocation.CenterScreen
+                    WindowStartupLocation = WindowStartupLocation.CenterScreen,
+                    WindowState = System.Windows.WindowState.Maximized,
+                    Icon = logoImage,
+                    Background = System.Windows.Media.Brushes.Black,
                 };
+
+                // Dark title bar via WindowChrome
+                var chrome = new System.Windows.Shell.WindowChrome
+                {
+                    CaptionHeight = 32,
+                    ResizeBorderThickness = new Thickness(5),
+                    UseAeroCaptionButtons = true,
+                    GlassFrameThickness = new Thickness(0),
+                    NonClientFrameEdges = System.Windows.Shell.NonClientFrameEdges.None,
+                };
+                System.Windows.Shell.WindowChrome.SetWindowChrome(window, chrome);
+
+                // Apply dark title bar via Win32 DwmSetWindowAttribute (DWMWA_USE_IMMERSIVE_DARK_MODE)
+                window.SourceInitialized += (_, __) =>
+                {
+                    var hwnd = new System.Windows.Interop.WindowInteropHelper(window).Handle;
+                    int darkMode = 1;
+                    DwmSetWindowAttribute(hwnd, 20, ref darkMode, sizeof(int)); // DWMWA_USE_IMMERSIVE_DARK_MODE
+                };
+
                 window.Show();
 
                 if (parameter is Window loginWindow)

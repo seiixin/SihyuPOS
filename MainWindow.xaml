@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:sys="clr-namespace:System;assembly=mscorlib"
         Title="Login - SihyuPOS &amp; Payroll"
+        Icon="pack://application:,,,/assets/SihyuPOS-Logo.jpg"
         WindowStartupLocation="CenterScreen"
         ResizeMode="CanResize"
         WindowState="Maximized"
