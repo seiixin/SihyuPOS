@@ -17,8 +17,7 @@ namespace SihyuPOSPayroll.Services
 
         /// <summary>
         /// Returns a user when email+password match AND account is active (users.is_active = 1).
-        /// Returns null otherwise.
-        /// NOTE: This currently compares plaintext passwords to match your existing code.
+        /// Uses BCrypt to verify the password against the hashed password from the database.
         /// </summary>
         public UserModel? AuthenticateUser(string email, string password)
         {
@@ -40,17 +39,23 @@ namespace SihyuPOSPayroll.Services
                     FROM users u
                     LEFT JOIN employees e ON u.employee_id = e.id
                     WHERE u.email = @Email
-                      AND u.password = @Password
                       AND u.is_active = 1
                     LIMIT 1;";
 
                 using var cmd = new MySqlCommand(query, connection);
                 cmd.Parameters.AddWithValue("@Email", email);
-                cmd.Parameters.AddWithValue("@Password", password);
 
                 using var reader = cmd.ExecuteReader();
 
                 if (!reader.Read()) return null;
+
+                var hashedPassword = reader["password"]?.ToString() ?? "";
+
+                // Verify the password using BCrypt
+                if (!BCrypt.Net.BCrypt.Verify(password, hashedPassword))
+                {
+                    return null;
+                }
 
                 EmployeeModel? employee = null;
 
