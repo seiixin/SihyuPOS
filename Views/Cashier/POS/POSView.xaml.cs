@@ -64,6 +64,35 @@ namespace SihyuPOSPayroll.Views.Cashier.POS
         // ---------- Left panel filtering ----------
         private void CategoryCombo_SelectionChanged(object sender, SelectionChangedEventArgs e) => ApplyProductFilter();
 
+        // Safely load product image from file path stored in Tag
+        private void ProductImage_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (sender is not System.Windows.Controls.Image img) return;
+            var path = img.Tag as string;
+            if (string.IsNullOrWhiteSpace(path)) return;
+
+            try
+            {
+                var uri = Uri.IsWellFormedUriString(path, UriKind.Absolute)
+                          ? new Uri(path, UriKind.Absolute)
+                          : new Uri(System.IO.Path.GetFullPath(path), UriKind.Absolute);
+
+                var bmp = new System.Windows.Media.Imaging.BitmapImage();
+                bmp.BeginInit();
+                bmp.UriSource       = uri;
+                bmp.CacheOption     = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                bmp.DecodePixelWidth = 148;
+                bmp.EndInit();
+                bmp.Freeze();
+
+                img.Source     = bmp;
+                img.Visibility = Visibility.Visible;
+            }
+            catch
+            {
+                img.Visibility = Visibility.Collapsed;
+            }
+        }
         private void SearchBox_TextChanged(object sender, TextChangedEventArgs e) => ApplyProductFilter();
 
         private void ApplyProductFilter()

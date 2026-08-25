@@ -372,25 +372,67 @@ namespace SihyuPOSPayroll.Services
         }
 
         // ---------------- MENU PRODUCTS (for dropdown) ----------------
+        /// <summary>
+        /// Returns products available in the POS.
+        /// - RestaurantMode: reads from the <c>menu</c> table (managed via Menu page).
+        /// - StoreMode: reads from <c>inventory_items</c> so anything added to
+        ///   Inventory is immediately available in the POS without a separate Menu entry.
+        /// </summary>
         public List<MenuModel> GetAllMenu()
         {
             var products = new List<MenuModel>();
 
             using var connection = new MySqlConnection(_connectionString);
             connection.Open();
-            const string query = "SELECT id, name, category, price FROM menu ORDER BY name";
 
-            using var cmd = new MySqlCommand(query, connection);
-            using var reader = cmd.ExecuteReader();
-            while (reader.Read())
+            bool isStoreMode = SettingsService.Instance.CurrentMode == SihyuPOSPayroll.Models.SystemMode.StoreMode;
+
+            if (isStoreMode)
             {
-                products.Add(new MenuModel
+                // StoreMode: use inventory_items as the product catalogue
+                const string sql = @"
+                    SELECT Id       AS id,
+                           ProductName AS name,
+                           CategoryName AS category,
+                           NULL     AS price,
+                           ImagePath AS image_url
+                    FROM inventory_items
+                    ORDER BY ProductName;";
+
+                using var cmd = new MySqlCommand(sql, connection);
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
                 {
-                    Id = reader.GetInt32("id"),
-                    Name = reader.IsDBNull(reader.GetOrdinal("name")) ? string.Empty : reader.GetString("name"),
-                    Category = reader.IsDBNull(reader.GetOrdinal("category")) ? string.Empty : reader.GetString("category"),
-                    Price = reader.IsDBNull(reader.GetOrdinal("price")) ? (decimal?)null : reader.GetDecimal("price")
-                });
+                    // Price stored in inventory_items is NULL — use 0 as default;
+                    // cashier can edit unit price inline in the order grid.
+                    products.Add(new MenuModel
+                    {
+                        Id       = reader.GetInt32("id"),
+                        Name     = reader.IsDBNull(reader.GetOrdinal("name"))     ? string.Empty : reader.GetString("name"),
+                        Category = reader.IsDBNull(reader.GetOrdinal("category")) ? string.Empty : reader.GetString("category"),
+                        Price    = 0m,
+                        ImageUrl = reader.IsDBNull(reader.GetOrdinal("image_url")) ? null : reader.GetString("image_url"),
+                    });
+                }
+            }
+            else
+            {
+                // RestaurantMode: use the dedicated menu table
+                const string sql = "SELECT id, name, category, price, image_url FROM menu ORDER BY name";
+
+                using var cmd = new MySqlCommand(sql, connection);
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    products.Add(new MenuModel
+                    {
+                        Id       = reader.GetInt32("id"),
+                        Name     = reader.IsDBNull(reader.GetOrdinal("name"))      ? string.Empty : reader.GetString("name"),
+                        Category = reader.IsDBNull(reader.GetOrdinal("category"))  ? string.Empty : reader.GetString("category"),
+                        Price    = reader.IsDBNull(reader.GetOrdinal("price"))     ? (decimal?)null : reader.GetDecimal("price"),
+                        ImageUrl = reader.IsDBNull(reader.GetOrdinal("image_url")) ? null : reader.GetString("image_url"),
+                    });
+                }
             }
 
             return products;

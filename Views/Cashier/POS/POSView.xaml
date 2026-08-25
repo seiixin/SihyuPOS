@@ -137,7 +137,7 @@
                                                 ClipToBounds="True"
                                                 Background="#0D0F1A">
                                             <Grid>
-                                                <!-- Category initial badge -->
+                                                <!-- Placeholder icon (always visible as fallback) -->
                                                 <Border Width="52" Height="52"
                                                         CornerRadius="26"
                                                         Background="#072219"
@@ -150,6 +150,23 @@
                                                                HorizontalAlignment="Center"
                                                                VerticalAlignment="Center"/>
                                                 </Border>
+                                                <!-- Actual image rendered via code-behind tag -->
+                                                <Image x:Name="ProductImage"
+                                                       Stretch="UniformToFill"
+                                                       Tag="{Binding ImageUrl}"
+                                                       Loaded="ProductImage_Loaded">
+                                                    <Image.Style>
+                                                        <Style TargetType="Image">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                            <Style.Triggers>
+                                                                <!-- Show when ImageUrl is not null/empty -->
+                                                                <DataTrigger Binding="{Binding ImageUrl}" Value="{x:Null}">
+                                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Image.Style>
+                                                </Image>
                                             </Grid>
                                         </Border>
 
