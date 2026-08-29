@@ -256,9 +256,6 @@ namespace SihyuPOSPayroll.ViewModels
                     MenuItems.Add("Dashboard");
                     MenuItems.Add("Users");
                     MenuItems.Add("Employees");
-                    MenuItems.Add("Payroll");
-                    MenuItems.Add("Payslip Requests");
-                    MenuItems.Add("Attendance");
                     MenuItems.Add("Menu");
                     MenuItems.Add("Inventory");
                     MenuItems.Add("Categories");
@@ -267,7 +264,6 @@ namespace SihyuPOSPayroll.ViewModels
                     MenuItems.Add("Receipts");
                     MenuItems.Add("Tables");
                     MenuItems.Add("Sales & Reports");
-                    MenuItems.Add("Settings");
                     MenuItems.Add("Logout");
 
                     MenuGroups.Add(new SidebarMenuGroup
@@ -285,19 +281,9 @@ namespace SihyuPOSPayroll.ViewModels
                         Header = "ADMIN TOOLS",
                         Items = new List<SidebarMenuItem>
                         {
-                            MakeItem("Users", "\uE716"),
-                            MakeItem("Menu",  "\uE8A5"),
-                            MakeItem("Settings", "\uE713"),
-                        }
-                    });
-                    MenuGroups.Add(new SidebarMenuGroup
-                    {
-                        Header = "OPERATIONS",
-                        Items = new List<SidebarMenuItem>
-                        {
-                            MakeItem("Attendance", "\uE787"),
-                            MakeItem("Employees",  "\uE716"),
-                            MakeItem("Payroll",    "\uE8C7"),
+                            MakeItem("Users",     "\uE716"),
+                            MakeItem("Employees", "\uE716"),
+                            MakeItem("Menu",      "\uE8A5"),
                         }
                     });
                     MenuGroups.Add(new SidebarMenuGroup
@@ -305,7 +291,6 @@ namespace SihyuPOSPayroll.ViewModels
                         Header = "FINANCIALS",
                         Items = new List<SidebarMenuItem>
                         {
-                            MakeItem("Payslip Requests", "\uE7C3"),
                             MakeItem("Receipts",         "\uE9F9"),
                             MakeItem("Orders",           "\uE8A5"),
                             MakeItem("POS",              "\uE8C9"),

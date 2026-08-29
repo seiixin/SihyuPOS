@@ -8,7 +8,73 @@
 
     <UserControl.Resources>
         <helpers:EmptyStringToVisibilityConverter x:Key="EmptyStringToVisibilityConverter"/>
-        <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+
+        <!-- ══ iOS-style Toggle Switch ══════════════════════════════════════════
+             Usage: <ToggleButton Style="{StaticResource IosToggle}" IsChecked="{Binding SomeBool}"/>
+        -->
+        <Style x:Key="IosToggle" TargetType="ToggleButton">
+            <Setter Property="Width"          Value="52"/>
+            <Setter Property="Height"         Value="28"/>
+            <Setter Property="Cursor"         Value="Hand"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Grid>
+                            <!-- Track -->
+                            <Border x:Name="Track"
+                                    CornerRadius="14"
+                                    Background="#D1D5DB">
+                                <Grid>
+                                    <!-- ON label -->
+                                    <TextBlock x:Name="OnLabel"
+                                               Text="ON"
+                                               FontSize="9"
+                                               FontWeight="Bold"
+                                               Foreground="#FFFFFF"
+                                               HorizontalAlignment="Left"
+                                               VerticalAlignment="Center"
+                                               Margin="7,0,0,0"
+                                               Visibility="Collapsed"/>
+                                    <!-- OFF label -->
+                                    <TextBlock x:Name="OffLabel"
+                                               Text="OFF"
+                                               FontSize="9"
+                                               FontWeight="Bold"
+                                               Foreground="#9CA3AF"
+                                               HorizontalAlignment="Right"
+                                               VerticalAlignment="Center"
+                                               Margin="0,0,5,0"
+                                               Visibility="Visible"/>
+                                </Grid>
+                            </Border>
+                            <!-- Thumb -->
+                            <Ellipse x:Name="Thumb"
+                                     Width="22" Height="22"
+                                     Fill="White"
+                                     HorizontalAlignment="Left"
+                                     VerticalAlignment="Center"
+                                     Margin="3,0,0,0">
+                                <Ellipse.Effect>
+                                    <DropShadowEffect Color="#000000" Opacity="0.18"
+                                                      BlurRadius="4" ShadowDepth="1" Direction="270"/>
+                                </Ellipse.Effect>
+                            </Ellipse>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Track"    Property="Background"  Value="#22C55E"/>
+                                <Setter TargetName="Thumb"    Property="Margin"      Value="27,0,0,0"/>
+                                <Setter TargetName="OnLabel"  Property="Visibility"  Value="Visible"/>
+                                <Setter TargetName="OffLabel" Property="Visibility"  Value="Collapsed"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
     </UserControl.Resources>
 
     <UserControl.DataContext>
@@ -23,185 +89,297 @@
 
         <!-- Page Header -->
         <Border BorderBrush="#072219" BorderThickness="0,0,0,1" Margin="0,0,0,20" Padding="0,0,0,14">
-            <TextBlock FontSize="26"
+            <TextBlock Text="Inventory"
+                       FontSize="26"
                        FontWeight="Bold"
-                       Foreground="#477C60">
-                <TextBlock.Style>
-                    <Style TargetType="TextBlock">
-                        <Setter Property="Text" Value="Inventory &amp; Expiry Alerts"/>
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding IsStoreMode}" Value="True">
-                                <Setter Property="Text" Value="Inventory"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </TextBlock.Style>
-            </TextBlock>
+                       Foreground="#477C60"/>
         </Border>
 
         <!-- Main content area -->
         <Grid Grid.Row="1">
-            <StackPanel Orientation="Vertical">
-                <!-- Search and Action Buttons -->
-                <Grid Margin="0,0,0,14">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="260"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <Border Background="#090B17"
-                            CornerRadius="8"
-                            BorderBrush="#0D1117"
-                            BorderThickness="1"
-                            Padding="12,0"
-                            Height="40"
-                            Grid.Column="0">
-                        <Grid>
-                            <TextBlock Text="&#xE721;"
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- ── Quick Add Barcode strip ──────────────────────────────── -->
+            <Grid Grid.Row="0" Margin="0,0,0,14">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="12"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <Border Background="#090B17" CornerRadius="8"
+                        BorderBrush="#0D1117" BorderThickness="1"
+                        Padding="12,0" Height="40" Grid.Column="0">
+                    <Grid>
+                        <TextBlock Text="&#xE943;" FontFamily="Segoe MDL2 Assets"
+                                   FontSize="13" Foreground="#477C60"
+                                   VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                        <TextBox x:Name="QuickAddBarcodeBox"
+                                 Background="Transparent" BorderThickness="0"
+                                 Foreground="#F3F4F6" VerticalContentAlignment="Center"
+                                 Margin="22,0,0,0"
+                                 KeyDown="QuickAddBarcodeBox_KeyDown"
+                                 TextChanged="QuickAddBarcodeBox_TextChanged"/>
+                        <TextBlock Text="Scan or type barcode, press Enter to add…"
+                                   Foreground="#6B7280" Margin="24,0,0,0"
+                                   VerticalAlignment="Center" IsHitTestVisible="False"
+                                   Visibility="{Binding ElementName=QuickAddBarcodeBox, Path=Text,
+                                                        Converter={StaticResource EmptyStringToVisibilityConverter}}"/>
+                    </Grid>
+                </Border>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <!-- Spinner -->
+                    <Border x:Name="SpinnerBorder" Width="22" Height="22"
+                            Margin="0,0,10,0" Visibility="Collapsed">
+                        <Border.RenderTransformOrigin>0.5,0.5</Border.RenderTransformOrigin>
+                        <Border.RenderTransform>
+                            <RotateTransform x:Name="SpinnerRotate" Angle="0"/>
+                        </Border.RenderTransform>
+                        <Border.Triggers>
+                            <EventTrigger RoutedEvent="Border.Loaded">
+                                <BeginStoryboard>
+                                    <Storyboard RepeatBehavior="Forever">
+                                        <DoubleAnimation Storyboard.TargetName="SpinnerRotate"
+                                                         Storyboard.TargetProperty="Angle"
+                                                         From="0" To="360" Duration="0:0:0.9"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+                        </Border.Triggers>
+                        <Ellipse Width="20" Height="20" Stroke="#477C60"
+                                 StrokeThickness="2.5" StrokeDashArray="5,3"/>
+                    </Border>
+
+                    <TextBlock x:Name="LookupHintText" Text="" Foreground="#477C60"
+                               VerticalAlignment="Center" Margin="0,0,12,0" FontWeight="Medium"/>
+                    <Button Content="Quick Add +" Click="QuickAddBarcode_Click"
+                            Style="{StaticResource PrimaryButton}"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- ── Search + Actions toolbar ────────────────────────────── -->
+            <Grid Grid.Row="1" Margin="0,0,0,14">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="260"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Search box -->
+                <Border Background="#090B17" CornerRadius="8"
+                        BorderBrush="#0D1117" BorderThickness="1"
+                        Padding="12,0" Height="40" Grid.Column="0">
+                    <Grid>
+                        <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets"
+                                   FontSize="13" Foreground="#6B7280"
+                                   VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                        <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                 Background="Transparent" BorderThickness="0"
+                                 Foreground="#F3F4F6" VerticalContentAlignment="Center"
+                                 Margin="22,0,0,0"/>
+                        <TextBlock Text="Search Product or Category"
+                                   Foreground="#6B7280" Margin="24,0,0,0"
+                                   VerticalAlignment="Center" IsHitTestVisible="False"
+                                   Visibility="{Binding SearchText,
+                                                Converter={StaticResource EmptyStringToVisibilityConverter}}"/>
+                    </Grid>
+                </Border>
+
+                <!-- Right-side buttons -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal"
+                            HorizontalAlignment="Right" VerticalAlignment="Center">
+
+                    <!-- ⚙ Settings icon → column visibility popup -->
+                    <Grid Margin="0,0,8,0">
+                        <!-- Anchor button -->
+                        <Button x:Name="SettingsBtn"
+                                Width="40" Height="40"
+                                Click="SettingsBtn_Click"
+                                ToolTip="Column settings"
+                                Style="{StaticResource SecondaryButton}"
+                                Padding="0">
+                            <TextBlock Text="&#xE713;"
                                        FontFamily="Segoe MDL2 Assets"
-                                       FontSize="13"
-                                       Foreground="#6B7280"
-                                       VerticalAlignment="Center"
-                                       HorizontalAlignment="Left"/>
-                            <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                                     Background="Transparent"
-                                     BorderThickness="0"
-                                     Foreground="#F3F4F6"
-                                     VerticalContentAlignment="Center"
-                                     Margin="22,0,0,0"/>
-                            <TextBlock Text="Search Product or Category"
-                                       Foreground="#6B7280"
-                                       Margin="24,0,0,0"
-                                       VerticalAlignment="Center"
-                                       IsHitTestVisible="False"
-                                       Visibility="{Binding SearchText, Converter={StaticResource EmptyStringToVisibilityConverter}}"/>
-                        </Grid>
-                    </Border>
-                    <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Content="+ Add Item"
-                                Command="{Binding AddItemCommand}"
-                                Style="{StaticResource PrimaryButton}"
-                                Margin="0,0,8,0"/>
-                        <Button Content="Refresh"
-                                Command="{Binding RefreshCommand}"
-                                Style="{StaticResource SecondaryButton}"/>
-                    </StackPanel>
-                </Grid>
+                                       FontSize="16"
+                                       Foreground="#9CA3AF"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"/>
+                        </Button>
 
-                <!-- Inventory Table -->
-                <Border Background="#090B17" CornerRadius="10" Margin="0,0,0,20">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="300">
-                        <DataGrid ItemsSource="{Binding FilteredItems}"
-                                  SelectedItem="{Binding SelectedItem}"
-                                  AutoGenerateColumns="False"
-                                  IsReadOnly="True"
-                                  CanUserAddRows="False"
-                                  BorderThickness="0"
-                                  Background="#090B17"
-                                  GridLinesVisibility="None"
-                                  ColumnHeaderHeight="44"
-                                  RowHeight="48">
-                            <DataGrid.Columns>
-                                <DataGridTextColumn Header="Product Name" Binding="{Binding ProductName}" Width="*"/>
-                                <DataGridTextColumn Header="Category" Binding="{Binding CategoryName}" Width="*"/>
-                                <DataGridTextColumn Header="Quantity" Binding="{Binding Quantity}" Width="*"/>
-                                <DataGridTextColumn Header="Expiry Date" Binding="{Binding ExpiryDate, StringFormat=\{0:yyyy-MM-dd\}}" Width="*"/>
-                                <DataGridTemplateColumn Header="Actions" Width="120">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                                <Button Content="Edit"
-                                                        Style="{StaticResource SecondaryButton}"
-                                                        Margin="0,0,8,0"
-                                                        Command="{Binding DataContext.EditItemCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                        CommandParameter="{Binding}"/>
-                                                <Button Content="Delete"
-                                                        Style="{StaticResource DangerButton}"
-                                                        Command="{Binding DataContext.DeleteItemCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                        CommandParameter="{Binding}"/>
-                                            </StackPanel>
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-                            </DataGrid.Columns>
-                        </DataGrid>
-                    </ScrollViewer>
-                </Border>
+                        <!-- Dropdown panel -->
+                        <Popup x:Name="SettingsPopup"
+                               PlacementTarget="{Binding ElementName=SettingsBtn}"
+                               Placement="Bottom"
+                               StaysOpen="False"
+                               AllowsTransparency="True"
+                               PopupAnimation="Fade">
+                            <Border Background="#0D1117"
+                                    CornerRadius="12"
+                                    BorderBrush="#1F2937"
+                                    BorderThickness="1"
+                                    Padding="18,16"
+                                    MinWidth="210">
+                                <Border.Effect>
+                                    <DropShadowEffect Color="#000000" Opacity="0.45"
+                                                      BlurRadius="20" ShadowDepth="4" Direction="270"/>
+                                </Border.Effect>
+                                <StackPanel>
+                                    <!-- Header -->
+                                    <TextBlock Text="Column Visibility"
+                                               FontSize="11"
+                                               FontWeight="SemiBold"
+                                               Foreground="#6B7280"
+                                               Margin="0,0,0,14"/>
 
-                <!-- Expiry Alerts Header -->
-                <Grid Margin="0,0,0,12"
-                      Visibility="{Binding IsRestaurantMode, Converter={StaticResource BoolToVisibilityConverter}}">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Text="Expiry Alerts"
-                               FontSize="18"
-                               FontWeight="Bold"
-                               Foreground="#477C60"/>
-                    <Border Grid.Column="1"
-                            Background="#EF4444"
-                            CornerRadius="8"
-                            Padding="12,6">
-                        <TextBlock Text="{Binding InventoryItems.Count, StringFormat=\{0\} Items}"
-                                   Foreground="#FFFFFF"
-                                   FontWeight="Bold"
-                                   FontSize="13"/>
-                    </Border>
-                </Grid>
+                                    <!-- Qty toggle row -->
+                                    <Grid Margin="0,0,0,14">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="Quantity"
+                                                       Foreground="#F3F4F6"
+                                                       FontSize="13"
+                                                       FontWeight="Medium"/>
+                                            <TextBlock Text="Show Qty column"
+                                                       Foreground="#6B7280"
+                                                       FontSize="11"/>
+                                        </StackPanel>
+                                        <ToggleButton Grid.Column="1"
+                                                      IsChecked="{Binding ShowQty}"
+                                                      Style="{StaticResource IosToggle}"
+                                                      Click="ColumnToggle_Click"
+                                                      VerticalAlignment="Center"/>
+                                    </Grid>
 
-                <!-- Expiry Alerts Table -->
-                <Border Background="#090B17" CornerRadius="10"
-                        Visibility="{Binding IsRestaurantMode, Converter={StaticResource BoolToVisibilityConverter}}">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="200">
-                        <DataGrid ItemsSource="{Binding InventoryItems}"
-                                  AutoGenerateColumns="False"
-                                  IsReadOnly="True"
-                                  CanUserAddRows="False"
-                                  BorderThickness="0"
-                                  Background="#090B17"
-                                  GridLinesVisibility="None"
-                                  ColumnHeaderHeight="44"
-                                  RowHeight="48">
-                            <DataGrid.Columns>
-                                <DataGridTextColumn Header="Product Name" Binding="{Binding ProductName}" Width="*"/>
-                                <DataGridTextColumn Header="Quantity" Binding="{Binding Quantity}" Width="*"/>
-                                <DataGridTextColumn Header="Expiry Date" Binding="{Binding ExpiryDate, StringFormat=\{0:yyyy-MM-dd\}}" Width="*"/>
-                                <DataGridTemplateColumn Header="Status" Width="*">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <Border CornerRadius="6" Padding="12,6" HorizontalAlignment="Center">
-                                                <Border.Style>
-                                                    <Style TargetType="Border">
-                                                        <Setter Property="Background" Value="#128854"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding Status}" Value="Expired">
-                                                                <Setter Property="Background" Value="#EF4444"/>
-                                                            </DataTrigger>
-                                                            <DataTrigger Binding="{Binding Status}" Value="Expiring Soon">
-                                                                <Setter Property="Background" Value="#F59E0B"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </Border.Style>
-                                                <TextBlock Text="{Binding Status}"
-                                                           Foreground="#000000"
-                                                           FontWeight="Bold"
-                                                           TextAlignment="Center"/>
-                                            </Border>
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-                            </DataGrid.Columns>
-                        </DataGrid>
-                    </ScrollViewer>
-                </Border>
-            </StackPanel>
+                                    <!-- Category toggle row -->
+                                    <Grid Margin="0,0,0,14">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="Category"
+                                                       Foreground="#F3F4F6"
+                                                       FontSize="13"
+                                                       FontWeight="Medium"/>
+                                            <TextBlock Text="Show Category column"
+                                                       Foreground="#6B7280"
+                                                       FontSize="11"/>
+                                        </StackPanel>
+                                        <ToggleButton Grid.Column="1"
+                                                      IsChecked="{Binding ShowCategory}"
+                                                      Style="{StaticResource IosToggle}"
+                                                      Click="ColumnToggle_Click"
+                                                      VerticalAlignment="Center"/>
+                                    </Grid>
+
+                                    <!-- Expiry toggle row -->
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="Expiry Date"
+                                                       Foreground="#F3F4F6"
+                                                       FontSize="13"
+                                                       FontWeight="Medium"/>
+                                            <TextBlock Text="Show Expiry Date column"
+                                                       Foreground="#6B7280"
+                                                       FontSize="11"/>
+                                        </StackPanel>
+                                        <ToggleButton Grid.Column="1"
+                                                      IsChecked="{Binding ShowExpiry}"
+                                                      Style="{StaticResource IosToggle}"
+                                                      Click="ColumnToggle_Click"
+                                                      VerticalAlignment="Center"/>
+                                    </Grid>
+
+                                </StackPanel>
+                            </Border>
+                        </Popup>
+                    </Grid>
+
+                    <Button Content="+ Add Item"
+                            Command="{Binding AddItemCommand}"
+                            Style="{StaticResource PrimaryButton}"
+                            Margin="0,0,8,0"/>
+                    <Button Content="Refresh"
+                            Command="{Binding RefreshCommand}"
+                            Style="{StaticResource SecondaryButton}"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- ── Inventory Table ──────────────────────────────────────── -->
+            <Border Grid.Row="2" Background="#090B17" CornerRadius="10">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <DataGrid ItemsSource="{Binding FilteredItems}"
+                              SelectedItem="{Binding SelectedItem}"
+                              AutoGenerateColumns="False"
+                              IsReadOnly="True"
+                              CanUserAddRows="False"
+                              BorderThickness="0"
+                              Background="#090B17"
+                              GridLinesVisibility="None"
+                              ColumnHeaderHeight="44"
+                              RowHeight="48">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Barcode"
+                                               Binding="{Binding Barcode}"
+                                               Width="140"/>
+                            <DataGridTextColumn Header="Product Name"
+                                               Binding="{Binding ProductName}"
+                                               Width="*"/>
+                            <DataGridTextColumn x:Name="CategoryColumn"
+                                               Header="Category"
+                                               Binding="{Binding CategoryName}"
+                                               Width="*"/>
+                            <DataGridTextColumn x:Name="QtyColumn"
+                                               Header="Qty"
+                                               Binding="{Binding Quantity}"
+                                               Width="70"/>
+                            <DataGridTextColumn Header="Price"
+                                               Binding="{Binding Price, StringFormat=\{0:N2\}}"
+                                               Width="100"/>
+                            <DataGridTextColumn x:Name="ExpiryColumn"
+                                               Header="Expiry Date"
+                                               Binding="{Binding ExpiryDate, StringFormat=\{0:yyyy-MM-dd\}}"
+                                               Width="*"/>
+                            <DataGridTemplateColumn Header="Actions" Width="120">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                            <Button Content="Edit"
+                                                    Style="{StaticResource SecondaryButton}"
+                                                    Margin="0,0,8,0"
+                                                    Command="{Binding DataContext.EditItemCommand,
+                                                              RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}"/>
+                                            <Button Content="Delete"
+                                                    Style="{StaticResource DangerButton}"
+                                                    Command="{Binding DataContext.DeleteItemCommand,
+                                                              RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </ScrollViewer>
+            </Border>
 
             <!-- Dialog Overlay -->
-            <Border Background="#80000000"
-                    CornerRadius="8"
-                    Padding="20"
+            <Border Grid.Row="0" Grid.RowSpan="3"
+                    Background="#80000000"
+                    CornerRadius="8" Padding="20"
                     HorizontalAlignment="Stretch"
                     VerticalAlignment="Stretch">
                 <Border.Style>

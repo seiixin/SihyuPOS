@@ -133,8 +133,8 @@ namespace SihyuPOSPayroll.Services
                         OtherDeductions = Math.Round(otherDeductions, 2),
                         Bonus = Math.Round(bonus, 2),
                         NetSalary = Math.Round(net, 2),
-                        BranchName = null,
-                        ShiftType = null
+                        BranchName = string.Empty,
+                        ShiftType = string.Empty
                     });
                 }
             }
@@ -250,8 +250,8 @@ namespace SihyuPOSPayroll.Services
                         OtherDeductions = r.GetDecimal("other_deductions"),
                         Bonus = r.GetDecimal("bonus"),
                         NetSalary = r.GetDecimal("net_salary"),
-                        BranchName = r["branch_name"]?.ToString(),
-                        ShiftType = r["shift_type"]?.ToString(),
+                        BranchName = r["branch_name"]?.ToString() ?? string.Empty,
+                        ShiftType = r["shift_type"]?.ToString() ?? string.Empty,
                         EmployeeFullName = r["full_name"]?.ToString() ?? ""
                     });
                 }

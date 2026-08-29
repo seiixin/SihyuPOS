@@ -1,0 +1,11 @@
+<Project>
+
+  <Target Name="StripEditorConfigFromCompileAndAdditionalFiles" BeforeTargets="BeforeCompile;CoreCompile">
+    <ItemGroup>
+      <Compile Remove="**\*.editorconfig" />
+      <AdditionalFiles Remove="**\*.editorconfig" />
+      <EditorConfigFiles Remove="**\*GeneratedMSBuildEditorConfig*.editorconfig" />
+    </ItemGroup>
+  </Target>
+
+</Project>

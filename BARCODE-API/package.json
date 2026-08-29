@@ -1,0 +1,15 @@
+{
+  "name": "barcode-api",
+  "version": "1.0.0",
+  "description": "PH Product Barcode Starter DB Builder",
+  "main": "build_starter_db.js",
+  "scripts": {
+    "build": "node build_starter_db.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.3.0"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

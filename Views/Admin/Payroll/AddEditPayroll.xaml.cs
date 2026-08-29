@@ -43,27 +43,28 @@ namespace SihyuPOSPayroll.Views.Admin.Payrolls
 
             if (payroll != null)
             {
+                var p = payroll;
                 _isEditMode = true;
-                _editingPayroll = payroll;
+                _editingPayroll = p;
 
                 TitleText.Text = "Edit Payroll";
 
-                EmployeeComboBox.SelectedValue = payroll.EmployeeId;
-                StartDatePicker.SelectedDate = payroll.StartDate;
-                EndDatePicker.SelectedDate = payroll.EndDate;
+                EmployeeComboBox.SelectedValue = p.EmployeeId;
+                StartDatePicker.SelectedDate = p.StartDate;
+                EndDatePicker.SelectedDate = p.EndDate;
 
                 // We'll overwrite DaysWorkedTextBox via RecalculateDaysWorked(), but set initial visible values:
-                DaysWorkedTextBox.Text = payroll.TotalDaysWorked.ToString();
+                DaysWorkedTextBox.Text = p.TotalDaysWorked.ToString();
 
-                GrossSalaryTextBox.Text = payroll.GrossSalary.ToString("0.00");
-                SSSTextBox.Text = (payroll?.SssDeduction ?? 0).ToString("0.00");
-                PhilhealthTextBox.Text = payroll.PhilhealthDeduction.ToString("0.00");
-                PagibigTextBox.Text = payroll.PagibigDeduction.ToString("0.00");
-                OtherDeductionsTextBox.Text = payroll.OtherDeductions.ToString("0.00");
-                BonusTextBox.Text = payroll.Bonus.ToString("0.00");
-                NetSalaryTextBox.Text = payroll.NetSalary.ToString("0.00");
-                BranchNameTextBox.Text = payroll.BranchName;
-                ShiftTypeTextBox.Text = payroll.ShiftType;
+                GrossSalaryTextBox.Text = p.GrossSalary.ToString("0.00");
+                SSSTextBox.Text = p.SssDeduction.ToString("0.00");
+                PhilhealthTextBox.Text = p.PhilhealthDeduction.ToString("0.00");
+                PagibigTextBox.Text = p.PagibigDeduction.ToString("0.00");
+                OtherDeductionsTextBox.Text = p.OtherDeductions.ToString("0.00");
+                BonusTextBox.Text = p.Bonus.ToString("0.00");
+                NetSalaryTextBox.Text = p.NetSalary.ToString("0.00");
+                BranchNameTextBox.Text = p.BranchName;
+                ShiftTypeTextBox.Text = p.ShiftType;
 
                 // Ensure we reflect the latest attendance-based value
                 RecalculateDaysWorked();
@@ -82,7 +83,7 @@ namespace SihyuPOSPayroll.Views.Admin.Payrolls
         // Event wiring
         // ========================
 
-        private void RecalcInputs_Changed(object sender, RoutedEventArgs e)
+        private void RecalcInputs_Changed(object? sender, EventArgs e)
         {
             RecalculateDaysWorked();
         }

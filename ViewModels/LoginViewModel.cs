@@ -61,13 +61,13 @@ namespace SihyuPOSPayroll.ViewModels
 
             if (user != null)
             {
-                string userRole = user.Role;
+                string userRole = user.Role ?? "Employee";
                 string userName = "System User";
 
                 // Load employee details 
                 if (user.Employee != null)
                 {
-                    userName = user.Employee.FullName;
+                    userName = user.Employee.FullName ?? "System User";
                 }
 
                 var mainLayout = new MainLayout

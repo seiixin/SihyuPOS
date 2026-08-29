@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              Background="Transparent">
 
-    <Border Style="{StaticResource CardBorder}" Width="480" VerticalAlignment="Center" HorizontalAlignment="Center">
+    <Border Style="{StaticResource CardBorder}" Width="520" VerticalAlignment="Center" HorizontalAlignment="Center">
         <Grid Margin="20">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -12,14 +12,41 @@
             </Grid.RowDefinitions>
 
             <!-- Header -->
-            <TextBlock x:Name="DialogTitle"
-                       Text="Product Information"
-                       FontSize="20" FontWeight="Bold"
-                       Foreground="{StaticResource TextPrimaryBrush}"
-                       Margin="0,0,0,24"/>
+            <Grid Margin="0,0,0,24">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="DialogTitle"
+                           Text="Product Information"
+                           FontSize="20" FontWeight="Bold"
+                           Foreground="{StaticResource TextPrimaryBrush}"
+                           VerticalAlignment="Center"/>
+                <!-- Source badge — hidden until a lookup source is set -->
+                <Border x:Name="SourceBadge"
+                        Grid.Column="1"
+                        CornerRadius="6"
+                        Padding="10,4"
+                        VerticalAlignment="Center"
+                        Visibility="Collapsed">
+                    <TextBlock x:Name="SourceBadgeText"
+                               FontSize="11"
+                               FontWeight="SemiBold"/>
+                </Border>
+            </Grid>
 
             <!-- Form Fields -->
             <StackPanel Grid.Row="1" Orientation="Vertical" VerticalAlignment="Top">
+
+                <!-- Barcode -->
+                <StackPanel Margin="0,0,0,16">
+                    <TextBlock Text="Barcode"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               FontWeight="Medium" Margin="0,0,0,4"/>
+                    <TextBox x:Name="BarcodeTextBox"
+                             Height="40"
+                             TextChanged="BarcodeTextBox_TextChanged"/>
+                </StackPanel>
 
                 <!-- Product Name -->
                 <StackPanel Margin="0,0,0,16">
@@ -39,15 +66,30 @@
                               IsEditable="True"/>
                 </StackPanel>
 
-                <!-- Quantity -->
-                <StackPanel Margin="0,0,0,16">
-                    <TextBlock Text="Quantity *"
-                               Foreground="{StaticResource TextSecondaryBrush}"
-                               FontWeight="Medium" Margin="0,0,0,4"/>
-                    <TextBox x:Name="QuantityTextBox"
-                             Height="40"
-                             PreviewTextInput="NumberValidationTextBox"/>
-                </StackPanel>
+                <!-- Quantity & Price (side by side) -->
+                <Grid Margin="0,0,0,16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="12"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="Quantity *"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   FontWeight="Medium" Margin="0,0,0,4"/>
+                        <TextBox x:Name="QuantityTextBox"
+                                 Height="40"
+                                 PreviewTextInput="NumberValidationTextBox"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="Price *"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   FontWeight="Medium" Margin="0,0,0,4"/>
+                        <TextBox x:Name="PriceTextBox"
+                                 Height="40"
+                                 PreviewTextInput="PriceValidationTextBox"/>
+                    </StackPanel>
+                </Grid>
 
                 <!-- Expiry Date -->
                 <StackPanel Margin="0,0,0,16">
