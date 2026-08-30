@@ -16,6 +16,7 @@ namespace SihyuPOSPayroll.Models
         Pending,
         Preparing,
         Served,
+        Completed,
         Cancelled
     }
 

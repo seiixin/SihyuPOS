@@ -1,24 +1,58 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 namespace SihyuPOSPayroll.Models
 {
-    public class OrderItemModel
+    public class OrderItemModel : INotifyPropertyChanged
     {
-        public int Id { get; set; }              // order_items.id
-        public int OrderId { get; set; }         // order_items.order_id
-        public int ProductId { get; set; }       // order_items.product_id  (bind this to the dropdown SelectedValue)
-        public int Quantity { get; set; } = 1;   // order_items.quantity
+        public int Id { get; set; }       // order_items.id
+        public int OrderId { get; set; }  // order_items.order_id
+        public int ProductId { get; set; }
 
-        // For UI/CRUD convenience:
-        public decimal UnitPrice { get; set; }   // order_items.unit_price (store frozen price at order time)
-        public decimal Subtotal => UnitPrice * Quantity; // computed; persist if you prefer
+        private int _quantity = 1;
+        public int Quantity
+        {
+            get => _quantity;
+            set
+            {
+                if (_quantity == value) return;
+                _quantity = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(Subtotal));
+            }
+        }
 
-        // Helpful for the grid/details without another call (optional, not required by DB):
-        public string? ProductName { get; set; } // join from Menu when reading
-        public string? Category { get; set; }    // join from Menu when reading
+        private decimal _unitPrice;
+        public decimal UnitPrice
+        {
+            get => _unitPrice;
+            set
+            {
+                if (_unitPrice == value) return;
+                _unitPrice = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(Subtotal));
+            }
+        }
+
+        public decimal Subtotal => UnitPrice * Quantity;
+
+        private string? _productName;
+        public string? ProductName
+        {
+            get => _productName;
+            set { _productName = value; OnPropertyChanged(); }
+        }
+
+        private string? _category;
+        public string? Category
+        {
+            get => _category;
+            set { _category = value; OnPropertyChanged(); }
+        }
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+        private void OnPropertyChanged([CallerMemberName] string? name = null)
+            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 }

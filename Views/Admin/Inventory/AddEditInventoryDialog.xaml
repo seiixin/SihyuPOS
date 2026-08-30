@@ -46,6 +46,50 @@
                     <TextBox x:Name="BarcodeTextBox"
                              Height="40"
                              TextChanged="BarcodeTextBox_TextChanged"/>
+                    <!-- Lookup status row — hidden when idle -->
+                    <Grid x:Name="BarcodeStatusRow" Margin="0,5,0,0" Visibility="Collapsed">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <!-- Spinner (dots animation via ControlTemplate) -->
+                        <Border x:Name="BarcodeSpinner"
+                                Grid.Column="0"
+                                Width="14" Height="14"
+                                Margin="0,0,6,0"
+                                VerticalAlignment="Center"
+                                Visibility="Collapsed">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Style.Triggers>
+                                        <EventTrigger RoutedEvent="Loaded">
+                                            <BeginStoryboard>
+                                                <Storyboard RepeatBehavior="Forever">
+                                                    <DoubleAnimation
+                                                        Storyboard.TargetProperty="(UIElement.RenderTransform).(RotateTransform.Angle)"
+                                                        From="0" To="360" Duration="0:0:1"/>
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </EventTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <Border.RenderTransformOrigin>0.5,0.5</Border.RenderTransformOrigin>
+                            <Border.RenderTransform>
+                                <RotateTransform/>
+                            </Border.RenderTransform>
+                            <Ellipse Width="12" Height="12"
+                                     Stroke="#60A5FA"
+                                     StrokeThickness="2"
+                                     StrokeDashArray="2 1"/>
+                        </Border>
+                        <TextBlock x:Name="BarcodeStatusText"
+                                   Grid.Column="1"
+                                   FontSize="11"
+                                   Foreground="#9CA3AF"
+                                   VerticalAlignment="Center"
+                                   TextWrapping="Wrap"/>
+                    </Grid>
                 </StackPanel>
 
                 <!-- Product Name -->
@@ -87,6 +131,7 @@
                                    FontWeight="Medium" Margin="0,0,0,4"/>
                         <TextBox x:Name="PriceTextBox"
                                  Height="40"
+                                 GotFocus="PriceTextBox_GotFocus"
                                  PreviewTextInput="PriceValidationTextBox"/>
                     </StackPanel>
                 </Grid>

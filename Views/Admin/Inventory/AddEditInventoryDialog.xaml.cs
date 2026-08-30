@@ -1,6 +1,8 @@
 using System;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -40,12 +42,17 @@ namespace SihyuPOSPayroll.Views.Admin.Inventory
 
         public event EventHandler<bool>? DialogClosed;
 
+        // ── Barcode lookup debounce ────────────────────────────────────────────
+        private CancellationTokenSource? _barcodeCts;
+        /// <summary>Set to true in the edit constructor so barcode changes don't re-trigger lookups.</summary>
+        private bool _isEditMode;
+
         // ── Constructors ───────────────────────────────────────────────────────
         public AddEditInventoryDialog()
         {
             InitializeComponent();
             QuantityTextBox.Text = "0";
-            PriceTextBox.Text    = "0.00";
+            PriceTextBox.Text    = ".00";
             LoadCategories();
             Loaded += (_, __) =>
             {
@@ -87,6 +94,7 @@ namespace SihyuPOSPayroll.Views.Admin.Inventory
 
         public AddEditInventoryDialog(InventoryItem item) : this()
         {
+            _isEditMode                   = true;
             DialogTitle.Text              = "Edit Product";
             BarcodeTextBox.Text           = item.Barcode ?? string.Empty;
             ProductNameTextBox.Text       = item.ProductName;
@@ -130,18 +138,90 @@ namespace SihyuPOSPayroll.Views.Admin.Inventory
             }
         }
 
-        // ── JSON lookup handler (fires on barcode TextChanged) ────────────────
+        // ── JSON + OFF lookup handler (fires on barcode TextChanged) ─────────
         private void BarcodeTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
+            // Don't trigger lookup in edit mode — item already has a name
+            if (_isEditMode) return;
+
             string barcode = BarcodeTextBox.Text.Trim();
+
+            // Clear status whenever the barcode field changes
+            SetBarcodeStatus(string.Empty, isSearching: false);
+
             if (string.IsNullOrEmpty(barcode)) return;
-            ApplyJsonLookup(barcode, overwriteBlankOnly: true);
+
+            // ── Step 1: instant local JSON hit ────────────────────────────────
+            if (ApplyJsonLookup(barcode, overwriteBlankOnly: true))
+            {
+                SetBarcodeStatus("✓ Found in local database", isSearching: false, isSuccess: true);
+                SetSourceBadge(QuickAddPrefill.PrefillSource.LocalJson);
+                return;
+            }
+
+            // ── Step 2: debounced Open Food Facts lookup ──────────────────────
+            _barcodeCts?.Cancel();
+            _barcodeCts = new CancellationTokenSource();
+            var token = _barcodeCts.Token;
+
+            SetBarcodeStatus("Searching online…", isSearching: true);
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    // Wait 600 ms — if user keeps typing, the previous task is cancelled
+                    await Task.Delay(600, token).ConfigureAwait(false);
+                    if (token.IsCancellationRequested) return;
+
+                    var result = await OpenFoodFactsService.LookupAsync(barcode, token).ConfigureAwait(false);
+
+                    // Marshal back to UI thread
+                    Dispatcher.Invoke(() =>
+                    {
+                        if (token.IsCancellationRequested) return;
+
+                        if (result.IsFound)
+                        {
+                            if (string.IsNullOrWhiteSpace(ProductNameTextBox.Text))
+                                ProductNameTextBox.Text = result.ProductName ?? string.Empty;
+
+                            if (string.IsNullOrWhiteSpace(CategoryComboBox.Text))
+                            {
+                                string? cat = result.Category
+                                    ?? GuessCategoryFromBrand(result.Brand, result.ProductName ?? string.Empty);
+                                if (!string.IsNullOrEmpty(cat))
+                                    CategoryComboBox.Text = cat;
+                            }
+
+                            SetSourceBadge(QuickAddPrefill.PrefillSource.OpenFoodFacts);
+                            SetBarcodeStatus($"✓ Found: {result.ProductName}", isSearching: false, isSuccess: true);
+                        }
+                        else
+                        {
+                            string hint = result.Status switch
+                            {
+                                OFFLookupResult.LookupStatus.Offline  => "Offline — enter product name manually",
+                                OFFLookupResult.LookupStatus.Timeout  => "Lookup timed out — enter manually",
+                                OFFLookupResult.LookupStatus.NotFound => "Not found — enter product name manually",
+                                _                                      => "Not found — enter product name manually",
+                            };
+                            SetBarcodeStatus(hint, isSearching: false, isSuccess: false);
+                        }
+                    });
+                }
+                catch (OperationCanceledException) { /* new barcode typed — silently abort */ }
+            }, token);
         }
 
-        private void ApplyJsonLookup(string barcode, bool overwriteBlankOnly)
+        /// <summary>
+        /// Tries the local JSON lookup and fills ProductName/Category if found.
+        /// Returns true if a hit was found.
+        /// </summary>
+        private bool ApplyJsonLookup(string barcode, bool overwriteBlankOnly)
         {
             var hit = BarcodeLookupService.Lookup(barcode);
-            if (hit == null) return;   // silently do nothing when not found
+            if (hit == null) return false;
 
             if (!overwriteBlankOnly || string.IsNullOrWhiteSpace(ProductNameTextBox.Text))
                 ProductNameTextBox.Text = hit.ProductName;
@@ -152,6 +232,21 @@ namespace SihyuPOSPayroll.Views.Admin.Inventory
                 if (!string.IsNullOrEmpty(bestCategory))
                     CategoryComboBox.Text = bestCategory;
             }
+
+            return true;
+        }
+
+        /// <summary>Updates the small status row below the barcode field.</summary>
+        private void SetBarcodeStatus(string message, bool isSearching, bool isSuccess = false)
+        {
+            BarcodeStatusText.Text       = message;
+            BarcodeStatusText.Foreground = isSuccess
+                ? (Brush)new BrushConverter().ConvertFrom("#4ADE80")!
+                : (Brush)new BrushConverter().ConvertFrom("#9CA3AF")!;
+            BarcodeSpinner.Visibility    = isSearching ? Visibility.Visible : Visibility.Collapsed;
+            BarcodeStatusRow.Visibility  = string.IsNullOrEmpty(message) && !isSearching
+                ? Visibility.Collapsed
+                : Visibility.Visible;
         }
 
         // ── Category guesser (public static so InventoryViewModel can call it) ──
@@ -345,5 +440,8 @@ namespace SihyuPOSPayroll.Views.Admin.Inventory
             // Allow up to one decimal, digits only otherwise
             e.Handled = !Regex.IsMatch(candidate, @"^\d{0,10}(\.\d{0,2})?$");
         }
+
+        private void PriceTextBox_GotFocus(object sender, RoutedEventArgs e)
+            => Dispatcher.InvokeAsync(() => ((TextBox)sender).SelectAll());
     }
 }

@@ -391,11 +391,12 @@ namespace SihyuPOSPayroll.Services
             {
                 // StoreMode: use inventory_items as the product catalogue
                 const string sql = @"
-                    SELECT Id       AS id,
+                    SELECT Id          AS id,
+                           Barcode     AS barcode,
                            ProductName AS name,
                            CategoryName AS category,
-                           NULL     AS price,
-                           ImagePath AS image_url
+                           Price       AS price,
+                           ImagePath   AS image_url
                     FROM inventory_items
                     ORDER BY ProductName;";
 
@@ -403,14 +404,13 @@ namespace SihyuPOSPayroll.Services
                 using var reader = cmd.ExecuteReader();
                 while (reader.Read())
                 {
-                    // Price stored in inventory_items is NULL — use 0 as default;
-                    // cashier can edit unit price inline in the order grid.
                     products.Add(new MenuModel
                     {
                         Id       = reader.GetInt32("id"),
-                        Name     = reader.IsDBNull(reader.GetOrdinal("name"))     ? string.Empty : reader.GetString("name"),
-                        Category = reader.IsDBNull(reader.GetOrdinal("category")) ? string.Empty : reader.GetString("category"),
-                        Price    = 0m,
+                        Barcode  = reader.IsDBNull(reader.GetOrdinal("barcode"))   ? null : reader.GetString("barcode"),
+                        Name     = reader.IsDBNull(reader.GetOrdinal("name"))      ? string.Empty : reader.GetString("name"),
+                        Category = reader.IsDBNull(reader.GetOrdinal("category"))  ? string.Empty : reader.GetString("category"),
+                        Price    = reader.IsDBNull(reader.GetOrdinal("price"))     ? 0m : reader.GetDecimal("price"),
                         ImageUrl = reader.IsDBNull(reader.GetOrdinal("image_url")) ? null : reader.GetString("image_url"),
                     });
                 }
@@ -418,7 +418,7 @@ namespace SihyuPOSPayroll.Services
             else
             {
                 // RestaurantMode: use the dedicated menu table
-                const string sql = "SELECT id, name, category, price, image_url FROM menu ORDER BY name";
+                const string sql = "SELECT id, NULL AS barcode, name, category, price, image_url FROM menu ORDER BY name";
 
                 using var cmd = new MySqlCommand(sql, connection);
                 using var reader = cmd.ExecuteReader();
@@ -427,6 +427,7 @@ namespace SihyuPOSPayroll.Services
                     products.Add(new MenuModel
                     {
                         Id       = reader.GetInt32("id"),
+                        Barcode  = null,
                         Name     = reader.IsDBNull(reader.GetOrdinal("name"))      ? string.Empty : reader.GetString("name"),
                         Category = reader.IsDBNull(reader.GetOrdinal("category"))  ? string.Empty : reader.GetString("category"),
                         Price    = reader.IsDBNull(reader.GetOrdinal("price"))     ? (decimal?)null : reader.GetDecimal("price"),

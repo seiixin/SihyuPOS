@@ -55,11 +55,94 @@
             <Grid Grid.Column="0">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
+                <!-- ── Quick Add / Barcode Scanner bar ──────────────────── -->
+                <Grid Grid.Row="0" Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="12"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0"
+                            Background="#090B17"
+                            CornerRadius="8"
+                            BorderBrush="#0D1117"
+                            BorderThickness="1"
+                            Padding="12,0"
+                            Height="40">
+                        <Grid>
+                            <TextBlock Text="&#xE943;"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="13"
+                                       Foreground="#477C60"
+                                       VerticalAlignment="Center"
+                                       HorizontalAlignment="Left"/>
+                            <TextBox x:Name="BarcodeBox"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     Foreground="#F3F4F6"
+                                     VerticalContentAlignment="Center"
+                                     Margin="22,0,0,0"
+                                     KeyDown="BarcodeBox_KeyDown"
+                                     TextChanged="BarcodeBox_TextChanged"/>
+                            <TextBlock Text="Scan or type barcode…"
+                                       Foreground="#6B7280"
+                                       Margin="24,0,0,0"
+                                       VerticalAlignment="Center"
+                                       IsHitTestVisible="False"
+                                       Visibility="{Binding Text, ElementName=BarcodeBox,
+                                                    Converter={StaticResource EmptyStringToVisibilityConverter}}"/>
+                        </Grid>
+                    </Border>
+
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                        <!-- Spinner -->
+                        <Border x:Name="BarcodeSpinner"
+                                Width="22" Height="22"
+                                Margin="0,0,10,0"
+                                Visibility="Collapsed">
+                            <Border.RenderTransformOrigin>0.5,0.5</Border.RenderTransformOrigin>
+                            <Border.RenderTransform>
+                                <RotateTransform x:Name="BarcodeSpinnerRotate" Angle="0"/>
+                            </Border.RenderTransform>
+                            <Border.Triggers>
+                                <EventTrigger RoutedEvent="Border.Loaded">
+                                    <BeginStoryboard>
+                                        <Storyboard RepeatBehavior="Forever">
+                                            <DoubleAnimation Storyboard.TargetName="BarcodeSpinnerRotate"
+                                                             Storyboard.TargetProperty="Angle"
+                                                             From="0" To="360"
+                                                             Duration="0:0:0.9"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                            </Border.Triggers>
+                            <Ellipse Width="20" Height="20"
+                                     Stroke="#477C60"
+                                     StrokeThickness="2.5"
+                                     StrokeDashArray="5,3"/>
+                        </Border>
+
+                        <TextBlock x:Name="BarcodeFeedback"
+                                   Text=""
+                                   Foreground="#477C60"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,12,0"
+                                   FontWeight="Medium"
+                                   MaxWidth="180"/>
+
+                        <Button Content="Add +"
+                                Style="{StaticResource PrimaryButton}"
+                                Click="BarcodeAdd_Click"/>
+                    </StackPanel>
+                </Grid>
+
                 <!-- Search + Category toolbar -->
-                <Grid Grid.Row="0" Margin="0,0,0,14">
+                <Grid Grid.Row="1" Margin="0,0,0,14">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="12"/>
@@ -105,7 +188,7 @@
                 </Grid>
 
                 <!-- Product card grid (WrapPanel inside ScrollViewer) -->
-                <ScrollViewer Grid.Row="1"
+                <ScrollViewer Grid.Row="2"
                               VerticalScrollBarVisibility="Auto"
                               HorizontalScrollBarVisibility="Disabled">
                     <ListView x:Name="ProductList"
@@ -122,110 +205,118 @@
                         </ListView.ItemsPanel>
                         <ListView.ItemTemplate>
                             <DataTemplate>
-                                <!-- ── Product Card ────────────────────── -->
-                                <Border Width="148"
-                                        Background="#090B17"
-                                        CornerRadius="12"
-                                        BorderBrush="#1A1D2E"
-                                        BorderThickness="1"
-                                        Padding="0,0,0,12"
-                                        Margin="0,0,0,0">
-                                    <StackPanel>
-                                        <!-- Product image / placeholder -->
-                                        <Border CornerRadius="12,12,0,0"
-                                                Height="100"
-                                                ClipToBounds="True"
-                                                Background="#0D0F1A">
-                                            <Grid>
-                                                <!-- Placeholder icon (always visible as fallback) -->
-                                                <Border Width="52" Height="52"
-                                                        CornerRadius="26"
-                                                        Background="#072219"
-                                                        HorizontalAlignment="Center"
-                                                        VerticalAlignment="Center">
-                                                    <TextBlock Text="&#xE8B9;"
-                                                               FontFamily="Segoe MDL2 Assets"
-                                                               FontSize="22"
-                                                               Foreground="#128854"
-                                                               HorizontalAlignment="Center"
-                                                               VerticalAlignment="Center"/>
-                                                </Border>
-                                                <!-- Actual image rendered via code-behind tag -->
-                                                <Image x:Name="ProductImage"
-                                                       Stretch="UniformToFill"
-                                                       Tag="{Binding ImageUrl}"
-                                                       Loaded="ProductImage_Loaded">
-                                                    <Image.Style>
-                                                        <Style TargetType="Image">
-                                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                                            <Style.Triggers>
-                                                                <!-- Show when ImageUrl is not null/empty -->
-                                                                <DataTrigger Binding="{Binding ImageUrl}" Value="{x:Null}">
-                                                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </Image.Style>
-                                                </Image>
-                                            </Grid>
-                                        </Border>
+                                <!-- ── Product Card (entire card is clickable) ── -->
+                                <Button Click="AddProduct_Click"
+                                        Tag="{Binding}"
+                                        Width="148"
+                                        Cursor="Hand"
+                                        Padding="0"
+                                        BorderThickness="0"
+                                        Background="Transparent">
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border x:Name="CardBorder"
+                                                    Width="148"
+                                                    Background="#090B17"
+                                                    CornerRadius="12"
+                                                    BorderBrush="#1A1D2E"
+                                                    BorderThickness="1"
+                                                    Padding="0,0,0,12">
+                                                <StackPanel>
+                                                    <!-- Product image / placeholder -->
+                                                    <Border CornerRadius="12,12,0,0"
+                                                            Height="100"
+                                                            ClipToBounds="True"
+                                                            Background="#0D0F1A">
+                                                        <Grid>
+                                                            <!-- Placeholder icon -->
+                                                            <Border Width="52" Height="52"
+                                                                    CornerRadius="26"
+                                                                    Background="#072219"
+                                                                    HorizontalAlignment="Center"
+                                                                    VerticalAlignment="Center">
+                                                                <TextBlock Text="&#xE8B9;"
+                                                                           FontFamily="Segoe MDL2 Assets"
+                                                                           FontSize="22"
+                                                                           Foreground="#128854"
+                                                                           HorizontalAlignment="Center"
+                                                                           VerticalAlignment="Center"/>
+                                                            </Border>
+                                                            <!-- Actual product image -->
+                                                            <Image x:Name="ProductImage"
+                                                                   Stretch="UniformToFill"
+                                                                   Tag="{Binding ImageUrl}"
+                                                                   Loaded="ProductImage_Loaded">
+                                                                <Image.Style>
+                                                                    <Style TargetType="Image">
+                                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding ImageUrl}" Value="{x:Null}">
+                                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </Image.Style>
+                                                            </Image>
+                                                        </Grid>
+                                                    </Border>
 
-                                        <!-- Name -->
-                                        <TextBlock Text="{Binding Name}"
-                                                   Foreground="#F3F4F6"
-                                                   FontSize="13"
-                                                   FontWeight="SemiBold"
-                                                   TextWrapping="Wrap"
-                                                   MaxHeight="38"
-                                                   Margin="10,10,10,6"
-                                                   TextTrimming="CharacterEllipsis"/>
+                                                    <!-- Name -->
+                                                    <TextBlock Text="{Binding Name}"
+                                                               Foreground="#F3F4F6"
+                                                               FontSize="13"
+                                                               FontWeight="SemiBold"
+                                                               TextWrapping="Wrap"
+                                                               MaxHeight="38"
+                                                               Margin="10,10,10,6"
+                                                               TextTrimming="CharacterEllipsis"/>
 
-                                        <!-- Price + Add button row -->
-                                        <Grid Margin="10,0,10,0">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
+                                                    <!-- Price + "+" badge row -->
+                                                    <Grid Margin="10,0,10,0">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
 
-                                            <!-- Price -->
-                                            <TextBlock Text="{Binding Price, StringFormat=₱{0:N2}}"
-                                                       Foreground="#10B981"
-                                                       FontSize="14"
-                                                       FontWeight="Bold"
-                                                       VerticalAlignment="Center"/>
+                                                        <TextBlock Text="{Binding Price, StringFormat=₱{0:N2}}"
+                                                                   Foreground="#10B981"
+                                                                   FontSize="14"
+                                                                   FontWeight="Bold"
+                                                                   VerticalAlignment="Center"/>
 
-                                            <!-- Circular + button -->
-                                            <Button Grid.Column="1"
-                                                    Content="+"
-                                                    Click="AddProduct_Click"
-                                                    Width="32" Height="32"
-                                                    Cursor="Hand"
-                                                    FontSize="18"
-                                                    FontWeight="Bold"
-                                                    Foreground="#000000">
-                                                <Button.Template>
-                                                    <ControlTemplate TargetType="Button">
-                                                        <Border x:Name="Bg"
+                                                        <!-- "+" badge (visual only, click handled by card) -->
+                                                        <Border Grid.Column="1"
+                                                                x:Name="PlusBadge"
                                                                 Width="32" Height="32"
                                                                 CornerRadius="16"
                                                                 Background="#10B981">
-                                                            <ContentPresenter HorizontalAlignment="Center"
-                                                                              VerticalAlignment="Center"/>
+                                                            <TextBlock Text="+"
+                                                                       FontSize="18"
+                                                                       FontWeight="Bold"
+                                                                       Foreground="#000000"
+                                                                       HorizontalAlignment="Center"
+                                                                       VerticalAlignment="Center"/>
                                                         </Border>
-                                                        <ControlTemplate.Triggers>
-                                                            <Trigger Property="IsMouseOver" Value="True">
-                                                                <Setter TargetName="Bg" Property="Background" Value="#128854"/>
-                                                            </Trigger>
-                                                            <Trigger Property="IsPressed" Value="True">
-                                                                <Setter TargetName="Bg" Property="Opacity" Value="0.8"/>
-                                                            </Trigger>
-                                                        </ControlTemplate.Triggers>
-                                                    </ControlTemplate>
-                                                </Button.Template>
-                                            </Button>
-                                        </Grid>
-                                    </StackPanel>
-                                </Border>
+                                                    </Grid>
+                                                </StackPanel>
+                                            </Border>
+
+                                            <!-- Hover / press visual triggers -->
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="CardBorder" Property="BorderBrush" Value="#10B981"/>
+                                                    <Setter TargetName="CardBorder" Property="Background" Value="#0D1220"/>
+                                                    <Setter TargetName="PlusBadge"  Property="Background" Value="#128854"/>
+                                                </Trigger>
+                                                <Trigger Property="IsPressed" Value="True">
+                                                    <Setter TargetName="CardBorder" Property="Background" Value="#0A1A18"/>
+                                                    <Setter TargetName="CardBorder" Property="BorderBrush" Value="#128854"/>
+                                                    <Setter TargetName="PlusBadge"  Property="Background" Value="#0D6B43"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                </Button>
                             </DataTemplate>
                         </ListView.ItemTemplate>
                     </ListView>
@@ -251,9 +342,6 @@
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="12"/>
-                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
                         <TextBlock Text="Current Order"
@@ -261,8 +349,9 @@
                                    Foreground="#F3F4F6"
                                    VerticalAlignment="Center"/>
 
-                        <!-- Payment -->
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <!-- Payment (hidden in POS) -->
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center"
+                                    Visibility="Collapsed">
                             <TextBlock Text="Payment:"
                                        Foreground="#6B7280" FontSize="12"
                                        VerticalAlignment="Center" Margin="0,0,6,0"/>
@@ -271,8 +360,9 @@
                                       SelectedItem="{Binding EditingPaymentStatus, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                         </StackPanel>
 
-                        <!-- Status -->
-                        <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+                        <!-- Status (hidden in POS) -->
+                        <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center"
+                                    Visibility="Collapsed">
                             <TextBlock Text="Status:"
                                        Foreground="#6B7280" FontSize="12"
                                        VerticalAlignment="Center" Margin="0,0,6,0"/>
@@ -530,5 +620,17 @@
                 </Border>
             </Grid>
         </Grid>
+
+        <!-- ── Dialog Overlay (spans full POS content area) ─────────────────── -->
+        <Border Grid.Row="1"
+                Background="#B2000000"
+                x:Name="DialogOverlay"
+                Visibility="Collapsed"
+                Padding="24">
+            <ContentPresenter x:Name="DialogHost"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"/>
+        </Border>
+
     </Grid>
 </UserControl>

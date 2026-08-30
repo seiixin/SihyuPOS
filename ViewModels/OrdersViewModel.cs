@@ -78,7 +78,7 @@ namespace SihyuPOSPayroll.ViewModels
             }
         }
 
-        private OrderStatus _editingOrderStatus = OrderStatus.Pending;
+        private OrderStatus _editingOrderStatus = OrderStatus.Completed;
         public OrderStatus EditingOrderStatus
         {
             get => _editingOrderStatus;
@@ -166,13 +166,13 @@ namespace SihyuPOSPayroll.ViewModels
             {
                 CreatedAt = DateTime.Now,
                 PaymentStatus = PaymentStatus.Paid,
-                OrderStatus = OrderStatus.Pending,
+                OrderStatus = OrderStatus.Completed,
                 TableNumber = null
             };
 
             // Sync proxy properties so ComboBoxes update
             _editingPaymentStatus = PaymentStatus.Paid;
-            _editingOrderStatus   = OrderStatus.Pending;
+            _editingOrderStatus   = OrderStatus.Completed;
             OnPropertyChanged(nameof(EditingPaymentStatus));
             OnPropertyChanged(nameof(EditingOrderStatus));
 
