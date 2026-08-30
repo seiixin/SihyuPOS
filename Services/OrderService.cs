@@ -1,5 +1,7 @@
+#nullable enable
+using Microsoft.Data.Sqlite;
+using SihyuPOSPayroll.Data;
 using SihyuPOSPayroll.Models;
-using MySql.Data.MySqlClient;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,122 +10,89 @@ namespace SihyuPOSPayroll.Services
 {
     public class OrderService
     {
-        private readonly string _connectionString =
-            "server=localhost;user=root;password=;database=sihyu_pos;";
+        // ── Table picker model ────────────────────────────────────────────────
 
-        // ---------------- Table dropdown model ----------------
         public sealed class TableOption
         {
-            public string TableNumber { get; set; } = string.Empty;   // "T01"
-            public string Status { get; set; } = "Available";          // "Available" | "Occupied"
-            public bool Selectable => Status == "Available";           // disable occupied in UI
+            public string TableNumber { get; set; } = string.Empty;
+            public string Status      { get; set; } = "Available";
+            public bool   Selectable  => Status == "Available";
         }
 
-        // For the status check
-        private static readonly string[] _openStatuses = new[] { "Pending", "Preparing", "Served" };
+        private static readonly string[] _openStatuses = { "Pending", "Preparing", "Served" };
 
-        // ---------------- TABLES for the picker ----------------
+        // ── Table picker ──────────────────────────────────────────────────────
+
         /// <summary>
-        /// Returns all cafe tables with derived status. If currentOrderId is provided,
-        /// occupancy by that order is ignored so its current table won�t appear �blocked�.
+        /// Returns all café tables with derived occupancy status.
+        /// If <paramref name="currentOrderId"/> is supplied, that order's table
+        /// is not counted as occupied (prevents blocking the current order's table).
         /// </summary>
         public List<TableOption> GetTablesForPicker(int? currentOrderId = null)
         {
             var result = new List<TableOption>();
-
-            using var conn = new MySqlConnection(_connectionString);
-            conn.Open();
-
-            var sql = $@"
-                SELECT
-                    t.table_number AS TableNumber,
-                    CASE WHEN EXISTS (
-                        SELECT 1 FROM orders o
-                        WHERE o.table_number = t.table_number
-                          AND o.payment_status = 'Unpaid'
-                          AND o.order_status IN ('{string.Join("','", _openStatuses)}')
-                          AND (@ignoreId IS NULL OR o.id <> @ignoreId)
-                    )
-                    THEN 'Occupied' ELSE 'Available' END AS Status
-                FROM cafe_tables t
-                ORDER BY t.table_number;";
-
-            using var cmd = new MySqlCommand(sql, conn);
-            cmd.Parameters.AddWithValue("@ignoreId", (object?)currentOrderId ?? DBNull.Value);
-
-            using var r = cmd.ExecuteReader();
-            while (r.Read())
+            try
             {
-                result.Add(new TableOption
-                {
-                    TableNumber = r.GetString("TableNumber"),
-                    Status = r.GetString("Status")
-                });
-            }
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
 
+                // SQLite does not support string interpolation of IN lists;
+                // build a literal for the status values (safe — they are code constants).
+                var inList = string.Join("','", _openStatuses);
+                cmd.CommandText = $@"
+                    SELECT
+                        t.table_number AS TableNumber,
+                        CASE WHEN EXISTS (
+                            SELECT 1 FROM orders o
+                            WHERE  o.table_number  = t.table_number
+                              AND  o.payment_status = 'Unpaid'
+                              AND  o.order_status  IN ('{inList}')
+                              AND  (@ignoreId IS NULL OR o.id != @ignoreId)
+                        ) THEN 'Occupied' ELSE 'Available' END AS Status
+                    FROM   cafe_tables t
+                    ORDER  BY t.table_number;";
+
+                cmd.Parameters.AddWithValue("@ignoreId",
+                    currentOrderId.HasValue ? (object)currentOrderId.Value : DBNull.Value);
+
+                using var r = cmd.ExecuteReader();
+                while (r.Read())
+                    result.Add(new TableOption
+                    {
+                        TableNumber = r.GetString(r.GetOrdinal("TableNumber")),
+                        Status      = r.GetString(r.GetOrdinal("Status")),
+                    });
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"[OrderService] GetTablesForPicker: {ex.Message}");
+            }
             return result;
         }
 
-        // ---------------- READ (Orders + Items) ----------------
+        // ── READ ──────────────────────────────────────────────────────────────
+
         public List<OrderModel> GetAllOrders()
         {
             var orders = new List<OrderModel>();
-
-            using (var connection = new MySqlConnection(_connectionString))
+            try
             {
-                connection.Open();
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = @"
+                    SELECT id, customer_id, table_number, total_amount,
+                           payment_status, order_status, cash_register_id,
+                           ordered_by_user_id, created_at
+                    FROM   orders
+                    ORDER  BY created_at DESC;";
 
-                const string query = @"
-                    SELECT 
-                        o.id,
-                        o.customer_id,
-                        o.table_number,
-                        o.total_amount,
-                        o.payment_status,
-                        o.created_at,
-                        o.cash_register_id,
-                        o.order_status,
-                        o.ordered_by_user_id
-                    FROM orders o
-                    ORDER BY o.created_at DESC";
-
-                using (var cmd = new MySqlCommand(query, connection))
-                using (var reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        string? paymentStatusStr = reader.IsDBNull(reader.GetOrdinal("payment_status"))
-                            ? null : reader.GetString("payment_status");
-
-                        string? orderStatusStr = reader.IsDBNull(reader.GetOrdinal("order_status"))
-                            ? null : reader.GetString("order_status");
-
-                        decimal total = reader.IsDBNull(reader.GetOrdinal("total_amount"))
-                            ? 0m : reader.GetDecimal("total_amount");
-
-                        var model = new OrderModel
-                        {
-                            Id = reader.GetInt32("id"),
-                            CustomerId = reader.IsDBNull(reader.GetOrdinal("customer_id"))
-                                ? null : reader.GetInt32("customer_id"),
-                            TableNumber = reader.IsDBNull(reader.GetOrdinal("table_number"))
-                                ? null : reader.GetString("table_number"),
-                            TotalAmount = total,
-                            PaymentStatus = Enum.TryParse(paymentStatusStr ?? "", true, out PaymentStatus ps)
-                                ? ps : PaymentStatus.Unpaid,
-                            CreatedAt = reader.GetDateTime("created_at"),
-                            CashRegisterId = reader.IsDBNull(reader.GetOrdinal("cash_register_id"))
-                                ? null : reader.GetInt32("cash_register_id"),
-                            OrderStatus = Enum.TryParse(orderStatusStr ?? "", true, out OrderStatus os)
-                                ? os : OrderStatus.Pending,
-                            OrderedByUserId = reader.IsDBNull(reader.GetOrdinal("ordered_by_user_id"))
-                                ? null : reader.GetInt32("ordered_by_user_id"),
-                            Items = new List<OrderItemModel>()
-                        };
-
-                        orders.Add(model);
-                    }
-                }
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
+                    orders.Add(MapOrder(reader));
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"[OrderService] GetAllOrders: {ex.Message}");
             }
 
             foreach (var order in orders)
@@ -135,196 +104,145 @@ namespace SihyuPOSPayroll.Services
         public List<OrderItemModel> GetOrderItems(int orderId)
         {
             var items = new List<OrderItemModel>();
-
-            using var connection = new MySqlConnection(_connectionString);
-            connection.Open();
-
-            const string query = @"
-                SELECT 
-                    oi.id,
-                    oi.order_id,
-                    oi.product_id,
-                    oi.quantity,
-                    oi.unit_price,
-                    m.name AS product_name,
-                    m.category
-                FROM order_items oi
-                INNER JOIN menu m ON oi.product_id = m.id
-                WHERE oi.order_id = @orderId";
-
-            using var cmd = new MySqlCommand(query, connection);
-            cmd.Parameters.AddWithValue("@orderId", orderId);
-
-            using var reader = cmd.ExecuteReader();
-            while (reader.Read())
+            try
             {
-                items.Add(new OrderItemModel
-                {
-                    Id = reader.GetInt32("id"),
-                    OrderId = reader.GetInt32("order_id"),
-                    ProductId = reader.GetInt32("product_id"),
-                    Quantity = reader.GetInt32("quantity"),
-                    UnitPrice = reader.IsDBNull(reader.GetOrdinal("unit_price"))
-                        ? 0m : reader.GetDecimal("unit_price"),
-                    ProductName = reader.IsDBNull(reader.GetOrdinal("product_name"))
-                        ? null : reader.GetString("product_name"),
-                    Category = reader.IsDBNull(reader.GetOrdinal("category"))
-                        ? null : reader.GetString("category")
-                });
-            }
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = @"
+                    SELECT
+                        oi.id, oi.order_id, oi.product_id,
+                        oi.quantity, oi.unit_price,
+                        m.Name AS product_name,
+                        m.Category AS category
+                    FROM   order_items oi
+                    LEFT JOIN menu m ON m.Id = oi.product_id
+                    WHERE  oi.order_id = @orderId;";
+                cmd.Parameters.AddWithValue("@orderId", orderId);
 
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
+                    items.Add(MapOrderItem(reader));
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"[OrderService] GetOrderItems: {ex.Message}");
+            }
             return items;
         }
 
-        // ---------------- CREATE ----------------
+        // ── CREATE ────────────────────────────────────────────────────────────
+
         public int AddOrder(OrderModel order)
         {
-            if (order.Items != null && order.Items.Count > 0)
+            if (order.Items?.Count > 0)
                 order.TotalAmount = order.Items.Sum(x => x.UnitPrice * x.Quantity);
 
             if (order.CreatedAt == default)
                 order.CreatedAt = DateTime.Now;
 
-            using var connection = new MySqlConnection(_connectionString);
-            connection.Open();
-
-            using var transaction = connection.BeginTransaction();
+            using var conn = SqliteConnectionFactory.CreateOpenConnection();
+            using var tx   = conn.BeginTransaction();
             try
             {
-                // Guard: table must be selected and available
-                EnsureTableAvailable(connection, transaction, order.TableNumber, ignoreOrderId: null);
-
-                const string insertOrder = @"
-                    INSERT INTO orders 
-                        (customer_id, table_number, total_amount, payment_status, created_at, cash_register_id, order_status, ordered_by_user_id)
-                    VALUES
-                        (@customerId, @tableNumber, @totalAmount, @paymentStatus, @createdAt, @cashRegisterId, @orderStatus, @orderedByUserId);
-                    SELECT LAST_INSERT_ID();";
+                EnsureTableAvailable(conn, tx, order.TableNumber, ignoreOrderId: null);
 
                 int newOrderId;
-                using (var cmd = new MySqlCommand(insertOrder, connection, transaction))
+                using (var cmd = conn.CreateCommand())
                 {
-                    cmd.Parameters.AddWithValue("@customerId", (object?)order.CustomerId ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@tableNumber", (object?)order.TableNumber ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@totalAmount", order.TotalAmount);
-                    cmd.Parameters.AddWithValue("@paymentStatus", order.PaymentStatus.ToString());
-                    cmd.Parameters.AddWithValue("@createdAt", order.CreatedAt);
-                    cmd.Parameters.AddWithValue("@cashRegisterId", (object?)order.CashRegisterId ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@orderStatus", order.OrderStatus.ToString());
-                    cmd.Parameters.AddWithValue("@orderedByUserId", (object?)order.OrderedByUserId ?? DBNull.Value);
+                    cmd.Transaction = tx;
+                    cmd.CommandText = @"
+                        INSERT INTO orders
+                            (customer_id, table_number, total_amount, payment_status,
+                             order_status, cash_register_id, ordered_by_user_id, created_at)
+                        VALUES
+                            (@customerId, @tableNumber, @totalAmount, @paymentStatus,
+                             @orderStatus, @cashRegisterId, @orderedByUserId, @createdAt);
+                        SELECT last_insert_rowid();";
 
+                    BindOrderParams(cmd, order);
                     newOrderId = Convert.ToInt32(cmd.ExecuteScalar());
                 }
 
                 if (order.Items != null)
                     foreach (var item in order.Items)
-                        AddOrderItem(connection, transaction, newOrderId, item);
+                        InsertOrderItem(conn, tx, newOrderId, item);
 
-                // If the order starts as Paid, ensure a receipt exists
                 if (order.PaymentStatus == PaymentStatus.Paid)
-                {
-                    EnsureReceiptExists(connection, transaction, newOrderId, order.TotalAmount);
-                }
+                    EnsureReceiptExists(conn, tx, newOrderId, order.TotalAmount);
 
-                transaction.Commit();
+                tx.Commit();
                 return newOrderId;
             }
             catch
             {
-                transaction.Rollback();
+                tx.Rollback();
                 throw;
             }
         }
 
-        private void AddOrderItem(MySqlConnection connection, MySqlTransaction tx, int orderId, OrderItemModel item)
-        {
-            const string insertItem = @"
-                INSERT INTO order_items (order_id, product_id, quantity, unit_price)
-                VALUES (@orderId, @productId, @quantity, @unitPrice)";
+        // ── UPDATE ────────────────────────────────────────────────────────────
 
-            using var cmd = new MySqlCommand(insertItem, connection, tx);
-            cmd.Parameters.AddWithValue("@orderId", orderId);
-            cmd.Parameters.AddWithValue("@productId", item.ProductId);
-            cmd.Parameters.AddWithValue("@quantity", item.Quantity);
-            cmd.Parameters.AddWithValue("@unitPrice", item.UnitPrice);
-            cmd.ExecuteNonQuery();
-        }
-
-        // ---------------- UPDATE ----------------
         public void UpdateOrder(OrderModel order)
         {
-            if (order.Items != null && order.Items.Count > 0)
+            if (order.Items?.Count > 0)
                 order.TotalAmount = order.Items.Sum(x => x.UnitPrice * x.Quantity);
 
-            using var connection = new MySqlConnection(_connectionString);
-            connection.Open();
-            using var tx = connection.BeginTransaction();
+            using var conn = SqliteConnectionFactory.CreateOpenConnection();
+            using var tx   = conn.BeginTransaction();
             try
             {
-                // Fetch previous payment status to detect transition (Paid/Unpaid)
-                string prevPaymentStatus = "Unpaid";
-                using (var getPrev = new MySqlCommand(
-                    "SELECT payment_status FROM orders WHERE id=@id LIMIT 1;", connection, tx))
+                // Capture previous payment status before overwriting
+                string prevPayment = "Unpaid";
+                using (var getPrev = conn.CreateCommand())
                 {
+                    getPrev.Transaction  = tx;
+                    getPrev.CommandText  = "SELECT payment_status FROM orders WHERE id=@id LIMIT 1;";
                     getPrev.Parameters.AddWithValue("@id", order.Id);
                     var obj = getPrev.ExecuteScalar();
                     if (obj != null && obj != DBNull.Value)
-                        prevPaymentStatus = Convert.ToString(obj) ?? "Unpaid";
+                        prevPayment = obj.ToString() ?? "Unpaid";
                 }
 
-                // Guard: table must be available; ignore current order�s own lock
-                EnsureTableAvailable(connection, tx, order.TableNumber, ignoreOrderId: order.Id);
+                EnsureTableAvailable(conn, tx, order.TableNumber, ignoreOrderId: order.Id);
 
-                const string updateOrder = @"
-                    UPDATE orders SET
-                        customer_id=@customerId,
-                        table_number=@tableNumber,
-                        total_amount=@totalAmount,
-                        payment_status=@paymentStatus,
-                        cash_register_id=@cashRegisterId,
-                        order_status=@orderStatus,
-                        ordered_by_user_id=@orderedByUserId
-                    WHERE id=@id";
-
-                using (var cmd = new MySqlCommand(updateOrder, connection, tx))
+                using (var cmd = conn.CreateCommand())
                 {
+                    cmd.Transaction = tx;
+                    cmd.CommandText = @"
+                        UPDATE orders SET
+                            customer_id        = @customerId,
+                            table_number       = @tableNumber,
+                            total_amount       = @totalAmount,
+                            payment_status     = @paymentStatus,
+                            order_status       = @orderStatus,
+                            cash_register_id   = @cashRegisterId,
+                            ordered_by_user_id = @orderedByUserId
+                        WHERE id = @id;";
+
+                    BindOrderParams(cmd, order);
                     cmd.Parameters.AddWithValue("@id", order.Id);
-                    cmd.Parameters.AddWithValue("@customerId", (object?)order.CustomerId ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@tableNumber", (object?)order.TableNumber ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@totalAmount", order.TotalAmount);
-                    cmd.Parameters.AddWithValue("@paymentStatus", order.PaymentStatus.ToString());
-                    cmd.Parameters.AddWithValue("@cashRegisterId", (object?)order.CashRegisterId ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@orderStatus", order.OrderStatus.ToString());
-                    cmd.Parameters.AddWithValue("@orderedByUserId", (object?)order.OrderedByUserId ?? DBNull.Value);
                     cmd.ExecuteNonQuery();
                 }
 
-                // Replace all items (simple approach)
-                using (var cmdDel = new MySqlCommand("DELETE FROM order_items WHERE order_id=@id", connection, tx))
+                // Replace items
+                using (var del = conn.CreateCommand())
                 {
-                    cmdDel.Parameters.AddWithValue("@id", order.Id);
-                    cmdDel.ExecuteNonQuery();
+                    del.Transaction = tx;
+                    del.CommandText = "DELETE FROM order_items WHERE order_id=@id;";
+                    del.Parameters.AddWithValue("@id", order.Id);
+                    del.ExecuteNonQuery();
                 }
 
                 if (order.Items != null)
                     foreach (var item in order.Items)
-                        AddOrderItem(connection, tx, order.Id, item);
+                        InsertOrderItem(conn, tx, order.Id, item);
 
-                // ===== Receipt handling (atomic with the update) =====
-                bool wasPaid = prevPaymentStatus.Equals("Paid", StringComparison.OrdinalIgnoreCase);
+                // Receipt sync
+                bool wasPaid = prevPayment.Equals("Paid", StringComparison.OrdinalIgnoreCase);
                 bool nowPaid = order.PaymentStatus == PaymentStatus.Paid;
 
                 if (!wasPaid && nowPaid)
-                {
-                    // Transitioned to Paid ? ensure receipt exists
-                    EnsureReceiptExists(connection, tx, order.Id, order.TotalAmount);
-                }
-                else if (wasPaid && !nowPaid)
-                {
-                    // Transitioned to Unpaid ? decide policy
-                    // Uncomment to remove the receipt when reverting to Unpaid:
-                    // RemoveReceiptIfAny(connection, tx, order.Id);
-                }
+                    EnsureReceiptExists(conn, tx, order.Id, order.TotalAmount);
 
                 tx.Commit();
             }
@@ -335,32 +253,20 @@ namespace SihyuPOSPayroll.Services
             }
         }
 
-        // ---------------- DELETE ----------------
+        // ── DELETE ────────────────────────────────────────────────────────────
+
         public void DeleteOrder(int orderId)
         {
-            using var connection = new MySqlConnection(_connectionString);
-            connection.Open();
-            using var tx = connection.BeginTransaction();
+            using var conn = SqliteConnectionFactory.CreateOpenConnection();
+            using var tx   = conn.BeginTransaction();
             try
             {
-                using (var cmd = new MySqlCommand("DELETE FROM order_items WHERE order_id=@id", connection, tx))
-                {
-                    cmd.Parameters.AddWithValue("@id", orderId);
-                    cmd.ExecuteNonQuery();
-                }
-
-                using (var cmd = new MySqlCommand("DELETE FROM orders WHERE id=@id", connection, tx))
-                {
-                    cmd.Parameters.AddWithValue("@id", orderId);
-                    cmd.ExecuteNonQuery();
-                }
-
-                // Optional: also remove receipts for that order if desired
-                // using (var cmd = new MySqlCommand("DELETE FROM receipts WHERE order_id=@id", connection, tx))
-                // {
-                //     cmd.Parameters.AddWithValue("@id", orderId);
-                //     cmd.ExecuteNonQuery();
-                // }
+                // order_items and receipts cascade via FK ON DELETE CASCADE
+                using var cmd = conn.CreateCommand();
+                cmd.Transaction = tx;
+                cmd.CommandText = "DELETE FROM orders WHERE id=@id;";
+                cmd.Parameters.AddWithValue("@id", orderId);
+                cmd.ExecuteNonQuery();
 
                 tx.Commit();
             }
@@ -371,137 +277,166 @@ namespace SihyuPOSPayroll.Services
             }
         }
 
-        // ---------------- MENU PRODUCTS (for dropdown) ----------------
+        // ── MENU PRODUCTS (for POS dropdown) ─────────────────────────────────
+
         /// <summary>
-        /// Returns products available in the POS.
-        /// - RestaurantMode: reads from the <c>menu</c> table (managed via Menu page).
-        /// - StoreMode: reads from <c>inventory_items</c> so anything added to
-        ///   Inventory is immediately available in the POS without a separate Menu entry.
+        /// StoreMode  → reads from <c>inventory_items</c> (barcode + price included).
+        /// Restaurant → reads from <c>menu</c>.
         /// </summary>
         public List<MenuModel> GetAllMenu()
         {
             var products = new List<MenuModel>();
-
-            using var connection = new MySqlConnection(_connectionString);
-            connection.Open();
-
-            bool isStoreMode = SettingsService.Instance.CurrentMode == SihyuPOSPayroll.Models.SystemMode.StoreMode;
-
-            if (isStoreMode)
+            try
             {
-                // StoreMode: use inventory_items as the product catalogue
-                const string sql = @"
-                    SELECT Id          AS id,
-                           Barcode     AS barcode,
-                           ProductName AS name,
-                           CategoryName AS category,
-                           Price       AS price,
-                           ImagePath   AS image_url
-                    FROM inventory_items
-                    ORDER BY ProductName;";
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
 
-                using var cmd = new MySqlCommand(sql, connection);
+                bool isStoreMode = SettingsService.Instance.CurrentMode == SystemMode.StoreMode;
+
+                if (isStoreMode)
+                {
+                    cmd.CommandText = @"
+                        SELECT Id          AS id,
+                               Barcode     AS barcode,
+                               ProductName AS name,
+                               CategoryName AS category,
+                               Price       AS price,
+                               ImagePath   AS image_url
+                        FROM   inventory_items
+                        ORDER  BY ProductName;";
+                }
+                else
+                {
+                    cmd.CommandText = @"
+                        SELECT Id, NULL AS barcode, Name AS name,
+                               Category AS category, Price AS price,
+                               image_url
+                        FROM   menu
+                        ORDER  BY Name;";
+                }
+
                 using var reader = cmd.ExecuteReader();
                 while (reader.Read())
                 {
                     products.Add(new MenuModel
                     {
-                        Id       = reader.GetInt32("id"),
-                        Barcode  = reader.IsDBNull(reader.GetOrdinal("barcode"))   ? null : reader.GetString("barcode"),
-                        Name     = reader.IsDBNull(reader.GetOrdinal("name"))      ? string.Empty : reader.GetString("name"),
-                        Category = reader.IsDBNull(reader.GetOrdinal("category"))  ? string.Empty : reader.GetString("category"),
-                        Price    = reader.IsDBNull(reader.GetOrdinal("price"))     ? 0m : reader.GetDecimal("price"),
-                        ImageUrl = reader.IsDBNull(reader.GetOrdinal("image_url")) ? null : reader.GetString("image_url"),
+                        Id       = reader.GetInt32(reader.GetOrdinal("id")),
+                        Barcode  = reader.IsDBNull(reader.GetOrdinal("barcode"))   ? null : reader.GetString(reader.GetOrdinal("barcode")),
+                        Name     = reader.IsDBNull(reader.GetOrdinal("name"))      ? string.Empty : reader.GetString(reader.GetOrdinal("name")),
+                        Category = reader.IsDBNull(reader.GetOrdinal("category"))  ? string.Empty : reader.GetString(reader.GetOrdinal("category")),
+                        Price    = reader.IsDBNull(reader.GetOrdinal("price"))     ? 0m : Convert.ToDecimal(reader.GetValue(reader.GetOrdinal("price"))),
+                        ImageUrl = reader.IsDBNull(reader.GetOrdinal("image_url")) ? null : reader.GetString(reader.GetOrdinal("image_url")),
                     });
                 }
             }
-            else
+            catch (Exception ex)
             {
-                // RestaurantMode: use the dedicated menu table
-                const string sql = "SELECT id, NULL AS barcode, name, category, price, image_url FROM menu ORDER BY name";
-
-                using var cmd = new MySqlCommand(sql, connection);
-                using var reader = cmd.ExecuteReader();
-                while (reader.Read())
-                {
-                    products.Add(new MenuModel
-                    {
-                        Id       = reader.GetInt32("id"),
-                        Barcode  = null,
-                        Name     = reader.IsDBNull(reader.GetOrdinal("name"))      ? string.Empty : reader.GetString("name"),
-                        Category = reader.IsDBNull(reader.GetOrdinal("category"))  ? string.Empty : reader.GetString("category"),
-                        Price    = reader.IsDBNull(reader.GetOrdinal("price"))     ? (decimal?)null : reader.GetDecimal("price"),
-                        ImageUrl = reader.IsDBNull(reader.GetOrdinal("image_url")) ? null : reader.GetString("image_url"),
-                    });
-                }
+                Console.Error.WriteLine($"[OrderService] GetAllMenu: {ex.Message}");
             }
-
             return products;
         }
 
-        // ---------------- Availability helpers ----------------
-        /// <summary>
-        /// Validates table availability. Table is OPTIONAL in two scenarios:
-        ///   1. StoreMode — no tables concept at all.
-        ///   2. RestaurantMode TakeOut — customer takes food away, no table needed.
-        /// If tableNumber is supplied, it must not be occupied by another open order.
-        /// </summary>
-        private void EnsureTableAvailable(MySqlConnection conn, MySqlTransaction? tx, string? tableNumber, int? ignoreOrderId)
-        {
-            // Table is optional — skip the null guard entirely.
-            // Only validate occupancy when a table number was actually provided.
-            if (string.IsNullOrWhiteSpace(tableNumber))
-                return;
+        // ── Private helpers ───────────────────────────────────────────────────
 
+        private static OrderModel MapOrder(SqliteDataReader r)
+        {
+            var payStr = r.IsDBNull(r.GetOrdinal("payment_status")) ? null : r.GetString(r.GetOrdinal("payment_status"));
+            var ordStr = r.IsDBNull(r.GetOrdinal("order_status"))   ? null : r.GetString(r.GetOrdinal("order_status"));
+            var createdRaw = r.IsDBNull(r.GetOrdinal("created_at"))
+                ? DateTime.Now
+                : DateTime.TryParse(r.GetString(r.GetOrdinal("created_at")), out var d) ? d : DateTime.Now;
+
+            return new OrderModel
+            {
+                Id              = r.GetInt32(r.GetOrdinal("id")),
+                CustomerId      = r.IsDBNull(r.GetOrdinal("customer_id"))         ? null : r.GetInt32(r.GetOrdinal("customer_id")),
+                TableNumber     = r.IsDBNull(r.GetOrdinal("table_number"))        ? null : r.GetString(r.GetOrdinal("table_number")),
+                TotalAmount     = r.IsDBNull(r.GetOrdinal("total_amount"))        ? 0m   : Convert.ToDecimal(r.GetValue(r.GetOrdinal("total_amount"))),
+                PaymentStatus   = Enum.TryParse(payStr ?? "", true, out PaymentStatus ps) ? ps : PaymentStatus.Unpaid,
+                OrderStatus     = Enum.TryParse(ordStr ?? "", true, out OrderStatus os)   ? os : OrderStatus.Pending,
+                CashRegisterId  = r.IsDBNull(r.GetOrdinal("cash_register_id"))    ? null : r.GetInt32(r.GetOrdinal("cash_register_id")),
+                OrderedByUserId = r.IsDBNull(r.GetOrdinal("ordered_by_user_id")) ? null : r.GetInt32(r.GetOrdinal("ordered_by_user_id")),
+                CreatedAt       = createdRaw,
+                Items           = new List<OrderItemModel>(),
+            };
+        }
+
+        private static OrderItemModel MapOrderItem(SqliteDataReader r) => new OrderItemModel
+        {
+            Id          = r.GetInt32(r.GetOrdinal("id")),
+            OrderId     = r.GetInt32(r.GetOrdinal("order_id")),
+            ProductId   = r.GetInt32(r.GetOrdinal("product_id")),
+            Quantity    = r.GetInt32(r.GetOrdinal("quantity")),
+            UnitPrice   = r.IsDBNull(r.GetOrdinal("unit_price"))    ? 0m  : Convert.ToDecimal(r.GetValue(r.GetOrdinal("unit_price"))),
+            ProductName = r.IsDBNull(r.GetOrdinal("product_name"))  ? null : r.GetString(r.GetOrdinal("product_name")),
+            Category    = r.IsDBNull(r.GetOrdinal("category"))      ? null : r.GetString(r.GetOrdinal("category")),
+        };
+
+        private static void BindOrderParams(SqliteCommand cmd, OrderModel order)
+        {
+            cmd.Parameters.AddWithValue("@customerId",       (object?)order.CustomerId      ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@tableNumber",      (object?)order.TableNumber     ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@totalAmount",      order.TotalAmount);
+            cmd.Parameters.AddWithValue("@paymentStatus",    order.PaymentStatus.ToString());
+            cmd.Parameters.AddWithValue("@orderStatus",      order.OrderStatus.ToString());
+            cmd.Parameters.AddWithValue("@cashRegisterId",   (object?)order.CashRegisterId  ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@orderedByUserId",  (object?)order.OrderedByUserId ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@createdAt",        order.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss"));
+        }
+
+        private static void InsertOrderItem(SqliteConnection conn, SqliteTransaction tx, int orderId, OrderItemModel item)
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.Transaction = tx;
+            cmd.CommandText = @"
+                INSERT INTO order_items (order_id, product_id, quantity, unit_price)
+                VALUES (@orderId, @productId, @quantity, @unitPrice);";
+            cmd.Parameters.AddWithValue("@orderId",   orderId);
+            cmd.Parameters.AddWithValue("@productId", item.ProductId);
+            cmd.Parameters.AddWithValue("@quantity",  item.Quantity);
+            cmd.Parameters.AddWithValue("@unitPrice", item.UnitPrice);
+            cmd.ExecuteNonQuery();
+        }
+
+        private void EnsureTableAvailable(SqliteConnection conn, SqliteTransaction tx, string? tableNumber, int? ignoreOrderId)
+        {
+            if (string.IsNullOrWhiteSpace(tableNumber)) return;
             if (IsTableOccupied(conn, tx, tableNumber!, ignoreOrderId))
                 throw new InvalidOperationException($"Table {tableNumber} is currently occupied.");
         }
 
-        private bool IsTableOccupied(MySqlConnection conn, MySqlTransaction? tx, string tableNumber, int? ignoreOrderId)
+        private bool IsTableOccupied(SqliteConnection conn, SqliteTransaction tx, string tableNumber, int? ignoreOrderId)
         {
-            var sql = $@"
-                SELECT EXISTS(
-                    SELECT 1 FROM orders o
-                    WHERE o.table_number = @tn
-                      AND o.payment_status = 'Unpaid'
-                      AND o.order_status IN ('{string.Join("','", _openStatuses)}')
-                      AND (@ignoreId IS NULL OR o.id <> @ignoreId)
-                )";
-
-            using var cmd = new MySqlCommand(sql, conn, tx);
-            cmd.Parameters.AddWithValue("@tn", tableNumber);
-            cmd.Parameters.AddWithValue("@ignoreId", (object?)ignoreOrderId ?? DBNull.Value);
-
-            var obj = cmd.ExecuteScalar();
-            return Convert.ToInt32(obj) == 1;
+            var inList = string.Join("','", _openStatuses);
+            using var cmd = conn.CreateCommand();
+            cmd.Transaction = tx;
+            cmd.CommandText = $@"
+                SELECT COUNT(*) FROM orders o
+                WHERE  o.table_number  = @tn
+                  AND  o.payment_status = 'Unpaid'
+                  AND  o.order_status  IN ('{inList}')
+                  AND  (@ignoreId IS NULL OR o.id != @ignoreId);";
+            cmd.Parameters.AddWithValue("@tn",       tableNumber);
+            cmd.Parameters.AddWithValue("@ignoreId", ignoreOrderId.HasValue ? (object)ignoreOrderId.Value : DBNull.Value);
+            return Convert.ToInt32(cmd.ExecuteScalar()) > 0;
         }
 
-        // ---------------- Receipts helpers (transactional) ----------------
-        private void EnsureReceiptExists(MySqlConnection conn, MySqlTransaction tx, int orderId, decimal amount)
+        private static void EnsureReceiptExists(SqliteConnection conn, SqliteTransaction tx, int orderId, decimal amount)
         {
-            // Check if a receipt already exists
-            using (var check = new MySqlCommand("SELECT id FROM receipts WHERE order_id=@oid LIMIT 1;", conn, tx))
-            {
-                check.Parameters.AddWithValue("@oid", orderId);
-                var existing = check.ExecuteScalar();
-                if (existing != null && existing != DBNull.Value) return;
-            }
+            using var check = conn.CreateCommand();
+            check.Transaction = tx;
+            check.CommandText = "SELECT id FROM receipts WHERE order_id=@oid LIMIT 1;";
+            check.Parameters.AddWithValue("@oid", orderId);
+            if (check.ExecuteScalar() != null) return;
 
-            // Insert a new receipt
-            using (var ins = new MySqlCommand(
-                "INSERT INTO receipts (order_id, amount_paid, issued_at) VALUES (@oid, @amt, NOW());", conn, tx))
-            {
-                ins.Parameters.AddWithValue("@oid", orderId);
-                ins.Parameters.AddWithValue("@amt", amount);
-                ins.ExecuteNonQuery();
-            }
-        }
-
-        private void RemoveReceiptIfAny(MySqlConnection conn, MySqlTransaction tx, int orderId)
-        {
-            using var del = new MySqlCommand("DELETE FROM receipts WHERE order_id=@id;", conn, tx);
-            del.Parameters.AddWithValue("@id", orderId);
-            del.ExecuteNonQuery();
+            using var ins = conn.CreateCommand();
+            ins.Transaction = tx;
+            ins.CommandText = @"
+                INSERT INTO receipts (order_id, amount_paid, issued_at)
+                VALUES (@oid, @amt, datetime('now'));";
+            ins.Parameters.AddWithValue("@oid", orderId);
+            ins.Parameters.AddWithValue("@amt", amount);
+            ins.ExecuteNonQuery();
         }
     }
 }

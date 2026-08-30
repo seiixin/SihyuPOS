@@ -88,6 +88,12 @@ namespace SihyuPOSPayroll.ViewModels
             // Subscribe to settings changes so the sidebar refreshes when an admin saves settings
             SettingsService.Instance.SettingsChanged += InitializeMenuItems;
 
+            // Seed _role from the active session before LoadEmployee runs.
+            // This ensures the fast-path (id <= 0) uses the correct role rather
+            // than falling back to "EMPLOYEE" when the admin has no employee record.
+            if (!string.IsNullOrWhiteSpace(Helpers.Session.CurrentUserRole))
+                _role = Helpers.Session.CurrentUserRole.Trim().ToUpperInvariant();
+
             _employeeId = employeeId;
             LoadEmployee(_employeeId); // pulls name/role/avatar from DB and sets menu + default view
         }
@@ -188,8 +194,10 @@ namespace SihyuPOSPayroll.ViewModels
                 ? "(Unknown)"
                 : emp!.FullName;
 
-            // Derive role from linked user account (fallback to previous or "EMPLOYEE")
-            var roleRaw = emp?.UserAccount?.Role ?? _role;
+            // Derive role: employee's linked user account → in-memory Session → previous _role → "EMPLOYEE"
+            var roleRaw = emp?.UserAccount?.Role
+                       ?? Helpers.Session.CurrentUserRole
+                       ?? _role;
             _role = (roleRaw ?? "EMPLOYEE").Trim().ToUpperInvariant();
             UserRole = _role;
 

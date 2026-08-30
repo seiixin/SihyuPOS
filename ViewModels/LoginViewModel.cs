@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
@@ -8,7 +9,6 @@ using SihyuPOSPayroll.Helpers;
 using SihyuPOSPayroll.Models;
 using SihyuPOSPayroll.Services;
 using SihyuPOSPayroll.Views.Layouts;
-using SihyuPOSPayroll.ViewModels;
 
 namespace SihyuPOSPayroll.ViewModels
 {
@@ -17,9 +17,13 @@ namespace SihyuPOSPayroll.ViewModels
         // Win32: enable dark title bar on Windows 10/11
         [DllImport("dwmapi.dll")]
         private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
+
         private string? _email;
         private string? _password;
         private string? _errorMessage;
+        private bool    _isBusy;
+
+        // ── Bound properties ──────────────────────────────────────────────────
 
         public string? Email
         {
@@ -39,98 +43,145 @@ namespace SihyuPOSPayroll.ViewModels
             set { _errorMessage = value; OnPropertyChanged(); }
         }
 
+        /// <summary>True while the login request is in flight (disables the button).</summary>
+        public bool IsBusy
+        {
+            get => _isBusy;
+            set { _isBusy = value; OnPropertyChanged(); }
+        }
+
+        // ── Commands ──────────────────────────────────────────────────────────
+
         public ICommand LoginCommand { get; }
 
-        private readonly DatabaseService _dbService;
+        // ── Services ──────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// AuthService is the single entry point for authentication.
+        /// DatabaseService is kept for the Menu/Inventory methods that have not
+        /// yet been migrated to SQLite.
+        /// </summary>
+        private readonly AuthService _authService;
+
+        // ── Constructor ───────────────────────────────────────────────────────
 
         public LoginViewModel()
         {
-            _dbService = new DatabaseService();
-            LoginCommand = new RelayCommand(Login);
+            _authService = new AuthService();
+            LoginCommand = new RelayCommand(Login, _ => !IsBusy);
         }
+
+        // ── Login logic ───────────────────────────────────────────────────────
 
         private void Login(object? parameter)
         {
             ErrorMessage = string.Empty;
 
-            var emailInput = Email?.Trim() ?? string.Empty;
-            var passwordInput = Password ?? string.Empty;
+            var emailInput    = Email?.Trim()  ?? string.Empty;
+            var passwordInput = Password       ?? string.Empty;
 
-            // Authenticate using email and password
-            var user = _dbService.AuthenticateUser(emailInput, passwordInput);
-
-            if (user != null)
+            if (string.IsNullOrWhiteSpace(emailInput) || string.IsNullOrWhiteSpace(passwordInput))
             {
-                string userRole = user.Role ?? "Employee";
-                string userName = "System User";
-
-                // Load employee details 
-                if (user.Employee != null)
-                {
-                    userName = user.Employee.FullName ?? "System User";
-                }
-
-                var mainLayout = new MainLayout
-                {
-                    DataContext = new SidebarViewModel(user)
-                };
-
-                // Load the app logo for the window icon
-                var logoUri = new Uri("pack://application:,,,/assets/SihyuPOS-Logo.jpg", UriKind.Absolute);
-                var logoImage = new System.Windows.Media.Imaging.BitmapImage(logoUri);
-
-                var window = new Window
-                {
-                    Title = "Dashboard - SihyuPOS",
-                    Content = mainLayout,
-                    Width = 1024,
-                    Height = 768,
-                    WindowStartupLocation = WindowStartupLocation.CenterScreen,
-                    WindowState = System.Windows.WindowState.Maximized,
-                    Icon = logoImage,
-                    Background = System.Windows.Media.Brushes.Black,
-                };
-
-                // Dark title bar via WindowChrome
-                var chrome = new System.Windows.Shell.WindowChrome
-                {
-                    CaptionHeight = 32,
-                    ResizeBorderThickness = new Thickness(5),
-                    UseAeroCaptionButtons = true,
-                    GlassFrameThickness = new Thickness(0),
-                    NonClientFrameEdges = System.Windows.Shell.NonClientFrameEdges.None,
-                };
-                System.Windows.Shell.WindowChrome.SetWindowChrome(window, chrome);
-
-                // Apply dark title bar via Win32 DwmSetWindowAttribute (DWMWA_USE_IMMERSIVE_DARK_MODE)
-                window.SourceInitialized += (_, __) =>
-                {
-                    var hwnd = new System.Windows.Interop.WindowInteropHelper(window).Handle;
-                    int darkMode = 1;
-                    DwmSetWindowAttribute(hwnd, 20, ref darkMode, sizeof(int)); // DWMWA_USE_IMMERSIVE_DARK_MODE
-                };
-
-                window.Show();
-
-                if (parameter is Window loginWindow)
-                {
-                    loginWindow.Close();
-                }
-
-                Console.WriteLine($"Login success: Email = {emailInput}, Role = {userRole}, Name = {userName}");
+                ErrorMessage = "Please enter your email and password.";
+                return;
             }
-            else
+
+            IsBusy = true;
+
+            try
             {
-                ErrorMessage = "Invalid email or password.";
-                Console.WriteLine("Login failed.");
+                // If a previous session is still in memory (e.g. the user hit Back
+                // from a future logout screen), invalidate it before creating a new one.
+                if (Session.IsLoggedIn)
+                    _authService.Logout();
+
+                // AuthService.Login:
+                //   1. Verifies email + BCrypt password against SQLite users table.
+                //   2. Writes a row to login_sessions.
+                //   3. Populates Session.CurrentUser / CurrentUserId / CurrentUserRole / ActiveToken.
+                var user = _authService.Login(emailInput, passwordInput);
+
+                if (user != null)
+                {
+                    OpenDashboard(user, parameter);
+                }
+                else
+                {
+                    ErrorMessage = "Invalid email or password.";
+                }
+            }
+            finally
+            {
+                IsBusy = false;
             }
         }
+
+        private void OpenDashboard(UserModel user, object? loginWindowParam)
+        {
+            var mainLayout = new MainLayout
+            {
+                DataContext = new SidebarViewModel(user)
+            };
+
+            // Load the app logo for the window icon
+            var logoUri   = new Uri("pack://application:,,,/assets/SihyuPOS-Logo.jpg", UriKind.Absolute);
+            var logoImage = new System.Windows.Media.Imaging.BitmapImage(logoUri);
+
+            var window = new Window
+            {
+                Title                  = $"Dashboard - SihyuPOS  [{user.Role}]",
+                Content                = mainLayout,
+                Width                  = 1024,
+                Height                 = 768,
+                WindowStartupLocation  = WindowStartupLocation.CenterScreen,
+                WindowState            = WindowState.Maximized,
+                Icon                   = logoImage,
+                Background             = System.Windows.Media.Brushes.Black,
+            };
+
+            // Dark title bar via WindowChrome
+            var chrome = new System.Windows.Shell.WindowChrome
+            {
+                CaptionHeight          = 32,
+                ResizeBorderThickness  = new Thickness(5),
+                UseAeroCaptionButtons  = true,
+                GlassFrameThickness    = new Thickness(0),
+                NonClientFrameEdges    = System.Windows.Shell.NonClientFrameEdges.None,
+            };
+            System.Windows.Shell.WindowChrome.SetWindowChrome(window, chrome);
+
+            // Apply dark title bar via Win32 DwmSetWindowAttribute (DWMWA_USE_IMMERSIVE_DARK_MODE = 20)
+            window.SourceInitialized += (_, __) =>
+            {
+                var hwnd     = new System.Windows.Interop.WindowInteropHelper(window).Handle;
+                int darkMode = 1;
+                DwmSetWindowAttribute(hwnd, 20, ref darkMode, sizeof(int));
+            };
+
+            // Stamp the session as logged-out if the user simply closes the dashboard window
+            // (covers the case where logout is not triggered through the sidebar button).
+            window.Closed += (_, __) =>
+            {
+                if (Session.IsLoggedIn)
+                    _authService.Logout();
+            };
+
+            window.Show();
+
+            // Close the login window
+            if (loginWindowParam is Window loginWindow)
+                loginWindow.Close();
+
+            System.Diagnostics.Debug.WriteLine(
+                $"[Login] OK — userId={user.Id}, role={user.Role}, " +
+                $"token={Session.ActiveToken?[..8]}…");
+        }
+
+        // ── INotifyPropertyChanged ────────────────────────────────────────────
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
-        protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
-        {
+        protected void OnPropertyChanged([CallerMemberName] string? propertyName = null) =>
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
     }
 }

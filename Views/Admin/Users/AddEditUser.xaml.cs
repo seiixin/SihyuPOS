@@ -31,7 +31,9 @@ namespace SihyuPOSPayroll.Views.Admin.Users
                 _editingUser = user;
                 TitleText.Text = "Edit User";
                 EmailTextBox.Text = user.Email ?? string.Empty;
-                PasswordBox.Password = user.Password ?? string.Empty;
+                // Do NOT pre-populate with the BCrypt hash — leave blank.
+                // An empty PasswordBox on save means "keep existing password".
+                PasswordBox.Password = string.Empty;
                 RoleComboBox.Text = user.Role ?? string.Empty;
                 if (user.EmployeeId.HasValue)
                     EmployeeComboBox.SelectedValue = user.EmployeeId.Value;

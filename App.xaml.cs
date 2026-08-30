@@ -1,4 +1,5 @@
 using System.Windows;
+using SihyuPOSPayroll.Data;
 using SihyuPOSPayroll.Services;
 
 namespace SihyuPOSPayroll
@@ -9,6 +10,12 @@ namespace SihyuPOSPayroll
         {
             base.OnStartup(e);
 
+            // ── SQLite: Users / Auth schema ───────────────────────────────────
+            // Must run first — other services may check session state at startup.
+            // Creates: roles, users, login_sessions tables + seeds default admin.
+            AuthSchemaInitializer.EnsureSchemaAtStartup();
+
+            // ── MySQL: Settings (not yet migrated) ────────────────────────────
             // Ensure the Settings tables exist and seed defaults before any
             // other schema migration runs, so settings are available at startup.
             SettingsService.EnsureSchemaAtStartup();

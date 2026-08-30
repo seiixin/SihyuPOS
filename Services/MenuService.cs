@@ -1,78 +1,59 @@
+#nullable enable
+using Microsoft.Data.Sqlite;
+using SihyuPOSPayroll.Data;
 using SihyuPOSPayroll.Models;
-using MySql.Data.MySqlClient;
 using System;
 using System.Collections.Generic;
-using System.Data;
 
 namespace SihyuPOSPayroll.Services
 {
+    /// <summary>
+    /// CRUD for the <c>menu</c> table (SQLite).
+    /// Column names match the schema exactly: Id, Name, Category, Price, image_url,
+    /// Description, Created_At — preserved from the original MySQL queries.
+    /// </summary>
     public class MenuService
     {
-        private readonly string _connectionString;
-
-        public MenuService()
-        {
-            _connectionString = "server=localhost;user=root;password=;database=sihyu_pos;";
-        }
+        // ── Read ───────────────────────────────────────────────────────────────
 
         public List<MenuModel> GetAllMenuItems()
         {
-            var menuItems = new List<MenuModel>();
-
+            var items = new List<MenuModel>();
             try
             {
-                using var connection = new MySqlConnection(_connectionString);
-                connection.Open();
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = @"
+                    SELECT Id, Name, Category, Price, image_url, Description, Created_At
+                    FROM   menu
+                    ORDER  BY Name;";
 
-                string query = "SELECT Id, Name, Category, Price, image_url, Description, Created_At FROM Menu";
-
-                using var command = new MySqlCommand(query, connection);
-                using var reader = command.ExecuteReader();
-
+                using var reader = cmd.ExecuteReader();
                 while (reader.Read())
-                {
-                    menuItems.Add(new MenuModel
-                    {
-                        Id = reader.GetInt32("Id"),
-                        Name = reader.IsDBNull("Name") ? string.Empty : reader.GetString("Name"),
-                        Category = reader.IsDBNull("Category") ? string.Empty : reader.GetString("Category"),
-                        Price = reader.IsDBNull("Price") ? 0 : reader.GetDecimal("Price"),
-                        ImageUrl = reader.IsDBNull("image_url") ? string.Empty : reader.GetString("image_url"),
-                        Description = reader.IsDBNull("Description") ? string.Empty : reader.GetString("Description"),
-                        CreatedAt = reader.IsDBNull("Created_At") ? DateTime.MinValue : reader.GetDateTime("Created_At")
-                    });
-                }
+                    items.Add(MapMenu(reader));
             }
             catch (Exception ex)
             {
                 throw new Exception("Error retrieving menu items.", ex);
             }
-
-            return menuItems;
+            return items;
         }
 
-        public void AddMenuItem(MenuModel menuItem)
-        {
-            if (menuItem == null) throw new ArgumentNullException(nameof(menuItem));
+        // ── Create ─────────────────────────────────────────────────────────────
 
+        public void AddMenuItem(MenuModel item)
+        {
+            if (item == null) throw new ArgumentNullException(nameof(item));
             try
             {
-                using var connection = new MySqlConnection(_connectionString);
-                connection.Open();
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = @"
+                    INSERT INTO menu (Name, Category, Price, image_url, Description, Created_At)
+                    VALUES (@name, @category, @price, @imageUrl, @description, datetime('now'));";
 
-                string query = @"
-                    INSERT INTO Menu (Name, Category, Price, image_url, Description, Created_At)
-                    VALUES (@Name, @Category, @Price, @ImageUrl, @Description, @CreatedAt)";
-
-                using var command = new MySqlCommand(query, connection);
-                command.Parameters.AddWithValue("@Name", menuItem.Name ?? string.Empty);
-                command.Parameters.AddWithValue("@Category", menuItem.Category ?? string.Empty);
-                command.Parameters.AddWithValue("@Price", menuItem.Price);
-                command.Parameters.AddWithValue("@ImageUrl", menuItem.ImageUrl ?? string.Empty);
-                command.Parameters.AddWithValue("@Description", menuItem.Description ?? string.Empty);
-                command.Parameters.AddWithValue("@CreatedAt", DateTime.Now);
-
-                command.ExecuteNonQuery();
+                BindMenuParams(cmd, item);
+                cmd.ExecuteNonQuery();
             }
             catch (Exception ex)
             {
@@ -80,30 +61,30 @@ namespace SihyuPOSPayroll.Services
             }
         }
 
-        public void UpdateMenuItem(MenuModel menuItem)
-        {
-            if (menuItem == null) throw new ArgumentNullException(nameof(menuItem));
+        // Legacy alias
+        public void InsertMenuItem(MenuModel item) => AddMenuItem(item);
 
+        // ── Update ─────────────────────────────────────────────────────────────
+
+        public void UpdateMenuItem(MenuModel item)
+        {
+            if (item == null) throw new ArgumentNullException(nameof(item));
             try
             {
-                using var connection = new MySqlConnection(_connectionString);
-                connection.Open();
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = @"
+                    UPDATE menu
+                    SET    Name        = @name,
+                           Category   = @category,
+                           Price      = @price,
+                           image_url  = @imageUrl,
+                           Description = @description
+                    WHERE  Id = @id;";
 
-                string query = @"
-                    UPDATE Menu
-                    SET Name = @Name, Category = @Category, Price = @Price,
-                        image_url = @ImageUrl, Description = @Description
-                    WHERE Id = @Id";
-
-                using var command = new MySqlCommand(query, connection);
-                command.Parameters.AddWithValue("@Id", menuItem.Id);
-                command.Parameters.AddWithValue("@Name", menuItem.Name ?? string.Empty);
-                command.Parameters.AddWithValue("@Category", menuItem.Category ?? string.Empty);
-                command.Parameters.AddWithValue("@Price", menuItem.Price);
-                command.Parameters.AddWithValue("@ImageUrl", menuItem.ImageUrl ?? string.Empty);
-                command.Parameters.AddWithValue("@Description", menuItem.Description ?? string.Empty);
-
-                command.ExecuteNonQuery();
+                BindMenuParams(cmd, item);
+                cmd.Parameters.AddWithValue("@id", item.Id);
+                cmd.ExecuteNonQuery();
             }
             catch (Exception ex)
             {
@@ -111,19 +92,17 @@ namespace SihyuPOSPayroll.Services
             }
         }
 
+        // ── Delete ─────────────────────────────────────────────────────────────
+
         public void DeleteMenuItem(int menuItemId)
         {
             try
             {
-                using var connection = new MySqlConnection(_connectionString);
-                connection.Open();
-
-                string query = "DELETE FROM Menu WHERE Id = @Id";
-
-                using var command = new MySqlCommand(query, connection);
-                command.Parameters.AddWithValue("@Id", menuItemId);
-
-                command.ExecuteNonQuery();
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = "DELETE FROM menu WHERE Id = @id;";
+                cmd.Parameters.AddWithValue("@id", menuItemId);
+                cmd.ExecuteNonQuery();
             }
             catch (Exception ex)
             {
@@ -131,10 +110,27 @@ namespace SihyuPOSPayroll.Services
             }
         }
 
-        // Optional legacy alias
-        public void InsertMenuItem(MenuModel menuItem)
+        // ── Private helpers ────────────────────────────────────────────────────
+
+        private static MenuModel MapMenu(SqliteDataReader r) => new MenuModel
         {
-            AddMenuItem(menuItem);
+            Id          = r.GetInt32(r.GetOrdinal("Id")),
+            Name        = r.IsDBNull(r.GetOrdinal("Name"))        ? string.Empty : r.GetString(r.GetOrdinal("Name")),
+            Category    = r.IsDBNull(r.GetOrdinal("Category"))    ? string.Empty : r.GetString(r.GetOrdinal("Category")),
+            Price       = r.IsDBNull(r.GetOrdinal("Price"))       ? 0m           : Convert.ToDecimal(r.GetValue(r.GetOrdinal("Price"))),
+            ImageUrl    = r.IsDBNull(r.GetOrdinal("image_url"))   ? string.Empty : r.GetString(r.GetOrdinal("image_url")),
+            Description = r.IsDBNull(r.GetOrdinal("Description")) ? string.Empty : r.GetString(r.GetOrdinal("Description")),
+            CreatedAt   = r.IsDBNull(r.GetOrdinal("Created_At"))  ? DateTime.MinValue
+                              : DateTime.TryParse(r.GetString(r.GetOrdinal("Created_At")), out var dt) ? dt : DateTime.MinValue,
+        };
+
+        private static void BindMenuParams(SqliteCommand cmd, MenuModel item)
+        {
+            cmd.Parameters.AddWithValue("@name",        item.Name        ?? string.Empty);
+            cmd.Parameters.AddWithValue("@category",    item.Category    ?? string.Empty);
+            cmd.Parameters.AddWithValue("@price",       (object?)item.Price ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@imageUrl",    item.ImageUrl    ?? string.Empty);
+            cmd.Parameters.AddWithValue("@description", item.Description ?? string.Empty);
         }
     }
 }

@@ -1,470 +1,290 @@
+#nullable enable
+using Microsoft.Data.Sqlite;
+using SihyuPOSPayroll.Data;
+using SihyuPOSPayroll.Models;
 using System;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Data;
-using MySql.Data.MySqlClient;
-using SihyuPOSPayroll.Models;
 
 namespace SihyuPOSPayroll.Services
 {
+    /// <summary>
+    /// CRUD service for the <c>inventory_items</c> table (SQLite).
+    /// Column names are PascalCase to match the existing schema and query patterns.
+    /// Schema is created by <see cref="AuthSchemaInitializer"/>.
+    ///
+    /// Notes vs. old MySQL version:
+    ///   • Constructor no longer runs INFORMATION_SCHEMA migrations — columns are
+    ///     defined correctly in the schema from the start (Barcode, Price, ImagePath).
+    ///   • DATE_ADD / CURDATE() replaced with SQLite-compatible date('now', '+7 days').
+    ///   • GetExpiringItems uses date comparison on TEXT 'YYYY-MM-DD' columns which
+    ///     sorts correctly in SQLite.
+    /// </summary>
     public class InventoryService
     {
-        private readonly string connectionString = "server=localhost;user=root;password=;database=sihyu_pos;";
+        // Schema is guaranteed by AuthSchemaInitializer — no constructor work needed.
 
-        public InventoryService()
-        {
-            EnsureBarcodeAndPriceColumns();
-            EnsureImagePathColumn();
-        }
-
-        private void EnsureBarcodeAndPriceColumns()
-        {
-            try
-            {
-                using var conn = new MySqlConnection(connectionString);
-                conn.Open();
-
-                // Barcode
-                const string checkBarcodeSql = @"
-                    SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
-                    WHERE TABLE_SCHEMA = DATABASE()
-                      AND TABLE_NAME   = 'inventory_items'
-                      AND COLUMN_NAME  = 'Barcode';";
-                using var cmdB = new MySqlCommand(checkBarcodeSql, conn);
-                if (Convert.ToInt32(cmdB.ExecuteScalar()) == 0)
-                {
-                    using var alter = new MySqlCommand(
-                        "ALTER TABLE inventory_items ADD COLUMN Barcode VARCHAR(64) NULL AFTER Id;", conn);
-                    alter.ExecuteNonQuery();
-                    using var idx = new MySqlCommand(
-                        "CREATE INDEX idx_inventory_barcode ON inventory_items(Barcode);", conn);
-                    try { idx.ExecuteNonQuery(); } catch { }
-                }
-
-                // Price
-                const string checkPriceSql = @"
-                    SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
-                    WHERE TABLE_SCHEMA = DATABASE()
-                      AND TABLE_NAME   = 'inventory_items'
-                      AND COLUMN_NAME  = 'Price';";
-                using var cmdP = new MySqlCommand(checkPriceSql, conn);
-                if (Convert.ToInt32(cmdP.ExecuteScalar()) == 0)
-                {
-                    using var alter = new MySqlCommand(
-                        "ALTER TABLE inventory_items ADD COLUMN Price DECIMAL(12,2) NOT NULL DEFAULT 0 AFTER Quantity;", conn);
-                    alter.ExecuteNonQuery();
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[InventoryService] EnsureBarcodeAndPriceColumns: {ex.Message}");
-            }
-        }
-
-        private void EnsureImagePathColumn()
-        {
-            try
-            {
-                using var conn = new MySqlConnection(connectionString);
-                conn.Open();
-
-                const string checkSql = @"
-                    SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
-                    WHERE TABLE_SCHEMA = DATABASE()
-                      AND TABLE_NAME   = 'inventory_items'
-                      AND COLUMN_NAME  = 'ImagePath';";
-
-                using var checkCmd = new MySqlCommand(checkSql, conn);
-                var count = Convert.ToInt32(checkCmd.ExecuteScalar());
-
-                if (count == 0)
-                {
-                    using var alterCmd = new MySqlCommand(
-                        "ALTER TABLE inventory_items ADD COLUMN ImagePath VARCHAR(512) AFTER ExpiryDate;",
-                        conn);
-                    alterCmd.ExecuteNonQuery();
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[InventoryService] EnsureImagePathColumn: {ex.Message}");
-            }
-        }
+        // ── Read ───────────────────────────────────────────────────────────────
 
         public ObservableCollection<InventoryItem> GetAllItems()
         {
             var items = new ObservableCollection<InventoryItem>();
-
-            using (var connection = new MySqlConnection(connectionString))
+            try
             {
-                connection.Open();
-                string query = @"SELECT Id, Barcode, ProductName, CategoryName, Quantity, Price, ExpiryDate, ImagePath
-                                FROM inventory_items ORDER BY ProductName";
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = @"
+                    SELECT Id, Barcode, ProductName, CategoryName,
+                           Quantity, Price, ExpiryDate, ImagePath
+                    FROM   inventory_items
+                    ORDER  BY ProductName;";
 
-                using (var command = new MySqlCommand(query, connection))
-                using (var reader = command.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        items.Add(new InventoryItem
-                        {
-                            Id           = reader.GetInt32("Id"),
-                            Barcode      = reader.IsDBNull("Barcode")    ? null : reader.GetString("Barcode"),
-                            ProductName  = reader.GetString("ProductName"),
-                            CategoryName = reader.IsDBNull("CategoryName") ? null : reader.GetString("CategoryName"),
-                            Quantity     = reader.GetInt32("Quantity"),
-                            Price        = reader.GetDecimal("Price"),
-                            ExpiryDate   = reader.IsDBNull("ExpiryDate")   ? null : reader.GetDateTime("ExpiryDate"),
-                            ImagePath    = reader.IsDBNull("ImagePath")    ? null : reader.GetString("ImagePath"),
-                        });
-                    }
-                }
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
+                    items.Add(MapItem(reader));
             }
-
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[InventoryService] GetAllItems: {ex.Message}");
+            }
             return items;
         }
 
-        /// <summary>Exact barcode match. Returns null if not found.</summary>
         public InventoryItem? GetItemByBarcode(string barcode)
         {
             if (string.IsNullOrWhiteSpace(barcode)) return null;
             try
             {
-                using var conn = new MySqlConnection(connectionString);
-                conn.Open();
-                const string sql = @"SELECT Id, Barcode, ProductName, CategoryName, Quantity, Price, ExpiryDate, ImagePath
-                                     FROM inventory_items
-                                     WHERE Barcode = @Barcode
-                                     LIMIT 1";
-                using var cmd = new MySqlCommand(sql, conn);
-                cmd.Parameters.AddWithValue("@Barcode", barcode.Trim());
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = @"
+                    SELECT Id, Barcode, ProductName, CategoryName,
+                           Quantity, Price, ExpiryDate, ImagePath
+                    FROM   inventory_items
+                    WHERE  Barcode = @barcode
+                    LIMIT  1;";
+                cmd.Parameters.AddWithValue("@barcode", barcode.Trim());
                 using var reader = cmd.ExecuteReader();
-                if (reader.Read())
-                {
-                    return new InventoryItem
-                    {
-                        Id           = reader.GetInt32("Id"),
-                        Barcode      = reader.IsDBNull("Barcode")      ? null : reader.GetString("Barcode"),
-                        ProductName  = reader.GetString("ProductName"),
-                        CategoryName = reader.IsDBNull("CategoryName") ? null : reader.GetString("CategoryName"),
-                        Quantity     = reader.GetInt32("Quantity"),
-                        Price        = reader.GetDecimal("Price"),
-                        ExpiryDate   = reader.IsDBNull("ExpiryDate")   ? null : reader.GetDateTime("ExpiryDate"),
-                        ImagePath    = reader.IsDBNull("ImagePath")    ? null : reader.GetString("ImagePath"),
-                    };
-                }
+                return reader.Read() ? MapItem(reader) : null;
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[InventoryService] GetItemByBarcode: {ex.Message}");
+                return null;
             }
-            return null;
         }
 
         public InventoryItem? GetItemById(int id)
         {
-            using (var connection = new MySqlConnection(connectionString))
-            {
-                connection.Open();
-                string query = @"SELECT Id, Barcode, ProductName, CategoryName, Quantity, Price, ExpiryDate, ImagePath
-                                FROM inventory_items WHERE Id = @Id";
-
-                using (var command = new MySqlCommand(query, connection))
-                {
-                    command.Parameters.AddWithValue("@Id", id);
-                    using (var reader = command.ExecuteReader())
-                    {
-                        if (reader.Read())
-                        {
-                            return new InventoryItem
-                            {
-                                Id = reader.GetInt32("Id"),
-                                Barcode = reader.IsDBNull("Barcode") ? null : reader.GetString("Barcode"),
-                                ProductName = reader.GetString("ProductName"),
-                                CategoryName = reader.IsDBNull("CategoryName") ? null : reader.GetString("CategoryName"),
-                                Quantity = reader.GetInt32("Quantity"),
-                                Price = reader.GetDecimal("Price"),
-                                ExpiryDate = reader.IsDBNull("ExpiryDate") ? null : reader.GetDateTime("ExpiryDate"),
-                                ImagePath = reader.IsDBNull("ImagePath") ? null : reader.GetString("ImagePath"),
-                            };
-                        }
-                    }
-                }
-            }
-            return null;
-        }
-
-        public bool AddItem(InventoryItem item)
-        {
-            if (item == null) throw new ArgumentNullException(nameof(item));
-
             try
             {
-                using (var connection = new MySqlConnection(connectionString))
-                {
-                    connection.Open();
-                    string query = @"INSERT INTO inventory_items (Barcode, ProductName, CategoryName, Quantity, Price, ExpiryDate, ImagePath) 
-                                    VALUES (@Barcode, @ProductName, @CategoryName, @Quantity, @Price, @ExpiryDate, @ImagePath)";
-
-                    using (var command = new MySqlCommand(query, connection))
-                    {
-                        command.Parameters.AddWithValue("@Barcode",      item.Barcode      ?? (object)DBNull.Value);
-                        command.Parameters.AddWithValue("@ProductName",  item.ProductName);
-                        command.Parameters.AddWithValue("@CategoryName", item.CategoryName ?? (object)DBNull.Value);
-                        command.Parameters.AddWithValue("@Quantity",     item.Quantity);
-                        command.Parameters.AddWithValue("@Price",        item.Price);
-                        command.Parameters.AddWithValue("@ExpiryDate",   item.ExpiryDate  ?? (object)DBNull.Value);
-                        command.Parameters.AddWithValue("@ImagePath",    item.ImagePath   ?? (object)DBNull.Value);
-
-                        int result = command.ExecuteNonQuery();
-                        return result > 0;
-                    }
-                }
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = @"
+                    SELECT Id, Barcode, ProductName, CategoryName,
+                           Quantity, Price, ExpiryDate, ImagePath
+                    FROM   inventory_items
+                    WHERE  Id = @id;";
+                cmd.Parameters.AddWithValue("@id", id);
+                using var reader = cmd.ExecuteReader();
+                return reader.Read() ? MapItem(reader) : null;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error adding item: {ex.Message}");
-                return false;
-            }
-        }
-
-        public bool UpdateItem(InventoryItem updatedItem)
-        {
-            if (updatedItem == null) throw new ArgumentNullException(nameof(updatedItem));
-
-            try
-            {
-                using (var connection = new MySqlConnection(connectionString))
-                {
-                    connection.Open();
-                    string query = @"UPDATE inventory_items 
-                                    SET Barcode      = @Barcode,
-                                        ProductName  = @ProductName,
-                                        CategoryName = @CategoryName,
-                                        Quantity     = @Quantity,
-                                        Price        = @Price,
-                                        ExpiryDate   = @ExpiryDate,
-                                        ImagePath    = @ImagePath
-                                    WHERE Id = @Id";
-
-                    using (var command = new MySqlCommand(query, connection))
-                    {
-                        command.Parameters.AddWithValue("@Id",           updatedItem.Id);
-                        command.Parameters.AddWithValue("@Barcode",      updatedItem.Barcode      ?? (object)DBNull.Value);
-                        command.Parameters.AddWithValue("@ProductName",  updatedItem.ProductName);
-                        command.Parameters.AddWithValue("@CategoryName", updatedItem.CategoryName ?? (object)DBNull.Value);
-                        command.Parameters.AddWithValue("@Quantity",     updatedItem.Quantity);
-                        command.Parameters.AddWithValue("@Price",        updatedItem.Price);
-                        command.Parameters.AddWithValue("@ExpiryDate",   updatedItem.ExpiryDate  ?? (object)DBNull.Value);
-                        command.Parameters.AddWithValue("@ImagePath",    updatedItem.ImagePath   ?? (object)DBNull.Value);
-
-                        int result = command.ExecuteNonQuery();
-                        return result > 0;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Error updating item: {ex.Message}");
-                return false;
-            }
-        }
-
-        public bool DeleteItem(int id)
-        {
-            try
-            {
-                using (var connection = new MySqlConnection(connectionString))
-                {
-                    connection.Open();
-                    string query = "DELETE FROM inventory_items WHERE Id = @Id";
-
-                    using (var command = new MySqlCommand(query, connection))
-                    {
-                        command.Parameters.AddWithValue("@Id", id);
-                        int result = command.ExecuteNonQuery();
-                        return result > 0;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Error deleting item: {ex.Message}");
-                return false;
+                System.Diagnostics.Debug.WriteLine($"[InventoryService] GetItemById: {ex.Message}");
+                return null;
             }
         }
 
         public ObservableCollection<InventoryItem> SearchItems(string searchText)
         {
+            if (string.IsNullOrWhiteSpace(searchText)) return GetAllItems();
+
             var items = new ObservableCollection<InventoryItem>();
-
-            if (string.IsNullOrWhiteSpace(searchText))
-                return GetAllItems();
-
-            using (var connection = new MySqlConnection(connectionString))
+            try
             {
-                connection.Open();
-                string query = @"SELECT Id, Barcode, ProductName, CategoryName, Quantity, Price, ExpiryDate, ImagePath
-                                FROM inventory_items 
-                                WHERE ProductName LIKE @SearchText 
-                                   OR CategoryName LIKE @SearchText 
-                                   OR Barcode LIKE @SearchText
-                                ORDER BY ProductName";
-
-                using (var command = new MySqlCommand(query, connection))
-                {
-                    command.Parameters.AddWithValue("@SearchText", $"%{searchText}%");
-                    using (var reader = command.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            items.Add(new InventoryItem
-                            {
-                                Id           = reader.GetInt32("Id"),
-                                Barcode      = reader.IsDBNull("Barcode")    ? null : reader.GetString("Barcode"),
-                                ProductName  = reader.GetString("ProductName"),
-                                CategoryName = reader.IsDBNull("CategoryName") ? null : reader.GetString("CategoryName"),
-                                Quantity     = reader.GetInt32("Quantity"),
-                                Price        = reader.GetDecimal("Price"),
-                                ExpiryDate   = reader.IsDBNull("ExpiryDate")   ? null : reader.GetDateTime("ExpiryDate"),
-                                ImagePath    = reader.IsDBNull("ImagePath")    ? null : reader.GetString("ImagePath"),
-                            });
-                        }
-                    }
-                }
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = @"
+                    SELECT Id, Barcode, ProductName, CategoryName,
+                           Quantity, Price, ExpiryDate, ImagePath
+                    FROM   inventory_items
+                    WHERE  ProductName  LIKE @q
+                       OR  CategoryName LIKE @q
+                       OR  Barcode      LIKE @q
+                    ORDER  BY ProductName;";
+                cmd.Parameters.AddWithValue("@q", $"%{searchText}%");
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
+                    items.Add(MapItem(reader));
             }
-
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[InventoryService] SearchItems: {ex.Message}");
+            }
             return items;
         }
 
+        /// <summary>Items expiring within the next 7 days (or already expired).</summary>
         public ObservableCollection<InventoryItem> GetExpiringItems()
         {
             var items = new ObservableCollection<InventoryItem>();
-
-            using (var connection = new MySqlConnection(connectionString))
+            try
             {
-                connection.Open();
-                string query = @"SELECT Id, Barcode, ProductName, CategoryName, Quantity, Price, ExpiryDate 
-                                FROM inventory_items 
-                                WHERE ExpiryDate IS NOT NULL 
-                                  AND ExpiryDate <= DATE_ADD(CURDATE(), INTERVAL 7 DAY)
-                                ORDER BY ExpiryDate";
-
-                using (var command = new MySqlCommand(query, connection))
-                using (var reader = command.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        items.Add(new InventoryItem
-                        {
-                            Id = reader.GetInt32("Id"),
-                            Barcode = reader.IsDBNull("Barcode") ? null : reader.GetString("Barcode"),
-                            ProductName = reader.GetString("ProductName"),
-                            CategoryName = reader.IsDBNull("CategoryName") ? null : reader.GetString("CategoryName"),
-                            Quantity = reader.GetInt32("Quantity"),
-                            Price = reader.GetDecimal("Price"),
-                            ExpiryDate = reader.GetDateTime("ExpiryDate")
-                        });
-                    }
-                }
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                // TEXT date comparison works correctly for ISO-8601 'YYYY-MM-DD' strings.
+                cmd.CommandText = @"
+                    SELECT Id, Barcode, ProductName, CategoryName,
+                           Quantity, Price, ExpiryDate, ImagePath
+                    FROM   inventory_items
+                    WHERE  ExpiryDate IS NOT NULL
+                      AND  ExpiryDate <= date('now', '+7 days')
+                    ORDER  BY ExpiryDate;";
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
+                    items.Add(MapItem(reader));
             }
-
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[InventoryService] GetExpiringItems: {ex.Message}");
+            }
             return items;
         }
 
         public ObservableCollection<InventoryItem> GetLowStockItems(int threshold = 10)
         {
             var items = new ObservableCollection<InventoryItem>();
-
-            using (var connection = new MySqlConnection(connectionString))
-            {
-                connection.Open();
-                string query = @"SELECT Id, Barcode, ProductName, CategoryName, Quantity, Price, ExpiryDate 
-                                FROM inventory_items 
-                                WHERE Quantity <= @Threshold 
-                                ORDER BY Quantity";
-
-                using (var command = new MySqlCommand(query, connection))
-                {
-                    command.Parameters.AddWithValue("@Threshold", threshold);
-                    using (var reader = command.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            items.Add(new InventoryItem
-                            {
-                                Id = reader.GetInt32("Id"),
-                                Barcode = reader.IsDBNull("Barcode") ? null : reader.GetString("Barcode"),
-                                ProductName = reader.GetString("ProductName"),
-                                CategoryName = reader.IsDBNull("CategoryName") ? null : reader.GetString("CategoryName"),
-                                Quantity = reader.GetInt32("Quantity"),
-                                Price = reader.GetDecimal("Price"),
-                                ExpiryDate = reader.IsDBNull("ExpiryDate") ? null : reader.GetDateTime("ExpiryDate")
-                            });
-                        }
-                    }
-                }
-            }
-
-            return items;
-        }
-
-        public void InitializeDatabase()
-        {
             try
             {
-                using (var connection = new MySqlConnection(connectionString))
-                {
-                    connection.Open();
-
-                    string createTableQuery = @"
-                        CREATE TABLE IF NOT EXISTS inventory_items (
-                            Id           INT AUTO_INCREMENT PRIMARY KEY,
-                            Barcode      VARCHAR(64) NULL,
-                            ProductName  VARCHAR(255) NOT NULL,
-                            CategoryName VARCHAR(255),
-                            Quantity     INT NOT NULL DEFAULT 0,
-                            Price        DECIMAL(12,2) NOT NULL DEFAULT 0,
-                            ExpiryDate   DATE,
-                            ImagePath    VARCHAR(512),
-                            CreatedAt    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                            UpdatedAt    TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                            INDEX idx_inventory_barcode (Barcode)
-                        )";
-
-                    using (var command = new MySqlCommand(createTableQuery, connection))
-                        command.ExecuteNonQuery();
-
-                    string countQuery = "SELECT COUNT(*) FROM inventory_items";
-                    using (var countCommand = new MySqlCommand(countQuery, connection))
-                    {
-                        int count = Convert.ToInt32(countCommand.ExecuteScalar());
-                        if (count == 0) InsertSampleData(connection);
-                    }
-
-                    CategoryService.EnsureTable();
-                }
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = @"
+                    SELECT Id, Barcode, ProductName, CategoryName,
+                           Quantity, Price, ExpiryDate, ImagePath
+                    FROM   inventory_items
+                    WHERE  Quantity <= @threshold
+                    ORDER  BY Quantity;";
+                cmd.Parameters.AddWithValue("@threshold", threshold);
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
+                    items.Add(MapItem(reader));
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error initializing database: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[InventoryService] GetLowStockItems: {ex.Message}");
+            }
+            return items;
+        }
+
+        // ── Create ─────────────────────────────────────────────────────────────
+
+        public bool AddItem(InventoryItem item)
+        {
+            if (item == null) throw new ArgumentNullException(nameof(item));
+            try
+            {
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = @"
+                    INSERT INTO inventory_items
+                        (Barcode, ProductName, CategoryName, Quantity, Price, ExpiryDate, ImagePath)
+                    VALUES
+                        (@barcode, @productName, @categoryName, @quantity, @price, @expiryDate, @imagePath);";
+
+                BindItemParams(cmd, item);
+                return cmd.ExecuteNonQuery() > 0;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[InventoryService] AddItem: {ex.Message}");
+                return false;
             }
         }
 
-        private void InsertSampleData(MySqlConnection connection)
-        {
-            string insertQuery = @"
-                INSERT INTO inventory_items (Barcode, ProductName, CategoryName, Quantity, Price, ExpiryDate) VALUES
-                (NULL, 'Coffee Beans - Arabica', 'Beverages', 25, 250.00, DATE_ADD(CURDATE(), INTERVAL 30 DAY)),
-                (NULL, 'Milk - Whole', 'Dairy', 8, 95.00, DATE_ADD(CURDATE(), INTERVAL 3 DAY)),
-                (NULL, 'Sugar - White', 'Sweeteners', 50, 65.00, NULL),
-                (NULL, 'Croissants - Frozen', 'Bakery', 15, 45.00, DATE_ADD(CURDATE(), INTERVAL 5 DAY)),
-                (NULL, 'Cheese - Cheddar', 'Dairy', 3, 180.00, DATE_ADD(CURDATE(), INTERVAL 1 DAY))";
+        // ── Update ─────────────────────────────────────────────────────────────
 
-            using (var command = new MySqlCommand(insertQuery, connection))
+        public bool UpdateItem(InventoryItem item)
+        {
+            if (item == null) throw new ArgumentNullException(nameof(item));
+            try
             {
-                command.ExecuteNonQuery();
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = @"
+                    UPDATE inventory_items SET
+                        Barcode      = @barcode,
+                        ProductName  = @productName,
+                        CategoryName = @categoryName,
+                        Quantity     = @quantity,
+                        Price        = @price,
+                        ExpiryDate   = @expiryDate,
+                        ImagePath    = @imagePath,
+                        UpdatedAt    = datetime('now')
+                    WHERE Id = @id;";
+
+                BindItemParams(cmd, item);
+                cmd.Parameters.AddWithValue("@id", item.Id);
+                return cmd.ExecuteNonQuery() > 0;
             }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[InventoryService] UpdateItem: {ex.Message}");
+                return false;
+            }
+        }
+
+        // ── Delete ─────────────────────────────────────────────────────────────
+
+        public bool DeleteItem(int id)
+        {
+            try
+            {
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = "DELETE FROM inventory_items WHERE Id = @id;";
+                cmd.Parameters.AddWithValue("@id", id);
+                return cmd.ExecuteNonQuery() > 0;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[InventoryService] DeleteItem: {ex.Message}");
+                return false;
+            }
+        }
+
+        // ── Legacy compat ──────────────────────────────────────────────────────
+        /// <summary>
+        /// No-op — schema and sample data are handled by
+        /// <see cref="AuthSchemaInitializer"/> at startup.
+        /// </summary>
+        public void InitializeDatabase() { /* handled by AuthSchemaInitializer */ }
+
+        // ── Private helpers ────────────────────────────────────────────────────
+
+        private static InventoryItem MapItem(SqliteDataReader r) => new InventoryItem
+        {
+            Id           = r.GetInt32(r.GetOrdinal("Id")),
+            Barcode      = r.IsDBNull(r.GetOrdinal("Barcode"))      ? null : r.GetString(r.GetOrdinal("Barcode")),
+            ProductName  = r.GetString(r.GetOrdinal("ProductName")),
+            CategoryName = r.IsDBNull(r.GetOrdinal("CategoryName")) ? null : r.GetString(r.GetOrdinal("CategoryName")),
+            Quantity     = r.GetInt32(r.GetOrdinal("Quantity")),
+            Price        = Convert.ToDecimal(r.GetValue(r.GetOrdinal("Price"))),
+            ExpiryDate   = r.IsDBNull(r.GetOrdinal("ExpiryDate"))   ? null
+                               : DateTime.TryParse(r.GetString(r.GetOrdinal("ExpiryDate")), out var d) ? d : null,
+            ImagePath    = r.IsDBNull(r.GetOrdinal("ImagePath"))    ? null : r.GetString(r.GetOrdinal("ImagePath")),
+        };
+
+        private static void BindItemParams(SqliteCommand cmd, InventoryItem item)
+        {
+            cmd.Parameters.AddWithValue("@barcode",      (object?)item.Barcode      ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@productName",  item.ProductName);
+            cmd.Parameters.AddWithValue("@categoryName", (object?)item.CategoryName ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@quantity",     item.Quantity);
+            cmd.Parameters.AddWithValue("@price",        item.Price);
+            cmd.Parameters.AddWithValue("@expiryDate",   item.ExpiryDate.HasValue
+                                                             ? item.ExpiryDate.Value.ToString("yyyy-MM-dd")
+                                                             : (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@imagePath",    (object?)item.ImagePath    ?? DBNull.Value);
         }
     }
 }

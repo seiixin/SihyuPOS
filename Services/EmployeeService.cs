@@ -1,6 +1,7 @@
 #nullable enable
+using Microsoft.Data.Sqlite;
+using SihyuPOSPayroll.Data;
 using SihyuPOSPayroll.Models;
-using MySql.Data.MySqlClient;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -11,35 +12,22 @@ namespace SihyuPOSPayroll.Services
     {
         List<EmployeeModel> GetAllEmployees();
         EmployeeModel? GetEmployeeById(int id);
+        bool AddEmployee(EmployeeModel employee);
         bool UpdateEmployee(EmployeeModel employee);
         bool UpdateEmployeeImage(int employeeId, string imageUrl);
-        bool AddEmployee(EmployeeModel employee);
         bool DeleteEmployee(int employeeId);
 
-        // Existing: map logged-in user (users.id) -> employees.id
         int? GetEmployeeIdByUserId(int userId);
-
-        // NEW: header & schedule helpers (employeeId ? info)
         string? GetEmployeeFullName(int employeeId);
         int? GetUserIdByEmployeeId(int employeeId);
         int? GetWorkScheduleDaysMask(int employeeId);
 
-        // NEW: status controls
         bool SetUserActiveStatusByEmployeeId(int employeeId, bool isActive);
         bool SetUserActiveStatusByUserId(int userId, bool isActive);
     }
 
     public sealed class EmployeeService : IEmployeeService
     {
-        private readonly string _connectionString;
-
-        public EmployeeService(string? connectionString = null)
-        {
-            _connectionString = string.IsNullOrWhiteSpace(connectionString)
-                ? "server=localhost;user=root;password=;database=sihyu_pos;"
-                : connectionString!;
-        }
-
         // =====================================================================
         // READ
         // =====================================================================
@@ -47,50 +35,29 @@ namespace SihyuPOSPayroll.Services
         public List<EmployeeModel> GetAllEmployees()
         {
             var employees = new List<EmployeeModel>();
-
             try
             {
-                using var connection = new MySqlConnection(_connectionString);
-                connection.Open();
-
-                const string sql = @"
-                    SELECT 
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = @"
+                    SELECT
                         e.*,
-                        u.id         AS user_id,
-                        u.email      AS email,
-                        u.role       AS role,
-                        u.is_active  AS user_is_active
+                        u.id        AS user_id,
+                        u.email     AS user_email,
+                        u.role      AS user_role,
+                        u.is_active AS user_is_active
                     FROM employees e
                     LEFT JOIN users u ON u.employee_id = e.id
                     ORDER BY e.id DESC;";
 
-                using var cmd = new MySqlCommand(sql, connection);
                 using var reader = cmd.ExecuteReader();
-
                 while (reader.Read())
-                {
-                    var emp = MapEmployee(reader);
-
-                    if (HasColumn(reader, "user_id") && !reader.IsDBNull(reader.GetOrdinal("user_id")))
-                    {
-                        emp.UserAccount = new UserModel
-                        {
-                            Id = reader.GetInt32("user_id"),
-                            Email = reader["email"]?.ToString(),
-                            Role = reader["role"]?.ToString(),
-                            EmployeeId = emp.Id,
-                            IsActive = ReadTinyIntBool(reader, "user_is_active", defaultValue: true)
-                        };
-                    }
-
-                    employees.Add(emp);
-                }
+                    employees.Add(MapEmployee(reader));
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine("Error loading employees: " + ex.Message);
+                Console.Error.WriteLine($"[EmployeeService] GetAllEmployees: {ex.Message}");
             }
-
             return employees;
         }
 
@@ -98,46 +65,27 @@ namespace SihyuPOSPayroll.Services
         {
             try
             {
-                using var connection = new MySqlConnection(_connectionString);
-                connection.Open();
-
-                const string sql = @"
-                    SELECT 
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = @"
+                    SELECT
                         e.*,
-                        u.id         AS user_id,
-                        u.email      AS email,
-                        u.role       AS role,
-                        u.is_active  AS user_is_active
+                        u.id        AS user_id,
+                        u.email     AS user_email,
+                        u.role      AS user_role,
+                        u.is_active AS user_is_active
                     FROM employees e
                     LEFT JOIN users u ON u.employee_id = e.id
                     WHERE e.id = @id
                     LIMIT 1;";
-
-                using var cmd = new MySqlCommand(sql, connection);
                 cmd.Parameters.AddWithValue("@id", id);
 
                 using var reader = cmd.ExecuteReader();
-                if (!reader.Read()) return null;
-
-                var emp = MapEmployee(reader);
-
-                if (HasColumn(reader, "user_id") && !reader.IsDBNull(reader.GetOrdinal("user_id")))
-                {
-                    emp.UserAccount = new UserModel
-                    {
-                        Id = reader.GetInt32("user_id"),
-                        Email = reader["email"]?.ToString(),
-                        Role = reader["role"]?.ToString(),
-                        EmployeeId = emp.Id,
-                        IsActive = ReadTinyIntBool(reader, "user_is_active", defaultValue: true)
-                    };
-                }
-
-                return emp;
+                return reader.Read() ? MapEmployee(reader) : null;
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine("Error loading employee: " + ex.Message);
+                Console.Error.WriteLine($"[EmployeeService] GetEmployeeById: {ex.Message}");
                 return null;
             }
         }
@@ -150,47 +98,31 @@ namespace SihyuPOSPayroll.Services
         {
             try
             {
-                using var connection = new MySqlConnection(_connectionString);
-                connection.Open();
-                using var tx = connection.BeginTransaction();
-
-                const string sql = @"
-                    INSERT INTO employees 
-                    (full_name, age, sex, address, birthday, contact_number, position, salary_per_day, work_schedule_id, shift,
-                     sss_number, philhealth_number, pagibig_number, image_url, emergency_contact, date_hired, created_at)
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var tx   = conn.BeginTransaction();
+                using var cmd  = conn.CreateCommand();
+                cmd.Transaction = tx;
+                cmd.CommandText = @"
+                    INSERT INTO employees
+                        (full_name, age, sex, address, birthday, contact_number, position,
+                         salary_per_day, work_schedule_id, shift, sss_number, philhealth_number,
+                         pagibig_number, image_url, emergency_contact, date_hired, created_at)
                     VALUES
-                    (@FullName, @Age, @Sex, @Address, @Birthday, @ContactNumber, @Position, @SalaryPerDay, @WorkScheduleId, @Shift,
-                     @SssNumber, @PhilhealthNumber, @PagibigNumber, @ImageUrl, @EmergencyContact, @DateHired, @CreatedAt);
-                    SELECT LAST_INSERT_ID();";
+                        (@fullName, @age, @sex, @address, @birthday, @contactNumber, @position,
+                         @salaryPerDay, @workScheduleId, @shift, @sssNumber, @philhealthNumber,
+                         @pagibigNumber, @imageUrl, @emergencyContact, @dateHired, datetime('now'));
+                    SELECT last_insert_rowid();";
 
-                using var cmd = new MySqlCommand(sql, connection, tx);
-                cmd.Parameters.AddWithValue("@FullName", ParamOrDbNull(employee.FullName));
-                cmd.Parameters.AddWithValue("@Age", ParamOrDbNull(employee.Age));
-                cmd.Parameters.AddWithValue("@Sex", ParamOrDbNull(employee.Sex));
-                cmd.Parameters.AddWithValue("@Address", ParamOrDbNull(employee.Address));
-                cmd.Parameters.AddWithValue("@Birthday", ParamOrDbNull(employee.Birthday));
-                cmd.Parameters.AddWithValue("@ContactNumber", ParamOrDbNull(employee.ContactNumber));
-                cmd.Parameters.AddWithValue("@Position", ParamOrDbNull(employee.Position));
-                cmd.Parameters.AddWithValue("@SalaryPerDay", ParamOrDbNull(employee.SalaryPerDay));
-                cmd.Parameters.AddWithValue("@WorkScheduleId", ParamOrDbNull(employee.WorkScheduleId));
-                cmd.Parameters.AddWithValue("@Shift", ParamOrDbNull(employee.Shift));
-                cmd.Parameters.AddWithValue("@SssNumber", ParamOrDbNull(employee.SssNumber));
-                cmd.Parameters.AddWithValue("@PhilhealthNumber", ParamOrDbNull(employee.PhilhealthNumber));
-                cmd.Parameters.AddWithValue("@PagibigNumber", ParamOrDbNull(employee.PagibigNumber));
-                cmd.Parameters.AddWithValue("@ImageUrl", ParamOrDbNull(employee.ImageUrl));
-                cmd.Parameters.AddWithValue("@EmergencyContact", ParamOrDbNull(employee.EmergencyContact));
-                cmd.Parameters.AddWithValue("@DateHired", ParamOrDbNull(employee.DateHired));
-                cmd.Parameters.AddWithValue("@CreatedAt", employee.CreatedAt == default ? DateTime.Now : employee.CreatedAt);
+                BindEmployeeParams(cmd, employee);
 
-                var newIdObj = cmd.ExecuteScalar();
+                var newId = Convert.ToInt32(cmd.ExecuteScalar());
                 tx.Commit();
-
-                employee.Id = Convert.ToInt32(newIdObj);
+                employee.Id = newId;
                 return true;
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine("Error adding employee: " + ex.Message);
+                Console.Error.WriteLine($"[EmployeeService] AddEmployee: {ex.Message}");
                 return false;
             }
         }
@@ -203,53 +135,36 @@ namespace SihyuPOSPayroll.Services
         {
             try
             {
-                using var connection = new MySqlConnection(_connectionString);
-                connection.Open();
-
-                const string sql = @"
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = @"
                     UPDATE employees SET
-                        full_name         = @FullName,
-                        age               = @Age,
-                        sex               = @Sex,
-                        address           = @Address,
-                        birthday          = @Birthday,
-                        contact_number    = @ContactNumber,
-                        position          = @Position,
-                        salary_per_day    = @SalaryPerDay,
-                        work_schedule_id  = @WorkScheduleId,
-                        shift             = @Shift,
-                        sss_number        = @SssNumber,
-                        philhealth_number = @PhilhealthNumber,
-                        pagibig_number    = @PagibigNumber,
-                        image_url         = @ImageUrl,
-                        emergency_contact = @EmergencyContact,
-                        date_hired        = @DateHired
-                    WHERE id = @Id;";
+                        full_name         = @fullName,
+                        age               = @age,
+                        sex               = @sex,
+                        address           = @address,
+                        birthday          = @birthday,
+                        contact_number    = @contactNumber,
+                        position          = @position,
+                        salary_per_day    = @salaryPerDay,
+                        work_schedule_id  = @workScheduleId,
+                        shift             = @shift,
+                        sss_number        = @sssNumber,
+                        philhealth_number = @philhealthNumber,
+                        pagibig_number    = @pagibigNumber,
+                        image_url         = @imageUrl,
+                        emergency_contact = @emergencyContact,
+                        date_hired        = @dateHired
+                    WHERE id = @id;";
 
-                using var cmd = new MySqlCommand(sql, connection);
-                cmd.Parameters.AddWithValue("@FullName", ParamOrDbNull(employee.FullName));
-                cmd.Parameters.AddWithValue("@Age", ParamOrDbNull(employee.Age));
-                cmd.Parameters.AddWithValue("@Sex", ParamOrDbNull(employee.Sex));
-                cmd.Parameters.AddWithValue("@Address", ParamOrDbNull(employee.Address));
-                cmd.Parameters.AddWithValue("@Birthday", ParamOrDbNull(employee.Birthday));
-                cmd.Parameters.AddWithValue("@ContactNumber", ParamOrDbNull(employee.ContactNumber));
-                cmd.Parameters.AddWithValue("@Position", ParamOrDbNull(employee.Position));
-                cmd.Parameters.AddWithValue("@SalaryPerDay", ParamOrDbNull(employee.SalaryPerDay));
-                cmd.Parameters.AddWithValue("@WorkScheduleId", ParamOrDbNull(employee.WorkScheduleId));
-                cmd.Parameters.AddWithValue("@Shift", ParamOrDbNull(employee.Shift));
-                cmd.Parameters.AddWithValue("@SssNumber", ParamOrDbNull(employee.SssNumber));
-                cmd.Parameters.AddWithValue("@PhilhealthNumber", ParamOrDbNull(employee.PhilhealthNumber));
-                cmd.Parameters.AddWithValue("@PagibigNumber", ParamOrDbNull(employee.PagibigNumber));
-                cmd.Parameters.AddWithValue("@ImageUrl", ParamOrDbNull(employee.ImageUrl));
-                cmd.Parameters.AddWithValue("@EmergencyContact", ParamOrDbNull(employee.EmergencyContact));
-                cmd.Parameters.AddWithValue("@DateHired", ParamOrDbNull(employee.DateHired));
-                cmd.Parameters.AddWithValue("@Id", employee.Id);
+                BindEmployeeParams(cmd, employee);
+                cmd.Parameters.AddWithValue("@id", employee.Id);
 
                 return cmd.ExecuteNonQuery() > 0;
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine("Error updating employee: " + ex.Message);
+                Console.Error.WriteLine($"[EmployeeService] UpdateEmployee: {ex.Message}");
                 return false;
             }
         }
@@ -258,19 +173,16 @@ namespace SihyuPOSPayroll.Services
         {
             try
             {
-                using var connection = new MySqlConnection(_connectionString);
-                connection.Open();
-
-                const string sql = "UPDATE employees SET image_url = @ImageUrl WHERE id = @Id;";
-                using var cmd = new MySqlCommand(sql, connection);
-                cmd.Parameters.AddWithValue("@ImageUrl", ParamOrDbNull(imageUrl));
-                cmd.Parameters.AddWithValue("@Id", employeeId);
-
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = "UPDATE employees SET image_url = @url WHERE id = @id;";
+                cmd.Parameters.AddWithValue("@url", (object?)imageUrl ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@id",  employeeId);
                 return cmd.ExecuteNonQuery() > 0;
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine("Error updating employee image: " + ex.Message);
+                Console.Error.WriteLine($"[EmployeeService] UpdateEmployeeImage: {ex.Message}");
                 return false;
             }
         }
@@ -283,21 +195,26 @@ namespace SihyuPOSPayroll.Services
         {
             try
             {
-                using var connection = new MySqlConnection(_connectionString);
-                connection.Open();
-                using var tx = connection.BeginTransaction();
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var tx   = conn.BeginTransaction();
 
-                using (var delUser = new MySqlCommand("DELETE FROM users WHERE employee_id = @eid;", connection, tx))
+                // FK ON DELETE CASCADE handles login_sessions; users FK is ON DELETE SET NULL.
+                // Explicitly nullify the user's employee_id link first.
+                using (var unlinkCmd = conn.CreateCommand())
                 {
-                    delUser.Parameters.AddWithValue("@eid", employeeId);
-                    delUser.ExecuteNonQuery();
+                    unlinkCmd.Transaction  = tx;
+                    unlinkCmd.CommandText  = "UPDATE users SET employee_id = NULL WHERE employee_id = @eid;";
+                    unlinkCmd.Parameters.AddWithValue("@eid", employeeId);
+                    unlinkCmd.ExecuteNonQuery();
                 }
 
                 int rows;
-                using (var delEmp = new MySqlCommand("DELETE FROM employees WHERE id = @id;", connection, tx))
+                using (var delCmd = conn.CreateCommand())
                 {
-                    delEmp.Parameters.AddWithValue("@id", employeeId);
-                    rows = delEmp.ExecuteNonQuery();
+                    delCmd.Transaction  = tx;
+                    delCmd.CommandText  = "DELETE FROM employees WHERE id = @id;";
+                    delCmd.Parameters.AddWithValue("@id", employeeId);
+                    rows = delCmd.ExecuteNonQuery();
                 }
 
                 tx.Commit();
@@ -305,105 +222,99 @@ namespace SihyuPOSPayroll.Services
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine("Error deleting employee: " + ex.Message);
+                Console.Error.WriteLine($"[EmployeeService] DeleteEmployee: {ex.Message}");
                 return false;
             }
         }
 
         // =====================================================================
-        // USER ? EMPLOYEE MAPPING
+        // USER ↔ EMPLOYEE MAPPING
         // =====================================================================
 
         public int? GetEmployeeIdByUserId(int userId)
         {
-            using var connection = new MySqlConnection(_connectionString);
-            connection.Open();
-
-            const string sql = "SELECT employee_id FROM users WHERE id = @uid LIMIT 1;";
-            using var cmd = new MySqlCommand(sql, connection);
-            cmd.Parameters.AddWithValue("@uid", userId);
-
-            var res = cmd.ExecuteScalar();
-            if (res == null || res == DBNull.Value) return null;
-
-            var empId = Convert.ToInt32(res);
-            return empId == 0 ? (int?)null : empId;
+            try
+            {
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = "SELECT employee_id FROM users WHERE id = @uid LIMIT 1;";
+                cmd.Parameters.AddWithValue("@uid", userId);
+                var res = cmd.ExecuteScalar();
+                if (res == null || res == DBNull.Value) return null;
+                var val = Convert.ToInt32(res);
+                return val == 0 ? null : val;
+            }
+            catch { return null; }
         }
 
-        // NEW: employeeId ? userId
         public int? GetUserIdByEmployeeId(int employeeId)
         {
-            using var connection = new MySqlConnection(_connectionString);
-            connection.Open();
-
-            const string sql = "SELECT id FROM users WHERE employee_id = @eid LIMIT 1;";
-            using var cmd = new MySqlCommand(sql, connection);
-            cmd.Parameters.AddWithValue("@eid", employeeId);
-
-            var res = cmd.ExecuteScalar();
-            if (res == null || res == DBNull.Value) return null;
-
-            var uid = Convert.ToInt32(res);
-            return uid == 0 ? (int?)null : uid;
+            try
+            {
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = "SELECT id FROM users WHERE employee_id = @eid LIMIT 1;";
+                cmd.Parameters.AddWithValue("@eid", employeeId);
+                var res = cmd.ExecuteScalar();
+                if (res == null || res == DBNull.Value) return null;
+                var val = Convert.ToInt32(res);
+                return val == 0 ? null : val;
+            }
+            catch { return null; }
         }
 
-        // NEW: employee full name
         public string? GetEmployeeFullName(int employeeId)
         {
-            using var connection = new MySqlConnection(_connectionString);
-            connection.Open();
-
-            const string sql = "SELECT full_name FROM employees WHERE id = @id LIMIT 1;";
-            using var cmd = new MySqlCommand(sql, connection);
-            cmd.Parameters.AddWithValue("@id", employeeId);
-
-            var res = cmd.ExecuteScalar();
-            return res == null || res == DBNull.Value ? null : res.ToString();
+            try
+            {
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = "SELECT full_name FROM employees WHERE id = @id LIMIT 1;";
+                cmd.Parameters.AddWithValue("@id", employeeId);
+                var res = cmd.ExecuteScalar();
+                return res == null || res == DBNull.Value ? null : res.ToString();
+            }
+            catch { return null; }
         }
 
-        // NEW: days_mask of assigned work schedule (nullable if none)
         public int? GetWorkScheduleDaysMask(int employeeId)
         {
-            using var connection = new MySqlConnection(_connectionString);
-            connection.Open();
-
-            const string sql = @"
-                SELECT ws.days_mask
-                FROM employees e
-                LEFT JOIN work_schedule ws ON ws.id = e.work_schedule_id
-                WHERE e.id = @eid
-                LIMIT 1;";
-            using var cmd = new MySqlCommand(sql, connection);
-            cmd.Parameters.AddWithValue("@eid", employeeId);
-
-            var res = cmd.ExecuteScalar();
-            if (res == null || res == DBNull.Value) return null;
-
-            try { return Convert.ToInt32(res); }
+            try
+            {
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = @"
+                    SELECT ws.days_mask
+                    FROM   employees e
+                    LEFT JOIN work_schedule ws ON ws.id = e.work_schedule_id
+                    WHERE  e.id = @eid
+                    LIMIT  1;";
+                cmd.Parameters.AddWithValue("@eid", employeeId);
+                var res = cmd.ExecuteScalar();
+                if (res == null || res == DBNull.Value) return null;
+                try { return Convert.ToInt32(res); } catch { return null; }
+            }
             catch { return null; }
         }
 
         // =====================================================================
-        // NEW: Active/Inactive status setters
+        // ACTIVE / INACTIVE STATUS
         // =====================================================================
 
         public bool SetUserActiveStatusByEmployeeId(int employeeId, bool isActive)
         {
             try
             {
-                using var connection = new MySqlConnection(_connectionString);
-                connection.Open();
-
-                const string sql = "UPDATE users SET is_active = @active WHERE employee_id = @eid;";
-                using var cmd = new MySqlCommand(sql, connection);
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = "UPDATE users SET is_active = @active WHERE employee_id = @eid;";
                 cmd.Parameters.AddWithValue("@active", isActive ? 1 : 0);
-                cmd.Parameters.AddWithValue("@eid", employeeId);
-
+                cmd.Parameters.AddWithValue("@eid",    employeeId);
                 return cmd.ExecuteNonQuery() > 0;
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine("Error updating user active status by employee_id: " + ex.Message);
+                Console.Error.WriteLine($"[EmployeeService] SetUserActiveStatusByEmployeeId: {ex.Message}");
                 return false;
             }
         }
@@ -412,63 +323,126 @@ namespace SihyuPOSPayroll.Services
         {
             try
             {
-                using var connection = new MySqlConnection(_connectionString);
-                connection.Open();
-
-                const string sql = "UPDATE users SET is_active = @active WHERE id = @uid;";
-                using var cmd = new MySqlCommand(sql, connection);
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = "UPDATE users SET is_active = @active WHERE id = @uid;";
                 cmd.Parameters.AddWithValue("@active", isActive ? 1 : 0);
-                cmd.Parameters.AddWithValue("@uid", userId);
-
+                cmd.Parameters.AddWithValue("@uid",    userId);
                 return cmd.ExecuteNonQuery() > 0;
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine("Error updating user active status by user_id: " + ex.Message);
+                Console.Error.WriteLine($"[EmployeeService] SetUserActiveStatusByUserId: {ex.Message}");
                 return false;
             }
         }
 
         // =====================================================================
-        // Mapper / helpers
+        // PRIVATE HELPERS
         // =====================================================================
 
-        private static EmployeeModel MapEmployee(MySqlDataReader r)
+        private static EmployeeModel MapEmployee(SqliteDataReader r)
         {
-            var model = new EmployeeModel
+            var emp = new EmployeeModel
             {
-                Id = r.GetInt32("id"),
-                FullName = r["full_name"]?.ToString(),
-                Age = HasColumn(r, "age") && !r.IsDBNull(r.GetOrdinal("age")) ? r.GetInt32("age") : (int?)null,
-                Sex = r["sex"]?.ToString(),
-                Address = r["address"]?.ToString(),
-                Birthday = HasColumn(r, "birthday") && !r.IsDBNull(r.GetOrdinal("birthday")) ? r.GetDateTime("birthday") : (DateTime?)null,
-                ContactNumber = r["contact_number"]?.ToString(),
-                Position = r["position"]?.ToString(),
-                SalaryPerDay = HasColumn(r, "salary_per_day") && !r.IsDBNull(r.GetOrdinal("salary_per_day")) ? r.GetDecimal("salary_per_day") : (decimal?)null,
-
-                WorkScheduleId = HasColumn(r, "work_schedule_id") && !r.IsDBNull(r.GetOrdinal("work_schedule_id")) ? r.GetInt32("work_schedule_id") : (int?)null,
-                Shift = r["shift"]?.ToString(),
-                SssNumber = r["sss_number"]?.ToString(),
-                PhilhealthNumber = r["philhealth_number"]?.ToString(),
-                PagibigNumber = r["pagibig_number"]?.ToString(),
-                ImageUrl = r["image_url"]?.ToString(),
-                EmergencyContact = r["emergency_contact"]?.ToString(),
-                DateHired = HasColumn(r, "date_hired") && !r.IsDBNull(r.GetOrdinal("date_hired")) ? r.GetDateTime("date_hired") : (DateTime?)null,
-                CreatedAt = HasColumn(r, "created_at") && !r.IsDBNull(r.GetOrdinal("created_at")) ? r.GetDateTime("created_at") : DateTime.Now
+                Id               = r.GetInt32(r.GetOrdinal("id")),
+                FullName         = SafeString(r, "full_name"),
+                Age              = SafeInt(r,    "age"),
+                Sex              = SafeString(r, "sex"),
+                Address          = SafeString(r, "address"),
+                Birthday         = SafeDate(r,   "birthday"),
+                ContactNumber    = SafeString(r, "contact_number"),
+                Position         = SafeString(r, "position"),
+                SalaryPerDay     = SafeDecimal(r,"salary_per_day"),
+                WorkScheduleId   = SafeInt(r,    "work_schedule_id"),
+                Shift            = SafeString(r, "shift"),
+                SssNumber        = SafeString(r, "sss_number"),
+                PhilhealthNumber = SafeString(r, "philhealth_number"),
+                PagibigNumber    = SafeString(r, "pagibig_number"),
+                ImageUrl         = SafeString(r, "image_url"),
+                EmergencyContact = SafeString(r, "emergency_contact"),
+                DateHired        = SafeDate(r,   "date_hired"),
+                CreatedAt        = SafeDateTime(r,"created_at") ?? DateTime.Now,
             };
 
-            return model;
+            // Attach linked user account when the JOIN returned one
+            if (HasColumn(r, "user_id") && !r.IsDBNull(r.GetOrdinal("user_id")))
+            {
+                emp.UserAccount = new UserModel
+                {
+                    Id         = r.GetInt32(r.GetOrdinal("user_id")),
+                    Email      = SafeString(r, "user_email"),
+                    Role       = SafeString(r, "user_role"),
+                    EmployeeId = emp.Id,
+                    IsActive   = r.GetInt32(r.GetOrdinal("user_is_active")) == 1,
+                };
+            }
+
+            return emp;
         }
 
-        private static bool ReadTinyIntBool(IDataRecord r, string col, bool defaultValue = false)
+        /// <summary>Bind INSERT/UPDATE parameters shared between Add and Update.</summary>
+        private static void BindEmployeeParams(SqliteCommand cmd, EmployeeModel e)
         {
-            if (!HasColumn(r, col) || r.IsDBNull(r.GetOrdinal(col))) return defaultValue;
-            try { return Convert.ToInt32(r[col]) == 1; }
-            catch { return defaultValue; }
+            cmd.Parameters.AddWithValue("@fullName",         (object?)e.FullName         ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@age",              (object?)e.Age               ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@sex",              (object?)e.Sex               ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@address",          (object?)e.Address           ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@birthday",         e.Birthday.HasValue
+                                                                 ? e.Birthday.Value.ToString("yyyy-MM-dd")
+                                                                 : (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("@contactNumber",    (object?)e.ContactNumber     ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@position",         (object?)e.Position          ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@salaryPerDay",     (object?)e.SalaryPerDay      ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@workScheduleId",   (object?)e.WorkScheduleId    ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@shift",            (object?)e.Shift             ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@sssNumber",        (object?)e.SssNumber         ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@philhealthNumber", (object?)e.PhilhealthNumber  ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@pagibigNumber",    (object?)e.PagibigNumber      ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@imageUrl",         (object?)e.ImageUrl          ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@emergencyContact", (object?)e.EmergencyContact  ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@dateHired",        e.DateHired.HasValue
+                                                                 ? e.DateHired.Value.ToString("yyyy-MM-dd")
+                                                                 : (object)DBNull.Value);
         }
 
-        private static object ParamOrDbNull(object? value) => value ?? DBNull.Value;
+        // ── Type-safe nullable readers ──────────────────────────────────────
+
+        private static string? SafeString(IDataRecord r, string col)
+        {
+            int ord = r.GetOrdinal(col);
+            return r.IsDBNull(ord) ? null : r.GetString(ord);
+        }
+
+        private static int? SafeInt(IDataRecord r, string col)
+        {
+            int ord = r.GetOrdinal(col);
+            return r.IsDBNull(ord) ? null : r.GetInt32(ord);
+        }
+
+        private static decimal? SafeDecimal(IDataRecord r, string col)
+        {
+            int ord = r.GetOrdinal(col);
+            if (r.IsDBNull(ord)) return null;
+            return Convert.ToDecimal(r.GetValue(ord));
+        }
+
+        private static DateTime? SafeDate(IDataRecord r, string col)
+        {
+            int ord = r.GetOrdinal(col);
+            if (r.IsDBNull(ord)) return null;
+            var raw = r.GetString(ord);
+            return DateTime.TryParse(raw, out var dt) ? dt : null;
+        }
+
+        private static DateTime? SafeDateTime(IDataRecord r, string col)
+        {
+            int ord;
+            try { ord = r.GetOrdinal(col); } catch { return null; }
+            if (r.IsDBNull(ord)) return null;
+            var raw = r.GetString(ord);
+            return DateTime.TryParse(raw, out var dt) ? dt : null;
+        }
 
         private static bool HasColumn(IDataRecord r, string name)
         {
