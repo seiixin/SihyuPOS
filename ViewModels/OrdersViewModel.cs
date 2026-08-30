@@ -270,36 +270,42 @@ namespace SihyuPOSPayroll.ViewModels
         }
 
         // ===== Persist header+items =====
-        public void SaveEditing()
+        public void SaveEditing() => SaveEditingAndGetId();
+
+        /// <summary>Saves and returns the persisted order ID (0 on failure).</summary>
+        public int SaveEditingAndGetId()
         {
-            if (EditingOrder == null) return;
+            if (EditingOrder == null) return 0;
 
             try
             {
-                // Ensure proxy values are flushed to EditingOrder
                 EditingOrder.PaymentStatus = _editingPaymentStatus;
                 EditingOrder.OrderStatus   = _editingOrderStatus;
                 EditingOrder.Items = new List<OrderItemModel>(EditingItems);
                 EditingOrder.RecalculateTotal();
 
                 if (EditingOrder.Id == 0)
-                    _orderService.AddOrder(EditingOrder);     // throws if table occupied
+                    EditingOrder.Id = _orderService.AddOrder(EditingOrder);
                 else
-                    _orderService.UpdateOrder(EditingOrder);  // throws if new table occupied
+                    _orderService.UpdateOrder(EditingOrder);
 
                 LoadOrders();
 
                 var orderId = EditingOrder.Id == 0 ? (int?)null : EditingOrder.Id;
                 LoadTablesForPicker(orderId, includeOccupied: orderId.HasValue);
+
+                return EditingOrder.Id;
             }
             catch (InvalidOperationException ex)
             {
                 MessageBox.Show(ex.Message, "Orders", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return 0;
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Failed to save order.\n{ex.Message}", "Orders",
                     MessageBoxButton.OK, MessageBoxImage.Error);
+                return 0;
             }
         }
 

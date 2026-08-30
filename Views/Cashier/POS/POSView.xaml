@@ -607,7 +607,7 @@
                                     Style="{StaticResource SecondaryButton}"
                                     Margin="0,0,8,0"
                                     Click="AddLine_Click"/>
-                            <Button Content="Save Order"
+                            <Button Content="Settle Payment"
                                     Style="{StaticResource PrimaryButton}"
                                     Margin="0,0,8,0"
                                     Click="SaveEditor_Click"

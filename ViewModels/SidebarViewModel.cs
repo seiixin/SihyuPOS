@@ -189,10 +189,13 @@ namespace SihyuPOSPayroll.ViewModels
 
         private void ApplyHeader(EmployeeModel? emp)
         {
-            // Derive name
-            UserName = string.IsNullOrWhiteSpace(emp?.FullName)
-                ? "(Unknown)"
-                : emp!.FullName;
+            // Derive name: employee full name → session email (strip @domain) → role
+            if (!string.IsNullOrWhiteSpace(emp?.FullName))
+                UserName = emp!.FullName;
+            else if (!string.IsNullOrWhiteSpace(Helpers.Session.CurrentUser?.Email))
+                UserName = Helpers.Session.CurrentUser.Email.Split('@')[0];
+            else
+                UserName = Helpers.Session.CurrentUserRole is { Length: > 0 } r ? r : "User";
 
             // Derive role: employee's linked user account → in-memory Session → previous _role → "EMPLOYEE"
             var roleRaw = emp?.UserAccount?.Role

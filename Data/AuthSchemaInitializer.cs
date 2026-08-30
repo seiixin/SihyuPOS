@@ -400,7 +400,7 @@ namespace SihyuPOSPayroll.Data
             {
                 cmd.CommandText = @"
                     INSERT OR IGNORE INTO SystemSettings (SettingKey, SettingValue)
-                    VALUES ('SystemMode', 'RestaurantMode');";
+                    VALUES ('SystemMode', 'StoreMode');";
                 cmd.ExecuteNonQuery();
             }
 

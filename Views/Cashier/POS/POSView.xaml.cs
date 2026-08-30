@@ -74,7 +74,15 @@ namespace SihyuPOSPayroll.Views.Cashier.POS
         // rerouted into it, so the scanner never needs the user to click first.
         private void POS_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            // Don't intercept keys while the new-item dialog is open
+            // F3 — open Settle Payment (same guard as the button)
+            if (e.Key == Key.F3 && DialogOverlay.Visibility != Visibility.Visible)
+            {
+                e.Handled = true;
+                SaveEditor_Click(sender, e);
+                return;
+            }
+
+            // Don't intercept keys while any dialog is open
             if (DialogOverlay.Visibility == Visibility.Visible) return;
 
             // Don't redirect when the user is typing in the search box or
@@ -419,16 +427,64 @@ namespace SihyuPOSPayroll.Views.Cashier.POS
 
         private void SaveEditor_Click(object sender, RoutedEventArgs e)
         {
+            // Guard: cart must have at least one item
+            if (Vm.EditingItems.Count == 0)
+            {
+                MessageBox.Show("Add at least one item before settling payment.", "POS",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                BarcodeBox.Focus();
+                return;
+            }
+
+            // Freeze the order type before opening the modal
+            Vm.EditingOrder!.OrderType = Vm.SelectedOrderType;
+            Vm.RecalcEditingTotal();
+
+            ShowSettlePaymentDialog();
+        }
+
+        // ── Settle Payment dialog ─────────────────────────────────────────────
+        private void ShowSettlePaymentDialog()
+        {
+            decimal total   = Vm.EditingOrder?.TotalAmount ?? 0m;
+            int     orderId = Vm.EditingOrder?.Id ?? 0;
+
+            var dialog = new SettlePaymentDialog(total, orderId);
+            dialog.DialogClosed += OnSettlePaymentDialogClosed;
+
+            DialogHost.Content       = dialog;
+            DialogOverlay.Visibility = Visibility.Visible;
+        }
+
+        private void OnSettlePaymentDialogClosed(object? sender, Models.SettlePaymentResult? result)
+        {
+            // Tear down the overlay first, regardless of outcome
+            DialogOverlay.Visibility = Visibility.Collapsed;
+            DialogHost.Content       = null;
+
+            if (result == null)
+            {
+                // User cancelled — stay on the current order
+                BarcodeBox.Focus();
+                return;
+            }
+
             try
             {
-                Vm.EditingOrder!.OrderType = Vm.SelectedOrderType;
-
-                // POS always completes as Paid — the dropdown is hidden in this view
+                // POS always records the order as Paid + Completed
                 Vm.EditingPaymentStatus = PaymentStatus.Paid;
 
-                Vm.SaveEditing();
+                int savedOrderId = Vm.SaveEditingAndGetId();
+
+                if (result.PrintReceipt && savedOrderId > 0)
+                    TriggerPrint(result, savedOrderId);
+
+                // Show a brief confirmation then reset
+                BarcodeFeedback.Text       = $"✓ Paid ₱{result.Total:N2}  Change ₱{result.Change:N2}";
+                BarcodeFeedback.Foreground = new System.Windows.Media.SolidColorBrush(
+                    System.Windows.Media.Color.FromRgb(0x10, 0xB9, 0x81));
+
                 Vm.BeginAdd();
-                BarcodeFeedback.Text = string.Empty;
             }
             catch (Exception ex)
             {
@@ -438,6 +494,35 @@ namespace SihyuPOSPayroll.Views.Cashier.POS
             finally
             {
                 BarcodeBox.Focus();
+            }
+        }
+
+        /// <summary>
+        /// Save → get the receipt that AddOrder created → hand off to the shared
+        /// ReceiptsViewModel print pipeline (same PDF/JPG flow used in the Receipts page).
+        /// </summary>
+        private static void TriggerPrint(Models.SettlePaymentResult result, int savedOrderId)
+        {
+            try
+            {
+                // The receipt row is created automatically by OrderService.AddOrder()
+                // when PaymentStatus == Paid.  Fetch it now.
+                var receipt = Services.ReceiptsServices.GetByOrderId(savedOrderId);
+                if (receipt == null)
+                {
+                    MessageBox.Show("Receipt not found for this order.", "Print",
+                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                // Reuse the exact same print logic from ReceiptsViewModel
+                var vm = new ViewModels.ReceiptsViewModel();
+                vm.PrintCommand.Execute(receipt.ReceiptId);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Print failed:\n{ex.Message}", "Print",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

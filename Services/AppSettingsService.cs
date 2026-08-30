@@ -1,56 +1,33 @@
+#nullable enable
+using Microsoft.Data.Sqlite;
+using SihyuPOSPayroll.Data;
 using System;
 using System.Diagnostics;
-using MySql.Data.MySqlClient;
 
 namespace SihyuPOSPayroll.Services
 {
     /// <summary>
-    /// Manages the <c>app_settings</c> table.
+    /// Manages the <c>app_settings</c> table in SQLite.
     ///
-    /// Schema:
-    ///   id          INT AUTO_INCREMENT PRIMARY KEY
-    ///   user        VARCHAR(100)  — username or "global" for shared settings
-    ///   page        VARCHAR(100)  — e.g. "inventory", "pos", "sales"
-    ///   column_name VARCHAR(100)  — e.g. "qty", "category", "expiry_date"
-    ///   is_show     TINYINT(1)    — 1 = visible, 0 = hidden
-    ///   UNIQUE KEY  uq_app_settings (user, page, column_name)
+    /// Schema (created by <see cref="AuthSchemaInitializer"/>):
+    ///   id          INTEGER PRIMARY KEY AUTOINCREMENT
+    ///   user        TEXT  — username or "global" for shared settings
+    ///   page        TEXT  — e.g. "inventory", "pos", "sales"
+    ///   column_name TEXT  — e.g. "qty", "category", "expiry_date"
+    ///   is_show     INTEGER — 1 = visible, 0 = hidden
+    ///   UNIQUE (user, page, column_name)
     /// </summary>
     public static class AppSettingsService
     {
-        private const string Cs =
-            "server=localhost;user=root;password=;database=sihyu_pos;";
         private const int Timeout = 10;
 
         // ── Schema ────────────────────────────────────────────────────────────
 
         /// <summary>
-        /// Creates the app_settings table if it does not yet exist.
-        /// Safe to call multiple times — idempotent.
+        /// No-op — table is created by <see cref="AuthSchemaInitializer.EnsureSchemaAtStartup"/>.
+        /// Kept for API compatibility with any callers.
         /// </summary>
-        public static void EnsureTable()
-        {
-            try
-            {
-                using var conn = new MySqlConnection(Cs);
-                conn.Open();
-                const string sql = @"
-                    CREATE TABLE IF NOT EXISTS app_settings (
-                        id          INT          NOT NULL AUTO_INCREMENT PRIMARY KEY,
-                        user        VARCHAR(100) NOT NULL DEFAULT 'global',
-                        page        VARCHAR(100) NOT NULL,
-                        column_name VARCHAR(100) NOT NULL,
-                        is_show     TINYINT(1)   NOT NULL DEFAULT 1,
-                        UNIQUE KEY uq_app_settings (user, page, column_name)
-                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
-                using var cmd = new MySqlCommand(sql, conn);
-                cmd.CommandTimeout = Timeout;
-                cmd.ExecuteNonQuery();
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[AppSettingsService] EnsureTable: {ex.Message}");
-            }
-        }
+        public static void EnsureTable() { }
 
         // ── Read ──────────────────────────────────────────────────────────────
 
@@ -66,17 +43,15 @@ namespace SihyuPOSPayroll.Services
         {
             try
             {
-                using var conn = new MySqlConnection(Cs);
-                conn.Open();
-                const string sql = @"
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = @"
                     SELECT is_show
                     FROM   app_settings
                     WHERE  user        = @user
                       AND  page        = @page
                       AND  column_name = @col
                     LIMIT 1;";
-                using var cmd = new MySqlCommand(sql, conn);
-                cmd.CommandTimeout = Timeout;
                 cmd.Parameters.AddWithValue("@user", user);
                 cmd.Parameters.AddWithValue("@page", page);
                 cmd.Parameters.AddWithValue("@col",  columnName);
@@ -108,14 +83,13 @@ namespace SihyuPOSPayroll.Services
         {
             try
             {
-                using var conn = new MySqlConnection(Cs);
-                conn.Open();
-                const string sql = @"
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                // INSERT OR REPLACE respects the UNIQUE(user, page, column_name) constraint.
+                cmd.CommandText = @"
                     INSERT INTO app_settings (user, page, column_name, is_show)
                     VALUES (@user, @page, @col, @show)
-                    ON DUPLICATE KEY UPDATE is_show = @show;";
-                using var cmd = new MySqlCommand(sql, conn);
-                cmd.CommandTimeout = Timeout;
+                    ON CONFLICT(user, page, column_name) DO UPDATE SET is_show = excluded.is_show;";
                 cmd.Parameters.AddWithValue("@user", user);
                 cmd.Parameters.AddWithValue("@page", page);
                 cmd.Parameters.AddWithValue("@col",  columnName);
