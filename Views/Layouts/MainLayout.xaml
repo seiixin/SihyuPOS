@@ -36,7 +36,7 @@
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>  <!-- toggle -->
-                        <ColumnDefinition Width="*"/>     <!-- search bar -->
+                        <ColumnDefinition Width="*"/>     <!-- spacer -->
                         <ColumnDefinition Width="Auto"/>  <!-- notification bell -->
                     </Grid.ColumnDefinitions>
 
@@ -51,31 +51,6 @@
                             FontFamily="Segoe MDL2 Assets"
                             FontSize="16"
                             VerticalAlignment="Center"/>
-
-                    <!-- Search bar -->
-                    <Border Grid.Column="1"
-                            Background="#0D1117"
-                            CornerRadius="8"
-                            Padding="12,0"
-                            Margin="12,8"
-                            VerticalAlignment="Stretch">
-                        <Grid>
-                            <TextBlock Text="&#xE721;"
-                                       FontFamily="Segoe MDL2 Assets"
-                                       FontSize="13"
-                                       Foreground="#6B7280"
-                                       VerticalAlignment="Center"
-                                       Margin="0,0,8,0"
-                                       HorizontalAlignment="Left"/>
-                            <TextBox x:Name="TopBarSearchBox"
-                                     Background="Transparent"
-                                     BorderThickness="0"
-                                     Foreground="#F3F4F6"
-                                     VerticalAlignment="Center"
-                                     Margin="20,0,0,0"
-                                     Text=""/>
-                        </Grid>
-                    </Border>
 
                     <!-- Notification bell -->
                     <Button Grid.Column="2"

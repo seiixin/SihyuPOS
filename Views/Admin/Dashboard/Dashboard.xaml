@@ -191,7 +191,8 @@
                                                 Width="1.4*"/>
                             <DataGridTextColumn Header="Table"
                                                 Binding="{Binding TableNumber}"
-                                                Width="*"/>
+                                                Width="*"
+                                                Visibility="Collapsed"/>
                             <DataGridTextColumn Header="Total"
                                                 Binding="{Binding TotalAmount, StringFormat=₱{0:N2}}"
                                                 Width="1.2*"/>

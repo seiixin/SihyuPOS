@@ -1,243 +1,278 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
-using System.Data;
+using Microsoft.Data.Sqlite;
+using SihyuPOSPayroll.Data;
 using SihyuPOSPayroll.Models;
-using MySql.Data.MySqlClient;
 
 namespace SihyuPOSPayroll.Services
 {
     public static class SalesService
     {
-        private const string ConnectionString = "server=localhost;user=root;password=;database=sihyu_pos;";
+        // ── GetSales ──────────────────────────────────────────────────────────
 
         public static List<SalesRow> GetSales(ReportPeriod period)
         {
-            using var conn = new MySqlConnection(ConnectionString);
-            conn.Open();
-
-            string sql = period switch
-            {
-                ReportPeriod.Daily => @"
-                    SELECT DATE(r.issued_at) AS sdate,
-                           DATE(r.issued_at) AS edate,
-                           SUM(r.amount_paid) AS total,
-                           COUNT(*) AS cnt
-                    FROM receipts r
-                    GROUP BY DATE(r.issued_at)
-                    ORDER BY sdate DESC;",
-
-                ReportPeriod.Weekly => @"
-                    SELECT YEARWEEK(r.issued_at,1) AS yw,
-                           MIN(DATE(r.issued_at)) AS sdate,
-                           MAX(DATE(r.issued_at)) AS edate,
-                           SUM(r.amount_paid) AS total,
-                           COUNT(*) AS cnt
-                    FROM receipts r
-                    GROUP BY YEARWEEK(r.issued_at,1)
-                    ORDER BY sdate DESC;",
-
-                ReportPeriod.Monthly => @"
-                    SELECT DATE_FORMAT(r.issued_at, '%Y-%m') AS ym,
-                           MIN(DATE(r.issued_at)) AS sdate,
-                           MAX(DATE(r.issued_at)) AS edate,
-                           SUM(r.amount_paid) AS total,
-                           COUNT(*) AS cnt
-                    FROM receipts r
-                    GROUP BY DATE_FORMAT(r.issued_at, '%Y-%m')
-                    ORDER BY sdate DESC;",
-
-                ReportPeriod.Quarterly => @"
-                    SELECT YEAR(r.issued_at) AS y,
-                           QUARTER(r.issued_at) AS q,
-                           MIN(DATE(r.issued_at)) AS sdate,
-                           MAX(DATE(r.issued_at)) AS edate,
-                           SUM(r.amount_paid) AS total,
-                           COUNT(*) AS cnt
-                    FROM receipts r
-                    GROUP BY YEAR(r.issued_at), QUARTER(r.issued_at)
-                    ORDER BY sdate DESC;",
-
-                _ => @"
-                    SELECT YEAR(r.issued_at) AS y,
-                           MIN(DATE(r.issued_at)) AS sdate,
-                           MAX(DATE(r.issued_at)) AS edate,
-                           SUM(r.amount_paid) AS total,
-                           COUNT(*) AS cnt
-                    FROM receipts r
-                    GROUP BY YEAR(r.issued_at)
-                    ORDER BY sdate DESC;"
-            };
-
-            using var cmd = new MySqlCommand(sql, conn);
-            using var rd = cmd.ExecuteReader();
-
             var rows = new List<SalesRow>();
-            while (rd.Read())
+            try
             {
-                DateTime sdate = rd.GetDateTime("sdate");
-                DateTime edate = rd.GetDateTime("edate");
-                decimal total = rd.IsDBNull(rd.GetOrdinal("total")) ? 0m : rd.GetDecimal("total");
-                int cnt = rd.IsDBNull(rd.GetOrdinal("cnt")) ? 0 : rd.GetInt32("cnt");
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = BuildGetSalesSql(period);
 
-                string label = period switch
-                {
-                    ReportPeriod.Daily => sdate.ToString("yyyy-MM-dd"),
-                    ReportPeriod.Weekly => $"{sdate:yyyy} W{System.Globalization.ISOWeek.GetWeekOfYear(sdate)}",
-                    ReportPeriod.Monthly => sdate.ToString("yyyy-MM"),
-                    ReportPeriod.Quarterly => $"{sdate:yyyy} Q{((sdate.Month - 1) / 3) + 1}",
-                    ReportPeriod.Yearly => sdate.ToString("yyyy"),
-                    _ => sdate.ToString("yyyy-MM-dd")
-                };
-
-                rows.Add(new SalesRow
-                {
-                    Period = label,
-                    StartDate = sdate,
-                    EndDate = edate,
-                    TotalAmount = total,
-                    ReceiptCount = cnt
-                });
-            }
-
-            return rows;
-        }
-        /// <summary>
-        /// Returns total sales for today from the receipts table.
-        /// Falls back to summing paid orders if receipts table is empty.
-        /// </summary>
-        public static decimal GetTodayTotal()
-        {
-            using var conn = new MySqlConnection(ConnectionString);
-            conn.Open();
-
-            // Primary: sum receipts issued today
-            const string receiptSql = @"
-                SELECT COALESCE(SUM(r.amount_paid), 0)
-                FROM receipts r
-                WHERE DATE(r.issued_at) = CURDATE();";
-
-            using (var cmd = new MySqlCommand(receiptSql, conn))
-            {
-                var obj = cmd.ExecuteScalar();
-                decimal fromReceipts = (obj == null || obj == DBNull.Value) ? 0m : Convert.ToDecimal(obj);
-                if (fromReceipts > 0) return fromReceipts;
-            }
-
-            // Fallback: sum paid orders created today (in case receipt row is missing)
-            const string orderSql = @"
-                SELECT COALESCE(SUM(total_amount), 0)
-                FROM orders
-                WHERE payment_status = 'Paid'
-                  AND DATE(created_at) = CURDATE();";
-
-            using (var cmd2 = new MySqlCommand(orderSql, conn))
-            {
-                var obj2 = cmd2.ExecuteScalar();
-                return (obj2 == null || obj2 == DBNull.Value) ? 0m : Convert.ToDecimal(obj2);
-            }
-        }
-
-        /// <summary>
-        /// Returns total sales for yesterday (same dual-source logic).
-        /// </summary>
-        public static decimal GetYesterdayTotal()
-        {
-            using var conn = new MySqlConnection(ConnectionString);
-            conn.Open();
-
-            const string receiptSql = @"
-                SELECT COALESCE(SUM(r.amount_paid), 0)
-                FROM receipts r
-                WHERE DATE(r.issued_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY);";
-
-            using (var cmd = new MySqlCommand(receiptSql, conn))
-            {
-                var obj = cmd.ExecuteScalar();
-                decimal fromReceipts = (obj == null || obj == DBNull.Value) ? 0m : Convert.ToDecimal(obj);
-                if (fromReceipts > 0) return fromReceipts;
-            }
-
-            const string orderSql = @"
-                SELECT COALESCE(SUM(total_amount), 0)
-                FROM orders
-                WHERE payment_status = 'Paid'
-                  AND DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY);";
-
-            using (var cmd2 = new MySqlCommand(orderSql, conn))
-            {
-                var obj2 = cmd2.ExecuteScalar();
-                return (obj2 == null || obj2 == DBNull.Value) ? 0m : Convert.ToDecimal(obj2);
-            }
-        }
-
-        /// <summary>
-        /// Returns daily sales rows for a given month/year, reading from both
-        /// receipts (primary) and paid orders (fallback/merge).
-        /// </summary>
-        public static List<SalesRow> GetDailySalesForMonth(int year, int month)
-        {
-            using var conn = new MySqlConnection(ConnectionString);
-            conn.Open();
-
-            // Try receipts first
-            const string receiptSql = @"
-                SELECT DATE(r.issued_at) AS sdate,
-                       SUM(r.amount_paid) AS total,
-                       COUNT(*) AS cnt
-                FROM receipts r
-                WHERE YEAR(r.issued_at) = @yr AND MONTH(r.issued_at) = @mo
-                GROUP BY DATE(r.issued_at)
-                ORDER BY sdate;";
-
-            var rows = new List<SalesRow>();
-            using (var cmd = new MySqlCommand(receiptSql, conn))
-            {
-                cmd.Parameters.AddWithValue("@yr", year);
-                cmd.Parameters.AddWithValue("@mo", month);
                 using var rd = cmd.ExecuteReader();
                 while (rd.Read())
                 {
+                    DateTime sdate = DateTime.Parse(rd.GetString(rd.GetOrdinal("sdate")));
+                    DateTime edate = DateTime.Parse(rd.GetString(rd.GetOrdinal("edate")));
+                    decimal  total = rd.IsDBNull(rd.GetOrdinal("total")) ? 0m : Convert.ToDecimal(rd.GetValue(rd.GetOrdinal("total")));
+                    int      cnt   = rd.IsDBNull(rd.GetOrdinal("cnt"))   ? 0  : rd.GetInt32(rd.GetOrdinal("cnt"));
+
+                    string label = period switch
+                    {
+                        ReportPeriod.Daily     => sdate.ToString("yyyy-MM-dd"),
+                        ReportPeriod.Weekly    => $"{sdate:yyyy} W{System.Globalization.ISOWeek.GetWeekOfYear(sdate)}",
+                        ReportPeriod.Monthly   => sdate.ToString("yyyy-MM"),
+                        ReportPeriod.Quarterly => $"{sdate:yyyy} Q{((sdate.Month - 1) / 3) + 1}",
+                        ReportPeriod.Yearly    => sdate.ToString("yyyy"),
+                        _                      => sdate.ToString("yyyy-MM-dd"),
+                    };
+
                     rows.Add(new SalesRow
                     {
-                        StartDate    = rd.GetDateTime("sdate"),
-                        EndDate      = rd.GetDateTime("sdate"),
-                        TotalAmount  = rd.IsDBNull(rd.GetOrdinal("total")) ? 0m : rd.GetDecimal("total"),
-                        ReceiptCount = rd.IsDBNull(rd.GetOrdinal("cnt"))   ? 0   : rd.GetInt32("cnt"),
+                        Period       = label,
+                        StartDate    = sdate,
+                        EndDate      = edate,
+                        TotalAmount  = total,
+                        ReceiptCount = cnt,
                     });
                 }
             }
-
-            if (rows.Count > 0) return rows;
-
-            // Fallback: paid orders
-            const string orderSql = @"
-                SELECT DATE(created_at) AS sdate,
-                       SUM(total_amount) AS total,
-                       COUNT(*) AS cnt
-                FROM orders
-                WHERE payment_status = 'Paid'
-                  AND YEAR(created_at) = @yr AND MONTH(created_at) = @mo
-                GROUP BY DATE(created_at)
-                ORDER BY sdate;";
-
-            using (var cmd2 = new MySqlCommand(orderSql, conn))
+            catch (Exception ex)
             {
-                cmd2.Parameters.AddWithValue("@yr", year);
-                cmd2.Parameters.AddWithValue("@mo", month);
-                using var rd2 = cmd2.ExecuteReader();
-                while (rd2.Read())
+                System.Diagnostics.Debug.WriteLine($"[SalesService] GetSales: {ex.Message}");
+            }
+            return rows;
+        }
+
+        private static string BuildGetSalesSql(ReportPeriod period) => period switch
+        {
+            ReportPeriod.Daily => @"
+                SELECT date(r.issued_at)           AS sdate,
+                       date(r.issued_at)           AS edate,
+                       SUM(r.amount_paid)          AS total,
+                       COUNT(*)                    AS cnt
+                FROM   receipts r
+                GROUP  BY date(r.issued_at)
+                ORDER  BY sdate DESC;",
+
+            ReportPeriod.Weekly => @"
+                SELECT strftime('%Y-%W', r.issued_at)       AS yw,
+                       date(r.issued_at, 'weekday 1', '-6 days') AS sdate,
+                       date(r.issued_at, 'weekday 0')       AS edate,
+                       SUM(r.amount_paid)                   AS total,
+                       COUNT(*)                             AS cnt
+                FROM   receipts r
+                GROUP  BY strftime('%Y-%W', r.issued_at)
+                ORDER  BY sdate DESC;",
+
+            ReportPeriod.Monthly => @"
+                SELECT strftime('%Y-%m', r.issued_at)   AS ym,
+                       date(r.issued_at, 'start of month') AS sdate,
+                       date(r.issued_at, 'start of month', '+1 month', '-1 day') AS edate,
+                       SUM(r.amount_paid)               AS total,
+                       COUNT(*)                         AS cnt
+                FROM   receipts r
+                GROUP  BY strftime('%Y-%m', r.issued_at)
+                ORDER  BY sdate DESC;",
+
+            ReportPeriod.Quarterly => @"
+                SELECT strftime('%Y', r.issued_at)  AS y,
+                       ((CAST(strftime('%m', r.issued_at) AS INTEGER) - 1) / 3) AS q,
+                       MIN(date(r.issued_at))       AS sdate,
+                       MAX(date(r.issued_at))       AS edate,
+                       SUM(r.amount_paid)           AS total,
+                       COUNT(*)                     AS cnt
+                FROM   receipts r
+                GROUP  BY strftime('%Y', r.issued_at),
+                          ((CAST(strftime('%m', r.issued_at) AS INTEGER) - 1) / 3)
+                ORDER  BY sdate DESC;",
+
+            _ => @"
+                SELECT strftime('%Y', r.issued_at)  AS y,
+                       MIN(date(r.issued_at))       AS sdate,
+                       MAX(date(r.issued_at))       AS edate,
+                       SUM(r.amount_paid)           AS total,
+                       COUNT(*)                     AS cnt
+                FROM   receipts r
+                GROUP  BY strftime('%Y', r.issued_at)
+                ORDER  BY sdate DESC;",
+        };
+
+        // ── GetTodayTotal ─────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Sum of receipts issued today.
+        /// Falls back to summing paid orders if no receipts exist for today.
+        /// </summary>
+        public static decimal GetTodayTotal()
+        {
+            try
+            {
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+
+                // Primary: receipts
+                using (var cmd = conn.CreateCommand())
                 {
-                    rows.Add(new SalesRow
-                    {
-                        StartDate    = rd2.GetDateTime("sdate"),
-                        EndDate      = rd2.GetDateTime("sdate"),
-                        TotalAmount  = rd2.IsDBNull(rd2.GetOrdinal("total")) ? 0m : rd2.GetDecimal("total"),
-                        ReceiptCount = rd2.IsDBNull(rd2.GetOrdinal("cnt"))   ? 0   : rd2.GetInt32("cnt"),
-                    });
+                    cmd.CommandText = @"
+                        SELECT COALESCE(SUM(amount_paid), 0)
+                        FROM   receipts
+                        WHERE  date(issued_at) = date('now');";
+                    var obj = cmd.ExecuteScalar();
+                    decimal v = (obj == null || obj == DBNull.Value) ? 0m : Convert.ToDecimal(obj);
+                    if (v > 0) return v;
+                }
+
+                // Fallback: paid orders
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"
+                        SELECT COALESCE(SUM(total_amount), 0)
+                        FROM   orders
+                        WHERE  payment_status = 'Paid'
+                          AND  date(created_at) = date('now');";
+                    var obj = cmd.ExecuteScalar();
+                    return (obj == null || obj == DBNull.Value) ? 0m : Convert.ToDecimal(obj);
                 }
             }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[SalesService] GetTodayTotal: {ex.Message}");
+                return 0m;
+            }
+        }
 
+        // ── GetYesterdayTotal ─────────────────────────────────────────────────
+
+        /// <summary>Returns total sales for yesterday.</summary>
+        public static decimal GetYesterdayTotal()
+        {
+            try
+            {
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+
+                // Primary: receipts
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"
+                        SELECT COALESCE(SUM(amount_paid), 0)
+                        FROM   receipts
+                        WHERE  date(issued_at) = date('now', '-1 day');";
+                    var obj = cmd.ExecuteScalar();
+                    decimal v = (obj == null || obj == DBNull.Value) ? 0m : Convert.ToDecimal(obj);
+                    if (v > 0) return v;
+                }
+
+                // Fallback: paid orders
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"
+                        SELECT COALESCE(SUM(total_amount), 0)
+                        FROM   orders
+                        WHERE  payment_status = 'Paid'
+                          AND  date(created_at) = date('now', '-1 day');";
+                    var obj = cmd.ExecuteScalar();
+                    return (obj == null || obj == DBNull.Value) ? 0m : Convert.ToDecimal(obj);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[SalesService] GetYesterdayTotal: {ex.Message}");
+                return 0m;
+            }
+        }
+
+        // ── GetDailySalesForMonth ─────────────────────────────────────────────
+
+        /// <summary>
+        /// Daily sales rows for a given year/month.
+        /// Reads from receipts first; falls back to paid orders.
+        /// </summary>
+        public static List<SalesRow> GetDailySalesForMonth(int year, int month)
+        {
+            var rows = new List<SalesRow>();
+            try
+            {
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+
+                // Build the month prefix for LIKE matching: e.g. "2026-08"
+                string monthPrefix = $"{year:D4}-{month:D2}";
+
+                // Primary: receipts
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"
+                        SELECT date(issued_at)       AS sdate,
+                               SUM(amount_paid)      AS total,
+                               COUNT(*)              AS cnt
+                        FROM   receipts
+                        WHERE  strftime('%Y-%m', issued_at) = @ym
+                        GROUP  BY date(issued_at)
+                        ORDER  BY sdate;";
+                    cmd.Parameters.AddWithValue("@ym", monthPrefix);
+
+                    using var rd = cmd.ExecuteReader();
+                    while (rd.Read())
+                    {
+                        rows.Add(MapDailyRow(rd));
+                    }
+                }
+
+                if (rows.Count > 0) return rows;
+
+                // Fallback: paid orders
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"
+                        SELECT date(created_at)      AS sdate,
+                               SUM(total_amount)     AS total,
+                               COUNT(*)              AS cnt
+                        FROM   orders
+                        WHERE  payment_status = 'Paid'
+                          AND  strftime('%Y-%m', created_at) = @ym
+                        GROUP  BY date(created_at)
+                        ORDER  BY sdate;";
+                    cmd.Parameters.AddWithValue("@ym", monthPrefix);
+
+                    using var rd = cmd.ExecuteReader();
+                    while (rd.Read())
+                    {
+                        rows.Add(MapDailyRow(rd));
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[SalesService] GetDailySalesForMonth: {ex.Message}");
+            }
             return rows;
+        }
+
+        // ── Private helpers ───────────────────────────────────────────────────
+
+        private static SalesRow MapDailyRow(SqliteDataReader rd)
+        {
+            DateTime sdate = DateTime.Parse(rd.GetString(rd.GetOrdinal("sdate")));
+            decimal  total = rd.IsDBNull(rd.GetOrdinal("total")) ? 0m : Convert.ToDecimal(rd.GetValue(rd.GetOrdinal("total")));
+            int      cnt   = rd.IsDBNull(rd.GetOrdinal("cnt"))   ? 0  : rd.GetInt32(rd.GetOrdinal("cnt"));
+
+            return new SalesRow
+            {
+                StartDate    = sdate,
+                EndDate      = sdate,
+                TotalAmount  = total,
+                ReceiptCount = cnt,
+            };
         }
     }
 }

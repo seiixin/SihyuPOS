@@ -139,17 +139,6 @@ namespace SihyuPOSPayroll.ViewModels
                 Background             = System.Windows.Media.Brushes.Black,
             };
 
-            // Dark title bar via WindowChrome
-            var chrome = new System.Windows.Shell.WindowChrome
-            {
-                CaptionHeight          = 32,
-                ResizeBorderThickness  = new Thickness(5),
-                UseAeroCaptionButtons  = true,
-                GlassFrameThickness    = new Thickness(0),
-                NonClientFrameEdges    = System.Windows.Shell.NonClientFrameEdges.None,
-            };
-            System.Windows.Shell.WindowChrome.SetWindowChrome(window, chrome);
-
             // Apply dark title bar via Win32 DwmSetWindowAttribute (DWMWA_USE_IMMERSIVE_DARK_MODE = 20)
             window.SourceInitialized += (_, __) =>
             {
