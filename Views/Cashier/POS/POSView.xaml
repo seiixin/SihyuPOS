@@ -608,11 +608,22 @@
                                     Style="{StaticResource SecondaryButton}"
                                     Margin="0,0,8,0"
                                     Click="AddLine_Click"/>
-                            <Button Content="Settle Payment"
-                                    Style="{StaticResource PrimaryButton}"
+                            <Button Style="{StaticResource PrimaryButton}"
                                     Margin="0,0,8,0"
                                     Click="SaveEditor_Click"
-                                    IsEnabled="{Binding CanConfirmOrder}"/>
+                                    IsEnabled="{Binding CanConfirmOrder}">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="Settle Payment"
+                                               FontSize="13" FontWeight="SemiBold"
+                                               Foreground="#000000" VerticalAlignment="Center"/>
+                                    <Border Background="#005533" CornerRadius="3"
+                                            Padding="4,1" Margin="7,0,0,0" VerticalAlignment="Center">
+                                        <TextBlock Text="F3"
+                                                   FontSize="10" FontWeight="Bold"
+                                                   Foreground="#00FF88"/>
+                                    </Border>
+                                </StackPanel>
+                            </Button>
                             <Button Content="Cancel"
                                     Style="{StaticResource SecondaryButton}"
                                     Click="CancelEditor_Click"/>

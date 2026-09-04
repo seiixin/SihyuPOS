@@ -204,15 +204,24 @@
 
                     <!-- Action buttons -->
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button x:Name="PrintBtn" Content="Print"
-                                Padding="20,10" FontSize="13" Cursor="Hand" Margin="0,0,8,0"
+                        <Button x:Name="PrintBtn"
+                                Padding="20,8" FontSize="13" Cursor="Hand" Margin="0,0,8,0"
                                 Click="Print_Click">
                             <Button.Template>
                                 <ControlTemplate TargetType="Button">
                                     <Border x:Name="Bg" Background="#0F1220" CornerRadius="6"
                                             BorderBrush="#1A1D2E" BorderThickness="1"
                                             Padding="{TemplateBinding Padding}">
-                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <TextBlock Text="Print"
+                                                       FontSize="13" FontWeight="SemiBold"
+                                                       Foreground="#F3F4F6"
+                                                       HorizontalAlignment="Center"/>
+                                            <TextBlock Text="[ENTER]"
+                                                       FontSize="10" FontWeight="Bold"
+                                                       Foreground="#477C60"
+                                                       HorizontalAlignment="Center"/>
+                                        </StackPanel>
                                     </Border>
                                     <ControlTemplate.Triggers>
                                         <Trigger Property="IsMouseOver" Value="True">
@@ -225,15 +234,24 @@
                                 </ControlTemplate>
                             </Button.Template>
                         </Button>
-                        <Button x:Name="SaveBtn" Content="Save"
-                                Padding="20,10" FontSize="13" FontWeight="SemiBold" Cursor="Hand" Margin="0,0,8,0"
+                        <Button x:Name="SaveBtn"
+                                Padding="20,8" FontSize="13" FontWeight="SemiBold" Cursor="Hand" Margin="0,0,8,0"
                                 Foreground="#000000"
                                 Click="Save_Click">
                             <Button.Template>
                                 <ControlTemplate TargetType="Button">
                                     <Border x:Name="Bg" Background="#128854" CornerRadius="6"
                                             Padding="{TemplateBinding Padding}">
-                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <TextBlock Text="Save"
+                                                       FontSize="13" FontWeight="SemiBold"
+                                                       Foreground="#000000"
+                                                       HorizontalAlignment="Center"/>
+                                            <TextBlock Text="[F4]"
+                                                       FontSize="10" FontWeight="Bold"
+                                                       Foreground="#005533"
+                                                       HorizontalAlignment="Center"/>
+                                        </StackPanel>
                                     </Border>
                                     <ControlTemplate.Triggers>
                                         <Trigger Property="IsMouseOver" Value="True">

@@ -108,15 +108,36 @@ namespace SihyuPOSPayroll.Services
             {
                 using var conn = SqliteConnectionFactory.CreateOpenConnection();
                 using var cmd  = conn.CreateCommand();
-                cmd.CommandText = @"
-                    SELECT
-                        oi.id, oi.order_id, oi.product_id,
-                        oi.quantity, oi.unit_price,
-                        m.Name AS product_name,
-                        m.Category AS category
-                    FROM   order_items oi
-                    LEFT JOIN menu m ON m.Id = oi.product_id
-                    WHERE  oi.order_id = @orderId;";
+
+                bool isStoreMode = SettingsService.Instance.CurrentMode == SystemMode.StoreMode;
+
+                if (isStoreMode)
+                {
+                    // StoreMode: product_ids in order_items reference inventory_items
+                    cmd.CommandText = @"
+                        SELECT
+                            oi.id, oi.order_id, oi.product_id,
+                            oi.quantity, oi.unit_price,
+                            inv.ProductName  AS product_name,
+                            inv.CategoryName AS category
+                        FROM   order_items oi
+                        LEFT JOIN inventory_items inv ON inv.Id = oi.product_id
+                        WHERE  oi.order_id = @orderId;";
+                }
+                else
+                {
+                    // Restaurant mode: product_ids reference menu
+                    cmd.CommandText = @"
+                        SELECT
+                            oi.id, oi.order_id, oi.product_id,
+                            oi.quantity, oi.unit_price,
+                            m.Name     AS product_name,
+                            m.Category AS category
+                        FROM   order_items oi
+                        LEFT JOIN menu m ON m.Id = oi.product_id
+                        WHERE  oi.order_id = @orderId;";
+                }
+
                 cmd.Parameters.AddWithValue("@orderId", orderId);
 
                 using var reader = cmd.ExecuteReader();

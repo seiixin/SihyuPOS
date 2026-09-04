@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 using Microsoft.Data.Sqlite;
 using SihyuPOSPayroll.Data;
 using SihyuPOSPayroll.Models;
@@ -12,15 +12,15 @@ namespace SihyuPOSPayroll.Services
     /// CRUD + sync helpers for the <c>receipts</c> table (SQLite).
     ///
     /// MySQL-specific changes:
-    ///   • DATE_FORMAT(issued_at, '%m/%d/%y') → strftime('%m/%d/%y', issued_at)
-    ///   • CAST(x AS CHAR) → CAST(x AS TEXT)
-    ///   • NOW() → datetime('now')
-    ///   • LAST_INSERT_ID() → last_insert_rowid()
-    ///   • Bulk INSERT … SELECT not changed — SQLite supports it.
+    ///   â€¢ DATE_FORMAT(issued_at, '%m/%d/%y') â†’ strftime('%m/%d/%y', issued_at)
+    ///   â€¢ CAST(x AS CHAR) â†’ CAST(x AS TEXT)
+    ///   â€¢ NOW() â†’ datetime('now')
+    ///   â€¢ LAST_INSERT_ID() â†’ last_insert_rowid()
+    ///   â€¢ Bulk INSERT â€¦ SELECT not changed â€” SQLite supports it.
     /// </summary>
     public static class ReceiptsServices
     {
-        // ── Read ───────────────────────────────────────────────────────────────
+        // â”€â”€ Read â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
         public static List<ReceiptsModel> GetAllReceipts(string? searchTerm = null, int? limit = null)
         {
@@ -35,7 +35,11 @@ namespace SihyuPOSPayroll.Services
                         r.id                                             AS ReceiptId,
                         r.order_id                                       AS OrderId,
                         COALESCE(o.table_number, '')                     AS TableNumber,
-                        strftime('%m/%d/%y', r.issued_at)                AS Date,
+                        COALESCE(
+                            strftime('%m/%d/%Y %H:%M', r.issued_at),
+                            strftime('%m/%d/%Y %H:%M', o.created_at),
+                            '—'
+                        )                                                AS Date,
                         r.amount_paid                                    AS Amount
                     FROM   receipts r
                     LEFT JOIN orders o ON r.order_id = o.id";
@@ -44,7 +48,7 @@ namespace SihyuPOSPayroll.Services
                     sql += @"
                     WHERE  CAST(r.order_id AS TEXT) LIKE @t
                        OR  COALESCE(o.table_number,'') LIKE @t
-                       OR  strftime('%m/%d/%y', r.issued_at) LIKE @t";
+                       OR  strftime('%m/%d/%Y %H:%M', r.issued_at) LIKE @t";
 
                 sql += " ORDER BY r.issued_at DESC";
                 if (limit.HasValue && limit > 0) sql += " LIMIT @limit";
@@ -77,7 +81,11 @@ namespace SihyuPOSPayroll.Services
                         r.id                                  AS ReceiptId,
                         r.order_id                            AS OrderId,
                         COALESCE(o.table_number, '')          AS TableNumber,
-                        strftime('%m/%d/%y', r.issued_at)     AS Date,
+                        COALESCE(
+                            strftime('%m/%d/%Y %H:%M', r.issued_at),
+                            strftime('%m/%d/%Y %H:%M', o.created_at),
+                            '—'
+                        )                                     AS Date,
                         r.amount_paid                         AS Amount
                     FROM   receipts r
                     LEFT JOIN orders o ON r.order_id = o.id
@@ -105,7 +113,11 @@ namespace SihyuPOSPayroll.Services
                         r.id                                  AS ReceiptId,
                         r.order_id                            AS OrderId,
                         COALESCE(o.table_number, '')          AS TableNumber,
-                        strftime('%m/%d/%y', r.issued_at)     AS Date,
+                        COALESCE(
+                            strftime('%m/%d/%Y %H:%M', r.issued_at),
+                            strftime('%m/%d/%Y %H:%M', o.created_at),
+                            '—'
+                        )                                     AS Date,
                         r.amount_paid                         AS Amount
                     FROM   receipts r
                     LEFT JOIN orders o ON r.order_id = o.id
@@ -122,7 +134,7 @@ namespace SihyuPOSPayroll.Services
             }
         }
 
-        // ── Create ─────────────────────────────────────────────────────────────
+        // â”€â”€ Create â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
         public static int Create(ReceiptsModel model)
         {
@@ -145,7 +157,7 @@ namespace SihyuPOSPayroll.Services
             }
         }
 
-        // ── Update ─────────────────────────────────────────────────────────────
+        // â”€â”€ Update â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
         public static void Update(ReceiptsModel model)
         {
@@ -169,7 +181,7 @@ namespace SihyuPOSPayroll.Services
             }
         }
 
-        // ── Delete ─────────────────────────────────────────────────────────────
+        // â”€â”€ Delete â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
         public static void Delete(int id)
         {
@@ -203,7 +215,7 @@ namespace SihyuPOSPayroll.Services
             }
         }
 
-        // ── Sync helpers ───────────────────────────────────────────────────────
+        // â”€â”€ Sync helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
         public static int? EnsureForPaidOrder(int orderId)
         {
@@ -311,7 +323,7 @@ namespace SihyuPOSPayroll.Services
             }
         }
 
-        // ── Receipt details (header + lines) ───────────────────────────────────
+        // â”€â”€ Receipt details (header + lines) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
         public static ReceiptDetailsModel? GetDetailsByReceiptId(int receiptId)
         {
@@ -327,7 +339,11 @@ namespace SihyuPOSPayroll.Services
                             r.id                                  AS ReceiptId,
                             r.order_id                            AS OrderId,
                             COALESCE(o.table_number, '')          AS TableNumber,
-                            strftime('%m/%d/%y', r.issued_at)     AS Date,
+                            COALESCE(
+                                strftime('%m/%d/%Y %H:%M', r.issued_at),
+                                strftime('%m/%d/%Y %H:%M', o.created_at),
+                                '—'
+                            )                                     AS Date,
                             r.amount_paid                         AS Amount
                         FROM   receipts r
                         LEFT JOIN orders o ON o.id = r.order_id
@@ -377,7 +393,7 @@ namespace SihyuPOSPayroll.Services
             }
         }
 
-        // ── Mapper ─────────────────────────────────────────────────────────────
+        // â”€â”€ Mapper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
         private static ReceiptsModel MapReceipt(IDataRecord r) => new ReceiptsModel
         {
@@ -398,7 +414,7 @@ namespace SihyuPOSPayroll.Services
     }
 }
 
-// ── Lightweight DTOs (unchanged) ──────────────────────────────────────────────
+// â”€â”€ Lightweight DTOs (unchanged) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 namespace SihyuPOSPayroll.Models
 {
     public class ReceiptDetailsModel
@@ -420,3 +436,4 @@ namespace SihyuPOSPayroll.Models
         public decimal  Subtotal    => UnitPrice * Quantity;
     }
 }
+

@@ -1,6 +1,7 @@
-using SihyuPOSPayroll.Helpers;
+﻿﻿﻿﻿using SihyuPOSPayroll.Helpers;
 using SihyuPOSPayroll.Models;
 using SihyuPOSPayroll.Services;
+using SihyuPOSPayroll.Views.Dialogs;
 using Microsoft.Win32;
 using System;
 using System.Collections.ObjectModel;
@@ -192,32 +193,20 @@ namespace SihyuPOSPayroll.ViewModels
                     return;
                 }
 
-                // Info popup (optional � keep if you want)
-                var h = details.Header;
-                var info =
-                    $"Receipt ID : {h.ReceiptId}\n" +
-                    $"Order ID   : {h.OrderId}\n" +
-                    $"Table      : {h.TableNumber}\n" +
-                    $"Date       : {h.Date}\n" +
-                    $"Amount     : {h.Amount:0.##}\n" +
-                    $"Lines      : {details.Lines.Count}\n\n" +
-                    "Do you want to export this receipt?";
-                MessageBox.Show(info, "Receipt Info", MessageBoxButton.OK, MessageBoxImage.Information);
+                // Show themed receipt info dialog
+                var dialog = new ReceiptInfoDialog(details);
+                // Set Owner safely — only if MainWindow is already visible
+                var main = System.Windows.Application.Current.MainWindow;
+                if (main != null && main.IsLoaded && main.IsVisible)
+                    dialog.Owner = main;
 
-                // Choose export target
-                var choice = MessageBox.Show(
-                    "Choose export format:\n\nYes = PDF (Print dialog)\nNo = JPG (save image)\nCancel = Do nothing",
-                    "Export Receipt",
-                    MessageBoxButton.YesNoCancel,
-                    MessageBoxImage.Question);
+                dialog.ShowDialog();
 
-                if (choice == MessageBoxResult.Cancel) return;
-
-                if (choice == MessageBoxResult.Yes)
+                if (dialog.ExportChoice == ReceiptInfoDialog.ReceiptExportChoice.ExportPdf)
                 {
                     ExportReceiptAsPdf(details);
                 }
-                else if (choice == MessageBoxResult.No)
+                else if (dialog.ExportChoice == ReceiptInfoDialog.ReceiptExportChoice.ExportJpg)
                 {
                     ExportReceiptAsJpg(details);
                 }
@@ -235,8 +224,9 @@ namespace SihyuPOSPayroll.ViewModels
             var dlg = new PrintDialog();
             if (dlg.ShowDialog() == true)
             {
+                // Keep the slim receipt page width; let height auto-paginate
+                doc.PageWidth  = doc.PageWidth;   // already set to slim thermal width
                 doc.PageHeight = dlg.PrintableAreaHeight;
-                doc.PageWidth = dlg.PrintableAreaWidth;
                 dlg.PrintDocument(((IDocumentPaginatorSource)doc).DocumentPaginator,
                     $"Receipt #{d.Header.ReceiptId}");
             }
@@ -244,10 +234,12 @@ namespace SihyuPOSPayroll.ViewModels
 
         private void ExportReceiptAsJpg(ReceiptDetailsModel d)
         {
-            var visual = BuildReceiptVisual(d);
+            var visual = (FrameworkElement)BuildReceiptVisual(d);
 
-            double width = 900, height = 700;
-            visual.Measure(new Size(width, height));
+            // Measure to actual content height
+            double width = ReceiptWidth;
+            visual.Measure(new Size(width, double.PositiveInfinity));
+            double height = visual.DesiredSize.Height + 4;
             visual.Arrange(new Rect(0, 0, width, height));
             visual.UpdateLayout();
 
@@ -274,183 +266,291 @@ namespace SihyuPOSPayroll.ViewModels
         }
 
         // ----------- Builders (Visual + FlowDocument) -----------
+        // Slim thermal receipt — 58 mm equivalent, monospaced layout
+
+        private const double ReceiptWidth   = 310;
+        private const double ReceiptPadding = 16;
+        private const string StoreName      = "SihyuPOS";
+
+        /// <summary>Builds a slim thermal-style WPF visual for JPG export.</summary>
         private FrameworkElement BuildReceiptVisual(ReceiptDetailsModel d)
         {
-            var h = d.Header;
+            var h    = d.Header;
+            var font = new FontFamily("Courier New");
 
-            var root = new Grid
+            var root = new StackPanel
             {
                 Background = Brushes.White,
-                Margin = new Thickness(24)
+                Width      = ReceiptWidth
             };
 
-            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); // 0 title
-            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); // 1 meta
-            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); // 2 items header
-            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); // 3 items
-            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); // 4 total
-            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); // 5 footer
-
-            var title = new TextBlock
+            void AddText(string text, double size = 10.5,
+                         FontWeight? weight = null,
+                         TextAlignment align = TextAlignment.Left,
+                         double topMargin = 0,
+                         Brush? color = null)
             {
-                Text = "SihyuPOS� � Receipt",
-                FontSize = 24,
-                FontWeight = FontWeights.Bold,
-                Margin = new Thickness(0, 0, 0, 16)
-            };
-            Grid.SetRow(title, 0);
-            root.Children.Add(title);
+                root.Children.Add(new TextBlock
+                {
+                    Text          = text,
+                    FontFamily    = font,
+                    FontSize      = size,
+                    FontWeight    = weight ?? FontWeights.Normal,
+                    TextAlignment = align,
+                    Foreground    = color ?? Brushes.Black,
+                    Margin        = new Thickness(ReceiptPadding, topMargin, ReceiptPadding, 0),
+                    TextWrapping  = TextWrapping.Wrap
+                });
+            }
 
-            var meta = new StackPanel { Orientation = Orientation.Vertical, Margin = new Thickness(0, 0, 0, 12) };
-            meta.Children.Add(new TextBlock { Text = $"Receipt ID : {h.ReceiptId}", FontSize = 16 });
-            meta.Children.Add(new TextBlock { Text = $"Order ID   : {h.OrderId}", FontSize = 16 });
-            meta.Children.Add(new TextBlock { Text = $"Table      : {h.TableNumber}", FontSize = 16 });
-            meta.Children.Add(new TextBlock { Text = $"Date       : {h.Date}", FontSize = 16 });
-            Grid.SetRow(meta, 1);
-            root.Children.Add(meta);
+            void AddRule(double topMargin = 4) =>
+                root.Children.Add(new Border
+                {
+                    Height     = 1,
+                    Background = Brushes.Black,
+                    Margin     = new Thickness(ReceiptPadding, topMargin, ReceiptPadding, 0)
+                });
 
-            var hdr = new Grid { Margin = new Thickness(0, 6, 0, 6) };
-            hdr.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(3, GridUnitType.Star) }); // Product
-            hdr.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }); // Qty
-            hdr.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }); // Unit
-            hdr.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }); // Subtotal
+            // ── Header ──
+            AddText(StoreName, 16, FontWeights.Bold, TextAlignment.Center, 14);
+            AddText("Official Receipt", 10, null, TextAlignment.Center, 2, Brushes.Gray);
+            AddRule(8);
 
-            hdr.Children.Add(MakeCell("Item", true, 0));
-            hdr.Children.Add(MakeCell("Qty", true, 1));
-            hdr.Children.Add(MakeCell("Unit", true, 2));
-            hdr.Children.Add(MakeCell("Subtotal", true, 3));
+            // ── Meta ──
+            var metaGrid = new Grid { Margin = new Thickness(ReceiptPadding, 6, ReceiptPadding, 0) };
+            metaGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            metaGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
-            Grid.SetRow(hdr, 2);
-            root.Children.Add(hdr);
+            void MetaRow(string label, string value, int rowIdx)
+            {
+                metaGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+                var lbl = new TextBlock { Text = label, FontFamily = font, FontSize = 10, Foreground = Brushes.Gray, Margin = new Thickness(0, 1, 8, 1) };
+                var val = new TextBlock { Text = value, FontFamily = font, FontSize = 10, TextAlignment = TextAlignment.Right, Margin = new Thickness(0, 1, 0, 1) };
+                Grid.SetRow(lbl, rowIdx); Grid.SetColumn(lbl, 0); metaGrid.Children.Add(lbl);
+                Grid.SetRow(val, rowIdx); Grid.SetColumn(val, 1); metaGrid.Children.Add(val);
+            }
+            MetaRow("Receipt #:", $"{h.ReceiptId}", 0);
+            MetaRow("Order #:",   $"{h.OrderId}",   1);
+            MetaRow("Date:",       string.IsNullOrWhiteSpace(h.Date) ? "—" : h.Date, 2);
+            root.Children.Add(metaGrid);
+            AddRule(6);
 
-            var items = new StackPanel { Margin = new Thickness(0, 0, 0, 12) };
+            // ── Column headers ──
+            var hdrGrid = new Grid { Margin = new Thickness(ReceiptPadding, 5, ReceiptPadding, 0) };
+            hdrGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(3, GridUnitType.Star) });
+            hdrGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(36) });
+            hdrGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(64) });
+
+            TextBlock HdrCell(string t, int col, TextAlignment a = TextAlignment.Left)
+            {
+                var tb = new TextBlock { Text = t, FontFamily = font, FontSize = 9.5, FontWeight = FontWeights.Bold, TextAlignment = a, Foreground = Brushes.DimGray };
+                Grid.SetColumn(tb, col); return tb;
+            }
+            hdrGrid.Children.Add(HdrCell("ITEM",   0));
+            hdrGrid.Children.Add(HdrCell("QTY",    1, TextAlignment.Center));
+            hdrGrid.Children.Add(HdrCell("AMOUNT", 2, TextAlignment.Right));
+            root.Children.Add(hdrGrid);
+            AddRule(3);
+
+            // ── Line items ──
             foreach (var line in d.Lines)
             {
-                var row = new Grid();
-                row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(3, GridUnitType.Star) });
-                row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-                row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-                row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                var name = !string.IsNullOrWhiteSpace(line.ProductName)
+                    ? line.ProductName
+                    : $"Item #{line.ProductId}";
 
-                row.Children.Add(MakeCell(line.ProductName ?? $"#{line.ProductId}", false, 0));
-                row.Children.Add(MakeCell(line.Quantity.ToString(), false, 1));
-                row.Children.Add(MakeCell($"{line.UnitPrice:0.##}", false, 2));
-                row.Children.Add(MakeCell($"{line.Subtotal:0.##}", false, 3));
-                items.Children.Add(row);
+                var rowGrid = new Grid { Margin = new Thickness(ReceiptPadding, 5, ReceiptPadding, 0) };
+                rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(3, GridUnitType.Star) });
+                rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(36) });
+                rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(64) });
+
+                var namePanel = new StackPanel();
+                namePanel.Children.Add(new TextBlock
+                {
+                    Text = name, FontFamily = font, FontSize = 10.5,
+                    TextWrapping = TextWrapping.Wrap, Foreground = Brushes.Black
+                });
+                namePanel.Children.Add(new TextBlock
+                {
+                    Text = $"  @ {line.UnitPrice:N2}", FontFamily = font,
+                    FontSize = 9, Foreground = Brushes.Gray
+                });
+
+                var qtyTb = new TextBlock
+                {
+                    Text = $"{line.Quantity}", FontFamily = font, FontSize = 10.5,
+                    TextAlignment = TextAlignment.Center, VerticalAlignment = VerticalAlignment.Top
+                };
+                var subTb = new TextBlock
+                {
+                    Text = $"{line.Subtotal:N2}", FontFamily = font, FontSize = 10.5,
+                    TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Top
+                };
+
+                Grid.SetColumn(namePanel, 0);
+                Grid.SetColumn(qtyTb, 1);
+                Grid.SetColumn(subTb, 2);
+                rowGrid.Children.Add(namePanel);
+                rowGrid.Children.Add(qtyTb);
+                rowGrid.Children.Add(subTb);
+                root.Children.Add(rowGrid);
             }
-            Grid.SetRow(items, 3);
-            root.Children.Add(items);
+            AddRule(6);
 
-            var total = new TextBlock
-            {
-                Text = $"TOTAL: {d.GrandTotal:0.##}",
-                FontSize = 18,
-                FontWeight = FontWeights.Bold,
-                HorizontalAlignment = HorizontalAlignment.Right,
-                Margin = new Thickness(0, 6, 0, 6)
-            };
-            Grid.SetRow(total, 4);
-            root.Children.Add(total);
+            // ── Totals ──
+            var totGrid = new Grid { Margin = new Thickness(ReceiptPadding, 5, ReceiptPadding, 0) };
+            totGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            totGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            totGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            totGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
-            var footer = new TextBlock
+            void TotRow(string lbl, string val, int rowIdx, bool bold)
             {
-                Text = "Thank you for dining with us!",
-                FontSize = 14,
-                Margin = new Thickness(0, 12, 0, 0),
-                Opacity = 0.8
-            };
-            Grid.SetRow(footer, 5);
-            root.Children.Add(footer);
+                var fw = bold ? FontWeights.Bold : FontWeights.Normal;
+                var fs = bold ? 12.0 : 10.5;
+                var l = new TextBlock { Text = lbl, FontFamily = font, FontSize = fs, FontWeight = fw, Margin = new Thickness(0, 1, 8, 1) };
+                var v = new TextBlock { Text = val, FontFamily = font, FontSize = fs, FontWeight = fw, TextAlignment = TextAlignment.Right, MinWidth = 64 };
+                Grid.SetRow(l, rowIdx); Grid.SetColumn(l, 0); totGrid.Children.Add(l);
+                Grid.SetRow(v, rowIdx); Grid.SetColumn(v, 1); totGrid.Children.Add(v);
+            }
+            TotRow("TOTAL",       $"{d.GrandTotal:N2}", 0, true);
+            TotRow("Amount Paid", $"{h.Amount:N2}",     1, false);
+            root.Children.Add(totGrid);
+            AddRule(6);
+
+            // ── Footer ──
+            AddText("Thank you for your purchase!", 9.5, null, TextAlignment.Center, 8, Brushes.Gray);
+            AddText("Please come again.", 9.5, null, TextAlignment.Center, 3, Brushes.Gray);
+            AddText("", 8, null, TextAlignment.Center, 12); // bottom padding
 
             return root;
-
-            static FrameworkElement MakeCell(string text, bool header, int col)
-            {
-                var tb = new TextBlock
-                {
-                    Text = text,
-                    FontSize = header ? 15 : 14,
-                    FontWeight = header ? FontWeights.SemiBold : FontWeights.Normal,
-                    Margin = new Thickness(2, 2, 2, 2)
-                };
-                Grid.SetColumn(tb, col);
-                return tb;
-            }
         }
 
+        /// <summary>Builds a slim thermal-style FlowDocument for PDF/print output.</summary>
         private FlowDocument BuildReceiptDocument(ReceiptDetailsModel d)
         {
+            var h    = d.Header;
+            var font = new FontFamily("Courier New");
+
             var fd = new FlowDocument
             {
-                FontFamily = new FontFamily("Consolas"),
-                FontSize = 12,
-                PagePadding = new Thickness(30),
-                ColumnWidth = double.PositiveInfinity,
+                FontFamily    = font,
+                FontSize      = 10,
+                PageWidth     = 220,
+                PageHeight    = 2200,
+                PagePadding   = new Thickness(16, 32, 16, 32),
+                ColumnWidth   = double.PositiveInfinity,
                 TextAlignment = TextAlignment.Left
             };
 
-            var title = new Paragraph(new Bold(new Run("SihyuPOS� � Receipt")))
-            { FontSize = 18, TextAlignment = TextAlignment.Center, Margin = new Thickness(0, 0, 0, 10) };
-            fd.Blocks.Add(title);
+            Paragraph Para(string text, double size = 10,
+                            TextAlignment align = TextAlignment.Left,
+                            bool bold = false, double spaceAfter = 0,
+                            Brush? fg = null)
+            {
+                Inline inline = bold ? (Inline)new Bold(new Run(text)) : new Run(text);
+                if (fg != null) inline.Foreground = fg;
+                return new Paragraph(inline)
+                {
+                    FontSize      = size,
+                    TextAlignment = align,
+                    Margin        = new Thickness(0, 0, 0, spaceAfter),
+                    LineHeight    = size * 1.35
+                };
+            }
 
-            var h = d.Header;
-            fd.Blocks.Add(new Paragraph(new Run($"Receipt #: {h.ReceiptId}")));
-            fd.Blocks.Add(new Paragraph(new Run($"Order   #: {h.OrderId}")));
-            fd.Blocks.Add(new Paragraph(new Run($"Table     : {h.TableNumber}")));
-            fd.Blocks.Add(new Paragraph(new Run($"Date      : {h.Date}")));
-            fd.Blocks.Add(new Paragraph(new Run(" ")));
+            string Dashes() => new string('-', 30);
 
-            var table = new Table { CellSpacing = 0 };
-            table.Columns.Add(new TableColumn { Width = new GridLength(260) });
-            table.Columns.Add(new TableColumn { Width = new GridLength(60) });
-            table.Columns.Add(new TableColumn { Width = new GridLength(100) });
-            table.Columns.Add(new TableColumn { Width = new GridLength(120) });
-            table.RowGroups.Add(new TableRowGroup());
+            // ── Header ──
+            fd.Blocks.Add(Para(StoreName, 14, TextAlignment.Center, bold: true));
+            fd.Blocks.Add(Para("Official Receipt", 9, TextAlignment.Center, fg: Brushes.Gray, spaceAfter: 3));
+            fd.Blocks.Add(Para(Dashes(), 8, TextAlignment.Center, fg: Brushes.Gray, spaceAfter: 4));
 
-            var headerRow = new TableRow();
-            headerRow.Cells.Add(HeaderCell("Product"));
-            headerRow.Cells.Add(HeaderCell("Qty"));
-            headerRow.Cells.Add(HeaderCell("Unit"));
-            headerRow.Cells.Add(HeaderCell("Subtotal"));
-            table.RowGroups[0].Rows.Add(headerRow);
+            // ── Meta ──
+            fd.Blocks.Add(Para($"Receipt # : {h.ReceiptId}", 9.5));
+            fd.Blocks.Add(Para($"Order #   : {h.OrderId}",   9.5));
+            fd.Blocks.Add(Para($"Date      : {(string.IsNullOrWhiteSpace(h.Date) ? "—" : h.Date)}", 9.5, spaceAfter: 3));
+            fd.Blocks.Add(Para(Dashes(), 8, TextAlignment.Center, fg: Brushes.Gray, spaceAfter: 4));
+
+            // ── Items table ──
+            var tbl = new Table { CellSpacing = 0, FontFamily = font, FontSize = 9.5 };
+            tbl.Columns.Add(new TableColumn { Width = new GridLength(94) });
+            tbl.Columns.Add(new TableColumn { Width = new GridLength(22) });
+            tbl.Columns.Add(new TableColumn { Width = new GridLength(42) });
+            tbl.Columns.Add(new TableColumn { Width = new GridLength(46) });
+            tbl.RowGroups.Add(new TableRowGroup());
+
+            TableCell TC(string text, bool bold = false,
+                         TextAlignment align = TextAlignment.Left,
+                         bool bottomBorder = false)
+            {
+                Inline run = bold ? (Inline)new Bold(new Run(text)) : new Run(text);
+                var cell = new TableCell(new Paragraph(run)
+                {
+                    Margin     = new Thickness(0, 1, 0, 1),
+                    LineHeight = 13
+                })
+                {
+                    TextAlignment = align,
+                    Padding       = new Thickness(0, 2, 2, 2)
+                };
+                if (bottomBorder)
+                {
+                    cell.BorderBrush     = Brushes.Black;
+                    cell.BorderThickness = new Thickness(0, 0, 0, 1);
+                }
+                return cell;
+            }
+
+            var hRow = new TableRow();
+            hRow.Cells.Add(TC("ITEM",  bold: true, bottomBorder: true));
+            hRow.Cells.Add(TC("QTY",   bold: true, align: TextAlignment.Center, bottomBorder: true));
+            hRow.Cells.Add(TC("UNIT",  bold: true, align: TextAlignment.Right,  bottomBorder: true));
+            hRow.Cells.Add(TC("TOTAL", bold: true, align: TextAlignment.Right,  bottomBorder: true));
+            tbl.RowGroups[0].Rows.Add(hRow);
 
             foreach (var line in d.Lines)
             {
-                var row = new TableRow();
-                row.Cells.Add(Cell(line.ProductName ?? "(item)"));
-                row.Cells.Add(Cell(line.Quantity.ToString()));
-                row.Cells.Add(Cell(line.UnitPrice.ToString("0.##")));
-                row.Cells.Add(Cell((line.UnitPrice * line.Quantity).ToString("0.##")));
-                table.RowGroups[0].Rows.Add(row);
+                var name = !string.IsNullOrWhiteSpace(line.ProductName)
+                    ? line.ProductName
+                    : $"Item #{line.ProductId}";
+                var iRow = new TableRow();
+                iRow.Cells.Add(TC(name));
+                iRow.Cells.Add(TC(line.Quantity.ToString(), align: TextAlignment.Center));
+                iRow.Cells.Add(TC($"{line.UnitPrice:N2}",  align: TextAlignment.Right));
+                iRow.Cells.Add(TC($"{line.Subtotal:N2}",   align: TextAlignment.Right));
+                tbl.RowGroups[0].Rows.Add(iRow);
             }
+            fd.Blocks.Add(tbl);
+            fd.Blocks.Add(Para(Dashes(), 8, TextAlignment.Center, fg: Brushes.Gray, spaceAfter: 2));
 
-            fd.Blocks.Add(table);
+            // ── Totals ──
+            var totTbl = new Table { CellSpacing = 0, FontFamily = font };
+            totTbl.Columns.Add(new TableColumn { Width = new GridLength(1, GridUnitType.Star) });
+            totTbl.Columns.Add(new TableColumn { Width = GridLength.Auto });
+            totTbl.RowGroups.Add(new TableRowGroup());
 
-            var totalPara = new Paragraph { TextAlignment = TextAlignment.Right, Margin = new Thickness(0, 8, 0, 0) };
-            totalPara.Inlines.Add(new Bold(new Run($"Total: {d.GrandTotal:0.##}")));
-            fd.Blocks.Add(totalPara);
+            void TotRow(string label, string value, bool bold)
+            {
+                var r  = new TableRow();
+                var fs = bold ? 11.0 : 10.0;
+                Inline lInline = bold ? (Inline)new Bold(new Run(label)) : new Run(label);
+                Inline vInline = bold ? (Inline)new Bold(new Run(value)) : new Run(value);
+                r.Cells.Add(new TableCell(new Paragraph(lInline)
+                    { Margin = new Thickness(0, 1, 0, 1), FontSize = fs }));
+                r.Cells.Add(new TableCell(new Paragraph(vInline)
+                    { Margin = new Thickness(0, 1, 0, 1), TextAlignment = TextAlignment.Right, FontSize = fs }));
+                totTbl.RowGroups[0].Rows.Add(r);
+            }
+            TotRow("TOTAL",       $"{d.GrandTotal:N2}", true);
+            TotRow("Amount Paid", $"{h.Amount:N2}",     false);
+            fd.Blocks.Add(totTbl);
 
-            var paidPara = new Paragraph { TextAlignment = TextAlignment.Right };
-            paidPara.Inlines.Add(new Run($"Amount Paid: {h.Amount:0.##}"));
-            fd.Blocks.Add(paidPara);
+            fd.Blocks.Add(Para(Dashes(), 8, TextAlignment.Center, fg: Brushes.Gray, spaceAfter: 6));
+            fd.Blocks.Add(Para("Thank you for your purchase!", 9, TextAlignment.Center, fg: Brushes.Gray));
+            fd.Blocks.Add(Para("Please come again.", 9, TextAlignment.Center, fg: Brushes.Gray));
 
-            fd.Blocks.Add(new Paragraph(new Run("Thank you!")));
             return fd;
-
-            // helpers
-            static TableCell HeaderCell(string text) =>
-                new TableCell(new Paragraph(new Bold(new Run(text))))
-                {
-                    BorderBrush = Brushes.Black,
-                    BorderThickness = new Thickness(0, 0, 0, 1),
-                    Padding = new Thickness(0, 2, 0, 4)
-                };
-
-            static TableCell Cell(string text) =>
-                new TableCell(new Paragraph(new Run(text)))
-                {
-                    Padding = new Thickness(0, 2, 0, 2)
-                };
         }
 
         // ----------- INotifyPropertyChanged -----------

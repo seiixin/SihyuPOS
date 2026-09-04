@@ -80,9 +80,9 @@
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="Receipt ID" Binding="{Binding ReceiptId}" Width="1.2*"/>
                     <DataGridTextColumn Header="Order ID"   Binding="{Binding OrderId}"   Width="1.2*"/>
-                    <DataGridTextColumn Header="Table"      Binding="{Binding TableNumber}" Width="1.0*"/>
-                    <DataGridTextColumn Header="Date"       Binding="{Binding Date}"       Width="1.4*"/>
-                    <DataGridTextColumn Header="Amount"     Binding="{Binding Amount, StringFormat=\{0:0.##\}}" Width="1.2*"/>
+                    <DataGridTextColumn Header="Table"      Binding="{Binding TableNumber}" Width="1.2*" Visibility="Collapsed"/>
+                    <DataGridTextColumn Header="Date"       Binding="{Binding Date}"       Width="2*"/>
+                    <DataGridTextColumn Header="Amount"     Binding="{Binding Amount, StringFormat=₱{0:N2}}" Width="1.2*"/>
                     <DataGridTemplateColumn Header="Actions" Width="1.2*">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
