@@ -43,9 +43,20 @@
                     <TextBlock Text="Barcode"
                                Foreground="{StaticResource TextSecondaryBrush}"
                                FontWeight="Medium" Margin="0,0,0,4"/>
-                    <TextBox x:Name="BarcodeTextBox"
-                             Height="40"
-                             TextChanged="BarcodeTextBox_TextChanged"/>
+                    <Border Background="#161929" CornerRadius="8"
+                            BorderBrush="#1A1D2E" BorderThickness="1">
+                        <Grid>
+                            <TextBlock Text="&#xE943;" FontFamily="Segoe MDL2 Assets"
+                                       FontSize="13" Foreground="#6B7280"
+                                       VerticalAlignment="Center" Margin="12,0,0,0"/>
+                            <TextBox x:Name="BarcodeTextBox"
+                                     Background="Transparent" BorderThickness="0"
+                                     Foreground="#FFFFFF" FontSize="13"
+                                     Padding="34,10,10,10"
+                                     CaretBrush="#477C60" SelectionBrush="#128854"
+                                     TextChanged="BarcodeTextBox_TextChanged"/>
+                        </Grid>
+                    </Border>
                     <!-- Lookup status row — hidden when idle -->
                     <Grid x:Name="BarcodeStatusRow" Margin="0,5,0,0" Visibility="Collapsed">
                         <Grid.ColumnDefinitions>
@@ -97,7 +108,14 @@
                     <TextBlock Text="Product Name *"
                                Foreground="{StaticResource TextSecondaryBrush}"
                                FontWeight="Medium" Margin="0,0,0,4"/>
-                    <TextBox x:Name="ProductNameTextBox" Height="40"/>
+                    <Border Background="#161929" CornerRadius="8"
+                            BorderBrush="#1A1D2E" BorderThickness="1">
+                        <TextBox x:Name="ProductNameTextBox"
+                                 Background="Transparent" BorderThickness="0"
+                                 Foreground="#FFFFFF" FontSize="13"
+                                 Padding="12,10,10,10"
+                                 CaretBrush="#477C60" SelectionBrush="#128854"/>
+                    </Border>
                 </StackPanel>
 
                 <!-- Category (loaded from DB) -->
@@ -121,19 +139,35 @@
                         <TextBlock Text="Quantity *"
                                    Foreground="{StaticResource TextSecondaryBrush}"
                                    FontWeight="Medium" Margin="0,0,0,4"/>
-                        <TextBox x:Name="QuantityTextBox"
-                                 Height="40"
-                                 GotFocus="QuantityTextBox_GotFocus"
-                                 PreviewTextInput="NumberValidationTextBox"/>
+                        <Border Background="#161929" CornerRadius="8"
+                                BorderBrush="#1A1D2E" BorderThickness="1">
+                            <TextBox x:Name="QuantityTextBox"
+                                     Background="Transparent" BorderThickness="0"
+                                     Foreground="#FFFFFF" FontSize="13"
+                                     Padding="12,10,10,10"
+                                     CaretBrush="#477C60" SelectionBrush="#128854"
+                                     GotFocus="QuantityTextBox_GotFocus"
+                                     PreviewTextInput="NumberValidationTextBox"/>
+                        </Border>
                     </StackPanel>
                     <StackPanel Grid.Column="2">
                         <TextBlock Text="Price *"
                                    Foreground="{StaticResource TextSecondaryBrush}"
                                    FontWeight="Medium" Margin="0,0,0,4"/>
-                        <TextBox x:Name="PriceTextBox"
-                                 Height="40"
-                                 GotFocus="PriceTextBox_GotFocus"
-                                 PreviewTextInput="PriceValidationTextBox"/>
+                        <Border Background="#161929" CornerRadius="8"
+                                BorderBrush="#1A1D2E" BorderThickness="1">
+                            <Grid>
+                                <TextBlock Text="₱" Foreground="#6B7280" FontSize="13"
+                                           VerticalAlignment="Center" Margin="12,0,0,0"/>
+                                <TextBox x:Name="PriceTextBox"
+                                         Background="Transparent" BorderThickness="0"
+                                         Foreground="#FFFFFF" FontSize="13"
+                                         Padding="26,10,10,10"
+                                         CaretBrush="#477C60" SelectionBrush="#128854"
+                                         GotFocus="PriceTextBox_GotFocus"
+                                         PreviewTextInput="PriceValidationTextBox"/>
+                            </Grid>
+                        </Border>
                     </StackPanel>
                 </Grid>
 
@@ -180,10 +214,15 @@
 
                         <!-- Path + buttons -->
                         <StackPanel Grid.Column="2" VerticalAlignment="Center">
-                            <TextBox x:Name="ImagePathBox"
-                                     Height="36"
-                                     IsReadOnly="True"
-                                     Margin="0,0,0,8"/>
+                            <Border Background="#161929" CornerRadius="8"
+                                    BorderBrush="#1A1D2E" BorderThickness="1"
+                                    Margin="0,0,0,8">
+                                <TextBox x:Name="ImagePathBox"
+                                         Background="Transparent" BorderThickness="0"
+                                         Foreground="#6B7280" FontSize="12"
+                                         Padding="10,8,10,8"
+                                         IsReadOnly="True"/>
+                            </Border>
                             <StackPanel Orientation="Horizontal">
                                 <Button Content="Browse…"
                                         Style="{StaticResource SecondaryButton}"

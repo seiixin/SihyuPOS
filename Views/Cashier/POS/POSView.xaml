@@ -72,27 +72,25 @@
                             Background="#090B17"
                             CornerRadius="8"
                             BorderBrush="#0D1117"
-                            BorderThickness="1"
-                            Padding="12,0"
-                            Height="40">
+                            BorderThickness="1">
                         <Grid>
                             <TextBlock Text="&#xE943;"
                                        FontFamily="Segoe MDL2 Assets"
                                        FontSize="13"
                                        Foreground="#477C60"
                                        VerticalAlignment="Center"
-                                       HorizontalAlignment="Left"/>
+                                       HorizontalAlignment="Left"
+                                       Margin="12,0,0,0"/>
                             <TextBox x:Name="BarcodeBox"
                                      Background="Transparent"
                                      BorderThickness="0"
                                      Foreground="#F3F4F6"
-                                     VerticalContentAlignment="Center"
-                                     Margin="22,0,0,0"
+                                     Padding="34,10,10,10"
                                      KeyDown="BarcodeBox_KeyDown"
                                      TextChanged="BarcodeBox_TextChanged"/>
                             <TextBlock Text="Scan or type barcode…"
                                        Foreground="#6B7280"
-                                       Margin="24,0,0,0"
+                                       Margin="36,0,0,0"
                                        VerticalAlignment="Center"
                                        IsHitTestVisible="False"
                                        Visibility="{Binding Text, ElementName=BarcodeBox,
@@ -154,26 +152,24 @@
                     <Border Background="#090B17"
                             CornerRadius="8"
                             BorderBrush="#1A1D2E"
-                            BorderThickness="1"
-                            Padding="12,0"
-                            Height="40">
+                            BorderThickness="1">
                         <Grid>
                             <TextBlock Text="&#xE721;"
                                        FontFamily="Segoe MDL2 Assets"
                                        FontSize="13"
                                        Foreground="#6B7280"
                                        VerticalAlignment="Center"
-                                       HorizontalAlignment="Left"/>
+                                       HorizontalAlignment="Left"
+                                       Margin="12,0,0,0"/>
                             <TextBox x:Name="SearchBox"
                                      Background="Transparent"
                                      BorderThickness="0"
                                      Foreground="#F3F4F6"
-                                     VerticalContentAlignment="Center"
-                                     Margin="22,0,0,0"
+                                     Padding="34,10,10,10"
                                      TextChanged="SearchBox_TextChanged"/>
                             <TextBlock Text="Search products…"
                                        Foreground="#6B7280"
-                                       Margin="24,0,0,0"
+                                       Margin="36,0,0,0"
                                        VerticalAlignment="Center"
                                        IsHitTestVisible="False"
                                        Visibility="{Binding Text, ElementName=SearchBox,

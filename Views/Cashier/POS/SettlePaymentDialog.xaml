@@ -131,22 +131,22 @@
                     <TextBlock Text="Cash Received"
                                Foreground="#9CA3AF" FontWeight="SemiBold" FontSize="12"
                                Margin="0,0,0,6"/>
-                    <Border Background="#090B17" CornerRadius="6"
+                    <Border Background="#161929" CornerRadius="6"
                             BorderBrush="#128854" BorderThickness="1.5"
-                            Padding="12,0" Margin="0,0,0,12">
-                        <Grid Height="44">
-                            <TextBlock Text="&#x20B1;" Foreground="#6B7280" FontSize="15"
-                                       VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                            Margin="0,0,0,12">
+                        <Grid>
+                            <TextBlock Text="&#x20B1;" Foreground="#9CA3AF" FontSize="15"
+                                       VerticalAlignment="Center" Margin="12,0,0,0"/>
                             <TextBox x:Name="CashReceivedBox"
                                      Text="0"
                                      FontSize="20" FontWeight="Bold"
-                                     Foreground="#F3F4F6"
+                                     Foreground="#FFFFFF"
                                      Background="Transparent"
                                      BorderThickness="0"
-                                     Margin="18,0,0,0"
-                                     VerticalContentAlignment="Center"
+                                     Padding="22,10,10,10"
                                      HorizontalContentAlignment="Right"
                                      TextAlignment="Right"
+                                     SelectionBrush="#128854"
                                      TextChanged="CashReceived_TextChanged"
                                      PreviewTextInput="NumericOnly_PreviewTextInput"
                                      GotFocus="CashReceivedBox_GotFocus"/>
@@ -248,7 +248,7 @@
                                                        Foreground="#000000"
                                                        HorizontalAlignment="Center"/>
                                             <TextBlock Text="[F4]"
-                                                       FontSize="10" FontWeight="Bold"
+                                                       FontSize="13" FontWeight="Bold"
                                                        Foreground="#005533"
                                                        HorizontalAlignment="Center"/>
                                         </StackPanel>

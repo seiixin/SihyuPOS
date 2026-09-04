@@ -116,19 +116,20 @@
 
                 <Border Background="#090B17" CornerRadius="8"
                         BorderBrush="#0D1117" BorderThickness="1"
-                        Padding="12,0" Height="40" Grid.Column="0">
+                        Grid.Column="0">
                     <Grid>
                         <TextBlock Text="&#xE943;" FontFamily="Segoe MDL2 Assets"
                                    FontSize="13" Foreground="#477C60"
-                                   VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                                   VerticalAlignment="Center" HorizontalAlignment="Left"
+                                   Margin="12,0,0,0"/>
                         <TextBox x:Name="QuickAddBarcodeBox"
                                  Background="Transparent" BorderThickness="0"
-                                 Foreground="#F3F4F6" VerticalContentAlignment="Center"
-                                 Margin="22,0,0,0"
+                                 Foreground="#F3F4F6"
+                                 Padding="34,10,10,10"
                                  KeyDown="QuickAddBarcodeBox_KeyDown"
                                  TextChanged="QuickAddBarcodeBox_TextChanged"/>
                         <TextBlock Text="Scan or type barcode, press Enter to add…"
-                                   Foreground="#6B7280" Margin="24,0,0,0"
+                                   Foreground="#6B7280" Margin="36,0,0,0"
                                    VerticalAlignment="Center" IsHitTestVisible="False"
                                    Visibility="{Binding ElementName=QuickAddBarcodeBox, Path=Text,
                                                         Converter={StaticResource EmptyStringToVisibilityConverter}}"/>
@@ -176,17 +177,18 @@
                 <!-- Search box -->
                 <Border Background="#090B17" CornerRadius="8"
                         BorderBrush="#0D1117" BorderThickness="1"
-                        Padding="12,0" Height="40" Grid.Column="0">
+                        Grid.Column="0">
                     <Grid>
                         <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets"
                                    FontSize="13" Foreground="#6B7280"
-                                   VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                                   VerticalAlignment="Center" HorizontalAlignment="Left"
+                                   Margin="12,0,0,0"/>
                         <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                                  Background="Transparent" BorderThickness="0"
-                                 Foreground="#F3F4F6" VerticalContentAlignment="Center"
-                                 Margin="22,0,0,0"/>
+                                 Foreground="#F3F4F6"
+                                 Padding="34,10,10,10"/>
                         <TextBlock Text="Search Product or Category"
-                                   Foreground="#6B7280" Margin="24,0,0,0"
+                                   Foreground="#6B7280" Margin="36,0,0,0"
                                    VerticalAlignment="Center" IsHitTestVisible="False"
                                    Visibility="{Binding SearchText,
                                                 Converter={StaticResource EmptyStringToVisibilityConverter}}"/>

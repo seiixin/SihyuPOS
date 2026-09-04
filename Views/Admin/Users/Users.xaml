@@ -50,8 +50,7 @@
 
                 <!-- Search box -->
                 <Border Background="#090B17" CornerRadius="8"
-                        BorderBrush="#1A1D2E" BorderThickness="1"
-                        Height="40">
+                        BorderBrush="#1A1D2E" BorderThickness="1">
                     <Grid>
                         <TextBlock Text="&#xE721;"
                                    FontFamily="Segoe MDL2 Assets"
@@ -61,8 +60,8 @@
                                    Margin="12,0,0,0"/>
                         <TextBox x:Name="SearchBox"
                                  Background="Transparent" BorderThickness="0"
-                                 Foreground="#F3F4F6" VerticalContentAlignment="Center"
-                                 Margin="34,0,10,0" FontSize="13"
+                                 Foreground="#F3F4F6" FontSize="13"
+                                 Padding="34,10,10,10"
                                  CaretBrush="#477C60"
                                  TextChanged="SearchBox_TextChanged"/>
                         <TextBlock Text="Search by email, role or employee…"

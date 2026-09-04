@@ -61,7 +61,6 @@
                       SelectionUnit="FullRow">
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="Date"    Binding="{Binding CreatedAt, StringFormat=\{0:MM/dd/yy HH:mm\}}" Width="2*" />
-                    <DataGridTextColumn Header="Table"   Binding="{Binding TableNumber}" Width="1.2*" />
                     <DataGridTextColumn Header="Total"   Binding="{Binding TotalAmount, StringFormat=₱{0:0.##}}" Width="1.2*" />
                     <DataGridTextColumn Header="Payment" Binding="{Binding PaymentStatus}" Width="1.2*" />
                     <DataGridTextColumn Header="Status"  Binding="{Binding OrderStatus}" Width="1.4*" />
@@ -117,8 +116,6 @@
                                 <Run Text="{Binding InfoOrder.Id}" FontWeight="Bold"/>
                                 <Run Text=" · Date:"/>
                                 <Run Text="{Binding InfoOrder.CreatedAt, StringFormat=\{0:MM/dd/yy HH:mm\}}"/>
-                                <Run Text=" · Table:"/>
-                                <Run Text="{Binding InfoOrder.TableNumber}"/>
                             </TextBlock>
                             <TextBlock Margin="0,4,0,0" Foreground="#9CA3AF">
                                 <Run Text="Payment:"/>

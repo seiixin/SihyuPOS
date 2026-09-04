@@ -72,35 +72,35 @@
             <!-- ── Email ──────────────────────────────────────────────────── -->
             <TextBlock Text="Email" FontSize="12" FontWeight="SemiBold"
                        Foreground="#9CA3AF" Margin="0,0,0,6"/>
-            <Border Background="#0D0F1A" CornerRadius="8"
+            <Border Background="#161929" CornerRadius="8"
                     BorderBrush="#1A1D2E" BorderThickness="1"
-                    Height="40" Margin="0,0,0,16">
+                    Margin="0,0,0,16">
                 <Grid>
                     <TextBlock Text="&#xE715;" FontFamily="Segoe MDL2 Assets"
-                               FontSize="13" Foreground="#374151"
+                               FontSize="13" Foreground="#6B7280"
                                VerticalAlignment="Center" Margin="12,0,0,0"/>
                     <TextBox x:Name="EmailTextBox"
                              Background="Transparent" BorderThickness="0"
-                             Foreground="#F3F4F6" VerticalContentAlignment="Center"
-                             Margin="34,0,10,0" FontSize="13"
-                             CaretBrush="#477C60"/>
+                             Foreground="#FFFFFF" FontSize="13"
+                             Padding="34,10,10,10"
+                             CaretBrush="#477C60" SelectionBrush="#128854"/>
                 </Grid>
             </Border>
 
             <!-- ── Password ───────────────────────────────────────────────── -->
             <TextBlock Text="Password" FontSize="12" FontWeight="SemiBold"
                        Foreground="#9CA3AF" Margin="0,0,0,6"/>
-            <Border Background="#0D0F1A" CornerRadius="8"
+            <Border Background="#161929" CornerRadius="8"
                     BorderBrush="#1A1D2E" BorderThickness="1"
-                    Height="40" Margin="0,0,0,4">
+                    Margin="0,0,0,4">
                 <Grid>
                     <TextBlock Text="&#xE72E;" FontFamily="Segoe MDL2 Assets"
-                               FontSize="13" Foreground="#374151"
+                               FontSize="13" Foreground="#6B7280"
                                VerticalAlignment="Center" Margin="12,0,0,0"/>
                     <PasswordBox x:Name="PasswordBox"
                                  Background="Transparent" BorderThickness="0"
-                                 Foreground="#F3F4F6" VerticalContentAlignment="Center"
-                                 Margin="34,0,10,0" FontSize="13"/>
+                                 Foreground="#FFFFFF" FontSize="13"
+                                 Padding="34,10,10,10"/>
                 </Grid>
             </Border>
             <TextBlock x:Name="PasswordHint"

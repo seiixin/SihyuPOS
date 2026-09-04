@@ -69,10 +69,20 @@
                     <TextBlock Text="Barcode"
                                Foreground="{StaticResource TextSecondaryBrush}"
                                FontWeight="Medium" Margin="0,0,0,4"/>
-                    <TextBox x:Name="BarcodeBox"
-                             Height="40"
-                             IsReadOnly="True"
-                             Foreground="#6B7280"/>
+                    <Border Background="#161929" CornerRadius="8"
+                            BorderBrush="#1A1D2E" BorderThickness="1">
+                        <Grid>
+                            <TextBlock Text="&#xE943;" FontFamily="Segoe MDL2 Assets"
+                                       FontSize="13" Foreground="#6B7280"
+                                       VerticalAlignment="Center" Margin="12,0,0,0"/>
+                            <TextBox x:Name="BarcodeBox"
+                                     Background="Transparent" BorderThickness="0"
+                                     Foreground="#6B7280" FontSize="13"
+                                     Padding="34,10,10,10"
+                                     CaretBrush="#477C60" SelectionBrush="#128854"
+                                     IsReadOnly="True"/>
+                        </Grid>
+                    </Border>
                     <!-- Lookup status row — hidden when idle -->
                     <Grid x:Name="LookupStatusRow" Margin="0,6,0,0" Visibility="Collapsed">
                         <Grid.ColumnDefinitions>
@@ -123,7 +133,14 @@
                     <TextBlock Text="Product Name *"
                                Foreground="{StaticResource TextSecondaryBrush}"
                                FontWeight="Medium" Margin="0,0,0,4"/>
-                    <TextBox x:Name="ProductNameBox" Height="40"/>
+                    <Border Background="#161929" CornerRadius="8"
+                            BorderBrush="#1A1D2E" BorderThickness="1">
+                        <TextBox x:Name="ProductNameBox"
+                                 Background="Transparent" BorderThickness="0"
+                                 Foreground="#FFFFFF" FontSize="13"
+                                 Padding="12,10,10,10"
+                                 CaretBrush="#477C60" SelectionBrush="#128854"/>
+                    </Border>
                 </StackPanel>
 
                 <!-- Category -->
@@ -148,9 +165,15 @@
                         <TextBlock Text="Quantity *"
                                    Foreground="{StaticResource TextSecondaryBrush}"
                                    FontWeight="Medium" Margin="0,0,0,4"/>
-                        <TextBox x:Name="QuantityBox"
-                                 Height="40"
-                                 PreviewTextInput="NumberOnly_PreviewTextInput"/>
+                        <Border Background="#161929" CornerRadius="8"
+                                BorderBrush="#1A1D2E" BorderThickness="1">
+                            <TextBox x:Name="QuantityBox"
+                                     Background="Transparent" BorderThickness="0"
+                                     Foreground="#FFFFFF" FontSize="13"
+                                     Padding="12,10,10,10"
+                                     CaretBrush="#477C60" SelectionBrush="#128854"
+                                     PreviewTextInput="NumberOnly_PreviewTextInput"/>
+                        </Border>
                     </StackPanel>
 
                     <StackPanel Grid.Column="2">
@@ -170,12 +193,20 @@
                                            Foreground="#000000"/>
                             </Border>
                         </StackPanel>
-                        <TextBox x:Name="PriceBox"
-                                 Height="40"
-                                 GotFocus="PriceBox_GotFocus"
-                                 PreviewTextInput="PriceOnly_PreviewTextInput"
-                                 BorderBrush="#10B981"
-                                 BorderThickness="1"/>
+                        <Border Background="#161929" CornerRadius="8"
+                                BorderBrush="#10B981" BorderThickness="1.5">
+                            <Grid>
+                                <TextBlock Text="₱" Foreground="#6B7280" FontSize="13"
+                                           VerticalAlignment="Center" Margin="12,0,0,0"/>
+                                <TextBox x:Name="PriceBox"
+                                         Background="Transparent" BorderThickness="0"
+                                         Foreground="#FFFFFF" FontSize="13"
+                                         Padding="26,10,10,10"
+                                         CaretBrush="#477C60" SelectionBrush="#128854"
+                                         GotFocus="PriceBox_GotFocus"
+                                         PreviewTextInput="PriceOnly_PreviewTextInput"/>
+                            </Grid>
+                        </Border>
                     </StackPanel>
                 </Grid>
 
