@@ -127,9 +127,7 @@
                       Background="#0D0F1A"
                       Foreground="#F3F4F6"
                       BorderBrush="#1A1D2E"
-                      FontSize="13"
-                      DisplayMemberPath="FullName"
-                      SelectedValuePath="Id"/>
+                      FontSize="13"/>
 
             <!-- ── Divider ─────────────────────────────────────────────────── -->
             <Border Height="1" Background="#1A1D2E" Margin="0,0,0,20"/>
