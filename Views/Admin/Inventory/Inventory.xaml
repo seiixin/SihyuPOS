@@ -4,6 +4,7 @@
              xmlns:vm="clr-namespace:SihyuPOSPayroll.ViewModels"
              xmlns:helpers="clr-namespace:SihyuPOSPayroll.Helpers"
              xmlns:views="clr-namespace:SihyuPOSPayroll.Views.Admin.Inventory"
+             xmlns:components="clr-namespace:SihyuPOSPayroll.Views.Components"
              Background="#000000">
 
     <UserControl.Resources>
@@ -81,22 +82,24 @@
         <vm:InventoryViewModel/>
     </UserControl.DataContext>
 
-    <Grid Margin="28,24,28,24">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
+    <Grid>
+        <!-- Page content (margin grid hosts header + main area + dialog overlay) -->
+        <Grid Margin="28,24,28,24">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
 
-        <!-- Page Header -->
-        <Border BorderBrush="#072219" BorderThickness="0,0,0,1" Margin="0,0,0,20" Padding="0,0,0,14">
-            <TextBlock Text="Inventory"
-                       FontSize="26"
-                       FontWeight="Bold"
-                       Foreground="#477C60"/>
-        </Border>
+            <!-- Page Header -->
+            <Border Grid.Row="0" BorderBrush="#072219" BorderThickness="0,0,0,1" Margin="0,0,0,20" Padding="0,0,0,14">
+                <TextBlock Text="Inventory"
+                           FontSize="26"
+                           FontWeight="Bold"
+                           Foreground="#477C60"/>
+            </Border>
 
-        <!-- Main content area -->
-        <Grid Grid.Row="1">
+            <!-- Main content area -->
+            <Grid Grid.Row="1">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
@@ -223,21 +226,21 @@
                                     BorderBrush="#1F2937"
                                     BorderThickness="1"
                                     Padding="18,16"
-                                    MinWidth="210">
+                                    MinWidth="280">
                                 <Border.Effect>
                                     <DropShadowEffect Color="#000000" Opacity="0.45"
                                                       BlurRadius="20" ShadowDepth="4" Direction="270"/>
                                 </Border.Effect>
                                 <StackPanel>
-                                    <!-- Header -->
-                                    <TextBlock Text="Column Visibility"
-                                               FontSize="11"
+                                    <!-- ── Section: Column Visibility ──────── -->
+                                    <TextBlock Text="COLUMN VISIBILITY"
+                                               FontSize="10"
                                                FontWeight="SemiBold"
                                                Foreground="#6B7280"
-                                               Margin="0,0,0,14"/>
+                                               Margin="0,0,0,12"/>
 
                                     <!-- Qty toggle row -->
-                                    <Grid Margin="0,0,0,14">
+                                    <Grid Margin="0,0,0,12">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="Auto"/>
@@ -259,7 +262,7 @@
                                     </Grid>
 
                                     <!-- Category toggle row -->
-                                    <Grid Margin="0,0,0,14">
+                                    <Grid Margin="0,0,0,12">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="Auto"/>
@@ -281,7 +284,7 @@
                                     </Grid>
 
                                     <!-- Expiry toggle row -->
-                                    <Grid>
+                                    <Grid Margin="0,0,0,20">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="Auto"/>
@@ -301,6 +304,95 @@
                                                       Click="ColumnToggle_Click"
                                                       VerticalAlignment="Center"/>
                                     </Grid>
+
+                                    <!-- Divider -->
+                                    <Border BorderBrush="#1F2937" BorderThickness="0,1,0,0"
+                                            Margin="0,0,0,16"/>
+
+                                    <!-- ── Section: Barcode Scan Action ─────── -->
+                                    <TextBlock Text="BARCODE SCAN ACTION"
+                                               FontSize="10"
+                                               FontWeight="SemiBold"
+                                               Foreground="#6B7280"
+                                               Margin="0,0,0,10"/>
+
+                                    <!-- Default / Modal Prompt -->
+                                    <Border Background="#0A1628" CornerRadius="8"
+                                            BorderBrush="#1E3A5F" BorderThickness="1"
+                                            Padding="12,10" Margin="0,0,0,6">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Text="Default (Modal Prompt)"
+                                                           Foreground="#F3F4F6"
+                                                           FontSize="13"
+                                                           FontWeight="Medium"/>
+                                                <TextBlock Text="Shows Add +1 / Edit buttons on scan"
+                                                           Foreground="#6B7280"
+                                                           FontSize="11"/>
+                                            </StackPanel>
+                                            <ToggleButton Grid.Column="1"
+                                                          IsChecked="{Binding BarcodeActionIsDefault}"
+                                                          Style="{StaticResource IosToggle}"
+                                                          Click="BarcodeActionToggle_Click"
+                                                          VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </Border>
+
+                                    <!-- Quick Add +1 -->
+                                    <Border Background="#0D2818" CornerRadius="8"
+                                            BorderBrush="#166534" BorderThickness="1"
+                                            Padding="12,10" Margin="0,0,0,6">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Text="Quick Add (+1 Qty)"
+                                                           Foreground="#F3F4F6"
+                                                           FontSize="13"
+                                                           FontWeight="Medium"/>
+                                                <TextBlock Text="Auto-increment stock, no modal"
+                                                           Foreground="#6B7280"
+                                                           FontSize="11"/>
+                                            </StackPanel>
+                                            <ToggleButton Grid.Column="1"
+                                                          IsChecked="{Binding BarcodeActionIsQuickAdd}"
+                                                          Style="{StaticResource IosToggle}"
+                                                          Click="BarcodeActionToggle_Click"
+                                                          VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </Border>
+
+                                    <!-- Quick Update -->
+                                    <Border Background="#0F172A" CornerRadius="8"
+                                            BorderBrush="#1E3A5F" BorderThickness="1"
+                                            Padding="12,10">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Text="Quick Update"
+                                                           Foreground="#F3F4F6"
+                                                           FontSize="13"
+                                                           FontWeight="Medium"/>
+                                                <TextBlock Text="Open Edit modal pre-filled on scan"
+                                                           Foreground="#6B7280"
+                                                           FontSize="11"/>
+                                            </StackPanel>
+                                            <ToggleButton Grid.Column="1"
+                                                          IsChecked="{Binding BarcodeActionIsQuickUpdate}"
+                                                          Style="{StaticResource IosToggle}"
+                                                          Click="BarcodeActionToggle_Click"
+                                                          VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </Border>
 
                                 </StackPanel>
                             </Border>
@@ -397,5 +489,17 @@
                                   VerticalAlignment="Center"/>
             </Border>
         </Grid>
+        </Grid>
+
+        <!-- Toast notification — floats top-right over all content -->
+        <components:ToastNotification x:Name="InventoryToast"
+                                      Panel.ZIndex="100"
+                                      VerticalAlignment="Top"
+                                      HorizontalAlignment="Right"
+                                      Margin="0,12,16,0"/>
+
+        <!-- Center banner — appears mid-screen on save/update/delete -->
+        <components:CenterBanner x:Name="InventoryCenterBanner"
+                                 Panel.ZIndex="200"/>
     </Grid>
 </UserControl>

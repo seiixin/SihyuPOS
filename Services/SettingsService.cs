@@ -9,12 +9,12 @@ using System.Diagnostics;
 namespace SihyuPOSPayroll.Services
 {
     /// <summary>
-    /// Singleton service that persists and retrieves SystemMode and ModuleVisibility
-    /// from the SQLite database. Schema is created by
+    /// Singleton service that persists and retrieves SystemMode, ModuleVisibility,
+    /// and BarcodeScanAction from the SQLite database. Schema is created by
     /// <see cref="AuthSchemaInitializer.EnsureSchemaAtStartup"/>.
     ///
-    /// Call <see cref="EnsureSchemaAtStartup"/> once from App.xaml.cs (now a no-op
-    /// kept for API compatibility), then call <see cref="Instance"/>.Load().
+    /// Call <see cref="EnsureSchemaAtStartup"/> once from App.xaml.cs (no-op kept
+    /// for API compatibility), then call <see cref="Instance"/>.Load().
     /// </summary>
     public class SettingsService
     {
@@ -23,7 +23,8 @@ namespace SihyuPOSPayroll.Services
         private SettingsService() { }
 
         // ── In-memory state ───────────────────────────────────────────────────
-        public SystemMode CurrentMode { get; private set; } = SystemMode.StoreMode;
+        public SystemMode        CurrentMode       { get; private set; } = SystemMode.StoreMode;
+        public BarcodeScanAction BarcodeScanAction { get; private set; } = BarcodeScanAction.ModalPrompt;
 
         private Dictionary<string, bool> _visibility =
             new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
@@ -38,21 +39,15 @@ namespace SihyuPOSPayroll.Services
         public event Action? SettingsChanged;
 
         // ── Schema (no-op — handled by AuthSchemaInitializer) ─────────────────
-        /// <summary>
-        /// No-op. Schema is created by <see cref="AuthSchemaInitializer.EnsureSchemaAtStartup"/>.
-        /// Kept for API compatibility with App.xaml.cs.
-        /// </summary>
         public static void EnsureSchemaAtStartup()
         {
-            // Tables are created + seeded by AuthSchemaInitializer.
-            // Nothing to do here.
             Debug.WriteLine("[SettingsService] EnsureSchemaAtStartup — delegated to AuthSchemaInitializer.");
         }
 
         // ── Load ──────────────────────────────────────────────────────────────
         /// <summary>
-        /// Reads SystemMode and ModuleVisibility from SQLite into the in-memory cache.
-        /// On any DB error falls back to defaults (RestaurantMode, all modules enabled).
+        /// Reads SystemMode, BarcodeScanAction and ModuleVisibility from SQLite.
+        /// Falls back to defaults on any DB error.
         /// </summary>
         public void Load()
         {
@@ -65,8 +60,15 @@ namespace SihyuPOSPayroll.Services
                 {
                     cmd.CommandText =
                         "SELECT SettingValue FROM SystemSettings WHERE SettingKey = 'SystemMode' LIMIT 1;";
-                    var raw = cmd.ExecuteScalar() as string;
-                    CurrentMode = ParseSystemMode(raw);
+                    CurrentMode = ParseSystemMode(cmd.ExecuteScalar() as string);
+                }
+
+                // Read BarcodeScanAction
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText =
+                        "SELECT SettingValue FROM SystemSettings WHERE SettingKey = 'BarcodeScanAction' LIMIT 1;";
+                    BarcodeScanAction = ParseBarcodeScanAction(cmd.ExecuteScalar() as string);
                 }
 
                 // Read ModuleVisibility
@@ -76,54 +78,43 @@ namespace SihyuPOSPayroll.Services
                     cmd.CommandText = "SELECT ModuleName, IsEnabled FROM ModuleVisibility;";
                     using var rdr = cmd.ExecuteReader();
                     while (rdr.Read())
-                    {
-                        string name    = rdr.GetString(0);
-                        bool   enabled = rdr.GetInt32(1) == 1;
-                        visibility[name] = enabled;
-                    }
+                        visibility[rdr.GetString(0)] = rdr.GetInt32(1) == 1;
                 }
 
                 EnsureDefaultModulesInCache(visibility);
                 _visibility = visibility;
 
-                Debug.WriteLine($"[SettingsService] Loaded. Mode={CurrentMode}, Modules={_visibility.Count}");
+                Debug.WriteLine(
+                    $"[SettingsService] Loaded. Mode={CurrentMode}, " +
+                    $"BarcodeAction={BarcodeScanAction}, Modules={_visibility.Count}");
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"[SettingsService] Load error — using defaults: {ex.Message}");
-                CurrentMode  = SystemMode.StoreMode;
-                _visibility  = BuildDefaultVisibility();
+                CurrentMode       = SystemMode.StoreMode;
+                BarcodeScanAction = BarcodeScanAction.ModalPrompt;
+                _visibility       = BuildDefaultVisibility();
             }
         }
 
-        // overload kept for API compat (App.xaml.cs passes no arg now, but just in case)
-        public void Load(string _ ) => Load();
+        // overload kept for API compat
+        public void Load(string _) => Load();
 
         // ── Save ──────────────────────────────────────────────────────────────
         /// <summary>
-        /// Persists mode + module states in a single SQLite transaction.
-        /// Updates the in-memory cache and raises <see cref="SettingsChanged"/> on success.
+        /// Persists mode, barcode action, and module states in a single transaction.
+        /// Updates in-memory cache and raises <see cref="SettingsChanged"/>.
         /// </summary>
-        public void Save(SystemMode mode, IEnumerable<ModuleConfig> modules)
+        public void Save(SystemMode mode, IEnumerable<ModuleConfig> modules, BarcodeScanAction barcodeAction)
         {
             using var conn = SqliteConnectionFactory.CreateOpenConnection();
             using var tx   = conn.BeginTransaction();
 
             try
             {
-                // Upsert SystemMode
-                using (var cmd = conn.CreateCommand())
-                {
-                    cmd.Transaction = tx;
-                    cmd.CommandText = @"
-                        INSERT INTO SystemSettings (SettingKey, SettingValue)
-                        VALUES ('SystemMode', @val)
-                        ON CONFLICT(SettingKey) DO UPDATE SET SettingValue = excluded.SettingValue;";
-                    cmd.Parameters.AddWithValue("@val", mode.ToString());
-                    cmd.ExecuteNonQuery();
-                }
+                UpsertSetting(conn, tx, "SystemMode",       mode.ToString());
+                UpsertSetting(conn, tx, "BarcodeScanAction", barcodeAction.ToString());
 
-                // Upsert each module
                 using (var cmd = conn.CreateCommand())
                 {
                     cmd.Transaction = tx;
@@ -133,7 +124,6 @@ namespace SihyuPOSPayroll.Services
                         ON CONFLICT(ModuleName) DO UPDATE SET IsEnabled = excluded.IsEnabled;";
                     var pName    = cmd.Parameters.Add("@name",    SqliteType.Text);
                     var pEnabled = cmd.Parameters.Add("@enabled", SqliteType.Integer);
-
                     foreach (var m in modules)
                     {
                         pName.Value    = m.ModuleName;
@@ -144,8 +134,8 @@ namespace SihyuPOSPayroll.Services
 
                 tx.Commit();
 
-                // Update in-memory cache
-                CurrentMode = mode;
+                CurrentMode       = mode;
+                BarcodeScanAction = barcodeAction;
                 var newVis = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
                 foreach (var m in modules)
                     newVis[m.ModuleName] = m.IsEnabled;
@@ -161,7 +151,11 @@ namespace SihyuPOSPayroll.Services
             }
         }
 
-        // overload for callers that still pass a connection string (ignored)
+        // Convenience overload (barcode action defaults to current value)
+        public void Save(SystemMode mode, IEnumerable<ModuleConfig> modules)
+            => Save(mode, modules, BarcodeScanAction);
+
+        // Legacy overload kept for any callers that pass a connection string (ignored)
         public void Save(SystemMode mode, IEnumerable<ModuleConfig> modules, string _)
             => Save(mode, modules);
 
@@ -169,11 +163,31 @@ namespace SihyuPOSPayroll.Services
         internal void NotifyChanged() => SettingsChanged?.Invoke();
 
         // ── Private helpers ───────────────────────────────────────────────────
+        private static void UpsertSetting(SqliteConnection conn, SqliteTransaction tx, string key, string value)
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.Transaction = tx;
+            cmd.CommandText = @"
+                INSERT INTO SystemSettings (SettingKey, SettingValue)
+                VALUES (@key, @val)
+                ON CONFLICT(SettingKey) DO UPDATE SET SettingValue = excluded.SettingValue;";
+            cmd.Parameters.AddWithValue("@key", key);
+            cmd.Parameters.AddWithValue("@val", value);
+            cmd.ExecuteNonQuery();
+        }
+
         private static SystemMode ParseSystemMode(string? raw)
         {
             if (Enum.TryParse<SystemMode>(raw, ignoreCase: true, out var parsed))
                 return parsed;
             return SystemMode.StoreMode;
+        }
+
+        private static BarcodeScanAction ParseBarcodeScanAction(string? raw)
+        {
+            if (Enum.TryParse<BarcodeScanAction>(raw, ignoreCase: true, out var parsed))
+                return parsed;
+            return BarcodeScanAction.ModalPrompt;
         }
 
         private static readonly string[] AllDefaultModules =

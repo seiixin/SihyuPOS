@@ -11,99 +11,107 @@ namespace SihyuPOSPayroll.Views.Admin.Employees
     public partial class Employees : UserControl
     {
         private readonly EmployeeService _employeeService = new();
-
         private List<EmployeeModel> _allEmployees = new();
 
         public Employees()
         {
             InitializeComponent();
+            ToastService.Register(EmployeesToast);
             LoadEmployees();
         }
+
+        // ── Data ─────────────────────────────────────────────────────────────
 
         private void LoadEmployees()
         {
             try
             {
                 _allEmployees = _employeeService.GetAllEmployees();
-                EmployeeDataGrid.ItemsSource = _allEmployees;
+                ApplyFilter(SearchBox?.Text ?? string.Empty);
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Failed to load employees.\n\n" + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                ToastService.Error("Failed to load employees: " + ex.Message);
             }
         }
 
-        private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
+        private void ApplyFilter(string query)
         {
-            string query = SearchBox.Text.Trim().ToLower();
+            query = query.Trim().ToLower();
 
-            var filtered = string.IsNullOrWhiteSpace(query)
+            var list = string.IsNullOrWhiteSpace(query)
                 ? _allEmployees
-                : _allEmployees.Where(emp =>
-                    (!string.IsNullOrEmpty(emp.FullName) && emp.FullName.ToLower().Contains(query)) ||
-                    (!string.IsNullOrEmpty(emp.Position) && emp.Position.ToLower().Contains(query)) ||
-                    (!string.IsNullOrEmpty(emp.ContactNumber) && emp.ContactNumber.ToLower().Contains(query)) ||
-                    (emp.UserAccount != null && emp.UserAccount.Id.ToString().Contains(query))
-                ).ToList();
+                : _allEmployees.Where(e =>
+                      (e.FullName      != null && e.FullName.ToLower().Contains(query))      ||
+                      (e.Position      != null && e.Position.ToLower().Contains(query))      ||
+                      (e.ContactNumber != null && e.ContactNumber.ToLower().Contains(query)) ||
+                      (e.Shift         != null && e.Shift.ToLower().Contains(query))
+                  ).ToList();
 
-            EmployeeDataGrid.ItemsSource = filtered;
+            EmployeeDataGrid.ItemsSource = list;
+            EmptyState.Visibility = list.Count == 0
+                ? Visibility.Visible
+                : Visibility.Collapsed;
         }
+
+        // ── Overlay helpers ───────────────────────────────────────────────────
+
+        private void OpenDialog(AddEditEmployee dialog)
+        {
+            dialog.DialogClosed += OnDialogClosed;
+            DialogHost.Content       = dialog;
+            DialogOverlay.Visibility = Visibility.Visible;
+        }
+
+        private void OnDialogClosed(object? sender, bool saved)
+        {
+            DialogOverlay.Visibility = Visibility.Collapsed;
+            DialogHost.Content       = null;
+            if (saved) LoadEmployees();
+        }
+
+        // ── Event handlers ────────────────────────────────────────────────────
+
+        private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
+            => ApplyFilter(SearchBox.Text);
 
         private void AddEmployee_Click(object sender, RoutedEventArgs e)
-        {
-            var addEmployeePopup = new AddEditEmployee();
-
-            addEmployeePopup.OnEmployeeSaved += () =>
-            {
-                LoadEmployees();
-            };
-
-            RootGrid.Children.Add(addEmployeePopup);
-        }
+            => OpenDialog(new AddEditEmployee());
 
         private void EditEmployee_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button btn && btn.DataContext is EmployeeModel employee)
-            {
-                var editEmployeePopup = new AddEditEmployee(employee);
-
-                editEmployeePopup.OnEmployeeSaved += () =>
-                {
-                    LoadEmployees();
-                };
-
-                RootGrid.Children.Add(editEmployeePopup);
-            }
+            if (sender is FrameworkElement fe && fe.DataContext is EmployeeModel emp)
+                OpenDialog(new AddEditEmployee(emp));
         }
 
         private void DeleteEmployee_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button btn && btn.DataContext is EmployeeModel employee)
+            if (sender is not FrameworkElement fe || fe.DataContext is not EmployeeModel emp)
+                return;
+
+            var confirm = MessageBox.Show(
+                $"Delete '{emp.FullName}'?\nThis cannot be undone.",
+                "Confirm Delete",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (confirm != MessageBoxResult.Yes) return;
+
+            try
             {
-                var confirm = MessageBox.Show($"Are you sure you want to delete {employee.FullName}?", "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Warning);
-
-                if (confirm == MessageBoxResult.Yes)
+                if (_employeeService.DeleteEmployee(emp.Id))
                 {
-                    bool success = false;
-                    try
-                    {
-                        success = _employeeService.DeleteEmployee(employee.Id);
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show("Error deleting employee:\n" + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
-
-                    if (success)
-                    {
-                        MessageBox.Show($"Deleted employee: {employee.FullName}");
-                        LoadEmployees();
-                    }
-                    else
-                    {
-                        MessageBox.Show("Failed to delete employee.");
-                    }
+                    LoadEmployees();
+                    ToastService.Info($"'{emp.FullName}' removed.");
                 }
+                else
+                {
+                    ToastService.Error("Failed to delete employee.");
+                }
+            }
+            catch (Exception ex)
+            {
+                ToastService.Error("Error: " + ex.Message);
             }
         }
     }

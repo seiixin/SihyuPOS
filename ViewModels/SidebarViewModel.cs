@@ -267,6 +267,8 @@ namespace SihyuPOSPayroll.ViewModels
                     MenuItems.Add("Dashboard");
                     MenuItems.Add("Users");
                     MenuItems.Add("Employees");
+                    MenuItems.Add("Permissions");
+                    MenuItems.Add("Positions");
                     MenuItems.Add("Menu");
                     MenuItems.Add("Inventory");
                     MenuItems.Add("Categories");
@@ -292,9 +294,11 @@ namespace SihyuPOSPayroll.ViewModels
                         Header = "ADMIN TOOLS",
                         Items = new List<SidebarMenuItem>
                         {
-                            MakeItem("Users",     "\uE716"),
-                            MakeItem("Employees", "\uE716"),
-                            MakeItem("Menu",      "\uE8A5"),
+                            MakeItem("Users",       "\uE716"),
+                            MakeItem("Employees",   "\uE716"),
+                            MakeItem("Permissions", "\uE8D7"),
+                            MakeItem("Positions",   "\uE821"),
+                            MakeItem("Menu",        "\uE8A5"),
                         }
                     });
                     MenuGroups.Add(new SidebarMenuGroup
@@ -518,6 +522,8 @@ namespace SihyuPOSPayroll.ViewModels
             "Dashboard"       => "Dashboard",
             "Users"           => "Users",
             "Employees"       => "Employees",
+            "Permissions"     => "Permissions",
+            "Positions"       => "Positions",
             "Payroll"         => "Payroll",
             "Payslip Requests"=> "PayslipRequests",
             "Payslip"         => "PayslipRequests",
@@ -597,6 +603,14 @@ namespace SihyuPOSPayroll.ViewModels
 
                 case "employees":
                     if (IsAdmin) CurrentView = new Employees();
+                    break;
+
+                case "permissions":
+                    if (IsAdmin) CurrentView = new Views.Admin.Permissions.Permissions();
+                    break;
+
+                case "positions":
+                    if (IsAdmin) CurrentView = new Views.Admin.Positions.Positions();
                     break;
 
                 case "payroll":

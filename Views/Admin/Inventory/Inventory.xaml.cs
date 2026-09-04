@@ -7,6 +7,7 @@ using System.Windows.Media;
 using SihyuPOSPayroll.Models;
 using SihyuPOSPayroll.Services;
 using SihyuPOSPayroll.ViewModels;
+using SihyuPOSPayroll.Views.Components;
 
 namespace SihyuPOSPayroll.Views.Admin.Inventory
 {
@@ -48,6 +49,9 @@ namespace SihyuPOSPayroll.Views.Admin.Inventory
                 _subscribedVm.LookupStatusChanged += OnLookupStatusChanged;
                 _subscribedVm.PropertyChanged     += OnVmPropertyChanged;
             }
+            // Register the toast control so ToastService can reach it from the ViewModel
+            ToastService.Register(InventoryToast);
+            CenterBannerService.Register(InventoryCenterBanner);
             ApplyColumnVisibility();
             QuickAddBarcodeBox.Focus();
         }
@@ -73,6 +77,9 @@ namespace SihyuPOSPayroll.Views.Admin.Inventory
         // Toggles called from inside the popup — just re-apply after binding updates
         private void ColumnToggle_Click(object sender, RoutedEventArgs e)
             => ApplyColumnVisibility();
+
+        // Barcode action toggle — VM handles mutual exclusion; nothing extra needed here
+        private void BarcodeActionToggle_Click(object sender, RoutedEventArgs e) { }
 
         // Opens / closes the settings popup
         private void SettingsBtn_Click(object sender, RoutedEventArgs e)

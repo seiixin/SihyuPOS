@@ -8,7 +8,6 @@ using System.Windows.Input;
 using SihyuPOSPayroll.Helpers;
 using SihyuPOSPayroll.Models;
 using SihyuPOSPayroll.Services;
-
 namespace SihyuPOSPayroll.ViewModels
 {
     /// <summary>

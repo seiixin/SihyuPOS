@@ -8,126 +8,131 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media.Imaging;
 
 namespace SihyuPOSPayroll.Views.Admin.Employees
 {
     public partial class AddEditEmployee : UserControl
     {
-        private readonly EmployeeService _employeeService = new();
+        private readonly EmployeeService       _employeeService       = new();
         private readonly PositionSalaryService _positionSalaryService = new();
-        private readonly WorkScheduleService _workScheduleService = new();   // Work schedule source
+        private readonly WorkScheduleService   _workScheduleService   = new();
 
-        private readonly bool _isEditMode;
+        private readonly bool           _isEditMode;
         private readonly EmployeeModel? _editingEmployee;
 
-        // Holds the chosen local image path before Save
+        // Chosen local image path before Save
         private string? _selectedImagePath;
 
-        // Notify parent when saved
-        public delegate void EmployeeSavedHandler();
-        public event EmployeeSavedHandler? OnEmployeeSaved;
+        /// <summary>Raised when the dialog should close. bool = saved successfully.</summary>
+        public event EventHandler<bool>? DialogClosed;
+
+        // ── Constructor ───────────────────────────────────────────────────────
 
         public AddEditEmployee(EmployeeModel? employee = null)
         {
             InitializeComponent();
 
-            // Populate dropdowns
             PopulatePositions();
             PopulateWorkSchedules();
 
+            // Esc → cancel
+            PreviewKeyDown += (_, e) =>
+            {
+                if (e.Key == Key.Escape)
+                {
+                    e.Handled = true;
+                    Close(saved: false);
+                }
+            };
+
             if (employee != null)
             {
-                _isEditMode = true;
+                _isEditMode      = true;
                 _editingEmployee = employee;
 
-                TitleText.Text = "Edit Employee";
+                TitleText.Text    = "Edit Employee";
+                SubtitleText.Text = "Update the employee's profile and settings.";
 
-                // Populate fields
-                FullNameTextBox.Text = employee.FullName ?? string.Empty;
-                AgeTextBox.Text = employee.Age?.ToString() ?? string.Empty;
+                FullNameTextBox.Text        = employee.FullName        ?? string.Empty;
+                AgeTextBox.Text             = employee.Age?.ToString() ?? string.Empty;
+                AddressTextBox.Text         = employee.Address         ?? string.Empty;
+                ContactNumberTextBox.Text   = employee.ContactNumber   ?? string.Empty;
+                EmergencyContactTextBox.Text= employee.EmergencyContact?? string.Empty;
+
+                BirthdayDatePicker.SelectedDate  = employee.Birthday;
+                DateHiredDatePicker.SelectedDate = employee.DateHired;
+
                 SexComboBox.SelectedItem = GetComboBoxItemByContent(SexComboBox, employee.Sex);
-                AddressTextBox.Text = employee.Address ?? string.Empty;
-                BirthdayDatePicker.SelectedDate = employee.Birthday;
-                ContactNumberTextBox.Text = employee.ContactNumber ?? string.Empty;
+                if (SexComboBox.SelectedItem == null) SexComboBox.SelectedIndex = 0;
 
-                // Position (combo is editable)
                 PositionComboBox.Text = employee.Position ?? string.Empty;
 
-                // Salary: keep existing; if empty and manual override is off, try auto-fill from preset
                 if (employee.SalaryPerDay.HasValue)
-                    SalaryPerDayTextBox.Text = employee.SalaryPerDay.Value.ToString(CultureInfo.InvariantCulture);
+                    SalaryPerDayTextBox.Text = employee.SalaryPerDay.Value
+                                                  .ToString("0.00", CultureInfo.InvariantCulture);
                 else
                     TryAutoFillSalaryFromPosition();
 
-                // Shift: try to select the existing one; if nothing matches, pick a safe default
                 ShiftComboBox.SelectedItem = GetComboBoxItemByContent(ShiftComboBox, employee.Shift);
-                if (ShiftComboBox.SelectedItem == null)
-                    ShiftComboBox.SelectedIndex = 0; // default "Morning"
+                if (ShiftComboBox.SelectedItem == null) ShiftComboBox.SelectedIndex = 0;
 
-                // Work Schedule (if any)
                 if (employee.WorkScheduleId.HasValue)
                     WorkScheduleComboBox.SelectedValue = employee.WorkScheduleId.Value;
 
-                SssNumberTextBox.Text = employee.SssNumber ?? string.Empty;
+                SssNumberTextBox.Text        = employee.SssNumber        ?? string.Empty;
                 PhilhealthNumberTextBox.Text = employee.PhilhealthNumber ?? string.Empty;
-                PagibigNumberTextBox.Text = employee.PagibigNumber ?? string.Empty;
+                PagibigNumberTextBox.Text    = employee.PagibigNumber    ?? string.Empty;
 
-                // Image preview for existing photo
                 if (!string.IsNullOrWhiteSpace(employee.ImageUrl))
                 {
-                    TryShowImagePreview(employee.ImageUrl!);
-                    if (SelectedImageLabel != null)
-                        SelectedImageLabel.Text = System.IO.Path.GetFileName(employee.ImageUrl);
+                    TryShowImagePreview(employee.ImageUrl);
+                    SelectedImageLabel.Text = Path.GetFileName(employee.ImageUrl);
                 }
 
-                EmergencyContactTextBox.Text = employee.EmergencyContact ?? string.Empty;
-                DateHiredDatePicker.SelectedDate = employee.DateHired;
-
-                // =========================
-                // ACCOUNT STATUS (edit mode)
-                // Set based on linked user; default true if null
-                // =========================
                 var isActive = employee.UserAccount?.IsActive ?? true;
-                if (StatusComboBox != null)
-                    StatusComboBox.SelectedValue = isActive ? "1" : "0";
+                StatusComboBox.SelectedValue = isActive ? "1" : "0";
             }
             else
             {
-                _isEditMode = false;
-                TitleText.Text = "Add New Employee";
-                SexComboBox.SelectedIndex = 0;
-                ShiftComboBox.SelectedIndex = 0; // default "Morning"
+                _isEditMode       = false;
+                TitleText.Text    = "Add New Employee";
+                SubtitleText.Text = "Fill in the employee details below.";
 
-                // =========================
-                // ACCOUNT STATUS (new)
-                // Default to Active
-                // =========================
-                if (StatusComboBox != null)
-                    StatusComboBox.SelectedValue = "1";
+                SexComboBox.SelectedIndex   = 0;
+                ShiftComboBox.SelectedIndex = 0;
+                StatusComboBox.SelectedValue = "1"; // Active by default
             }
 
-            // Salary field starts read-only; toggle via manual override
             SetSalaryReadOnlyState();
         }
 
-        // =======================
-        // UI Event Handlers
-        // =======================
+        // ── Close helper ──────────────────────────────────────────────────────
+
+        private void Close(bool saved)
+        {
+            DialogClosed?.Invoke(this, saved);
+
+            // Legacy fallback: remove from parent panel if used outside the overlay
+            if (Parent is Panel parent)
+                parent.Children.Remove(this);
+        }
+
+        // ── UI event handlers ─────────────────────────────────────────────────
 
         private void PositionComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            // Auto-fill salary only if manual override is OFF
-            if (ManualOverrideCheckBox.IsChecked == true) return;
-            TryAutoFillSalaryFromPosition();
+            if (ManualOverrideCheckBox.IsChecked != true)
+                TryAutoFillSalaryFromPosition();
         }
 
-        private void ManualOverrideCheckBox_Checked(object sender, RoutedEventArgs e) => SetSalaryReadOnlyState();
+        private void ManualOverrideCheckBox_Checked(object sender, RoutedEventArgs e)
+            => SetSalaryReadOnlyState();
 
         private void ManualOverrideCheckBox_Unchecked(object sender, RoutedEventArgs e)
         {
             SetSalaryReadOnlyState();
-            // When turning override OFF, refresh to preset
             TryAutoFillSalaryFromPosition();
         }
 
@@ -135,170 +140,154 @@ namespace SihyuPOSPayroll.Views.Admin.Employees
         {
             var ofd = new OpenFileDialog
             {
-                Title = "Select Profile Photo",
+                Title  = "Select Profile Photo",
                 Filter = "Image Files|*.jpg;*.jpeg;*.png;*.webp;*.bmp",
-                Multiselect = false
+                Multiselect = false,
             };
 
             if (ofd.ShowDialog() == true)
             {
-                _selectedImagePath = ofd.FileName;
-                if (SelectedImageLabel != null)
-                    SelectedImageLabel.Text = System.IO.Path.GetFileName(_selectedImagePath);
+                _selectedImagePath     = ofd.FileName;
+                SelectedImageLabel.Text = Path.GetFileName(_selectedImagePath);
                 TryShowImagePreview(_selectedImagePath);
             }
         }
 
         private void Cancel_Click(object sender, RoutedEventArgs e)
-        {
-            if (Parent is Panel parent)
-                parent.Children.Remove(this);
-        }
+            => Close(saved: false);
 
         private void Save_Click(object sender, RoutedEventArgs e)
         {
-            // Validate required fields (Full Name and Position)
-            var posText = (PositionComboBox.Text ?? string.Empty).Trim();
-            if (string.IsNullOrWhiteSpace(FullNameTextBox.Text) || string.IsNullOrWhiteSpace(posText))
+            // ── Validation ────────────────────────────────────────────────────
+            var fullName = (FullNameTextBox.Text ?? string.Empty).Trim();
+            var posText  = (PositionComboBox.Text ?? string.Empty).Trim();
+
+            if (string.IsNullOrWhiteSpace(fullName))
             {
-                MessageBox.Show("Please fill at least Full Name and Position.", "Validation",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                ToastService.Warning("Full Name is required.");
+                FullNameTextBox.Focus();
                 return;
             }
 
-            // Parse numeric fields safely
+            if (string.IsNullOrWhiteSpace(posText))
+            {
+                ToastService.Warning("Position is required.");
+                PositionComboBox.Focus();
+                return;
+            }
+
+            // ── Parse numeric fields ──────────────────────────────────────────
             int? age = null;
             if (int.TryParse((AgeTextBox.Text ?? string.Empty).Trim(), out var parsedAge))
                 age = parsedAge;
 
             decimal? salaryPerDay = null;
             if (decimal.TryParse((SalaryPerDayTextBox.Text ?? string.Empty).Trim(),
-                                 NumberStyles.Any, CultureInfo.InvariantCulture, out var parsedSalary))
+                                  NumberStyles.Any, CultureInfo.InvariantCulture, out var parsedSalary))
                 salaryPerDay = parsedSalary;
 
-            // WorkScheduleId (SelectedValuePath="Id")
-            int? workScheduleId = (WorkScheduleComboBox.SelectedValue is int id) ? id : (int?)null;
+            int? workScheduleId =
+                WorkScheduleComboBox.SelectedValue is int sid ? sid : (int?)null;
 
-            // Shift: read from SelectedItem if possible; else from Text; if still blank, default to "Morning"
-            string? shiftText =
+            string shiftText =
                 (ShiftComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString()
                 ?? (ShiftComboBox.Text ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(shiftText)) shiftText = "Morning";
 
-            if (string.IsNullOrWhiteSpace(shiftText))
-                shiftText = "Morning";
+            // ── Image ─────────────────────────────────────────────────────────
+            var newImageUrl     = SaveProfilePhotoIfAny();
+            var effectiveImage  = newImageUrl ?? (_isEditMode ? _editingEmployee?.ImageUrl : null);
 
-            // Save uploaded photo (if any). If none, keep existing on edit; otherwise null.
-            var newImageUrl = SaveProfilePhotoIfAny();
-            var effectiveImageUrl = newImageUrl
-                ?? (_isEditMode ? _editingEmployee?.ImageUrl : null);
-
-            // Prepare employee object
+            // ── Build model ───────────────────────────────────────────────────
             var employee = new EmployeeModel
             {
-                FullName = (FullNameTextBox.Text ?? string.Empty).Trim(),
-                Age = age,
-                Sex = (SexComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString(),
-                Address = (AddressTextBox.Text ?? string.Empty).Trim(),
-                Birthday = BirthdayDatePicker.SelectedDate,
-                ContactNumber = (ContactNumberTextBox.Text ?? string.Empty).Trim(),
-                Position = posText,
-                SalaryPerDay = salaryPerDay,
-                Shift = shiftText,                           // guaranteed non-empty
-                WorkScheduleId = workScheduleId,            // may be null if not chosen
-                SssNumber = (SssNumberTextBox.Text ?? string.Empty).Trim(),
+                FullName         = fullName,
+                Age              = age,
+                Sex              = (SexComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString(),
+                Address          = (AddressTextBox.Text         ?? string.Empty).Trim(),
+                Birthday         = BirthdayDatePicker.SelectedDate,
+                ContactNumber    = (ContactNumberTextBox.Text   ?? string.Empty).Trim(),
+                Position         = posText,
+                SalaryPerDay     = salaryPerDay,
+                Shift            = shiftText,
+                WorkScheduleId   = workScheduleId,
+                SssNumber        = (SssNumberTextBox.Text        ?? string.Empty).Trim(),
                 PhilhealthNumber = (PhilhealthNumberTextBox.Text ?? string.Empty).Trim(),
-                PagibigNumber = (PagibigNumberTextBox.Text ?? string.Empty).Trim(),
-                ImageUrl = effectiveImageUrl ?? string.Empty,
+                PagibigNumber    = (PagibigNumberTextBox.Text    ?? string.Empty).Trim(),
+                ImageUrl         = effectiveImage ?? string.Empty,
                 EmergencyContact = (EmergencyContactTextBox.Text ?? string.Empty).Trim(),
-                DateHired = DateHiredDatePicker.SelectedDate
+                DateHired        = DateHiredDatePicker.SelectedDate,
             };
 
-            var isActiveSelected = GetSelectedIsActiveOrDefault(); // read from StatusComboBox
+            bool isActiveSelected = GetSelectedIsActive();
 
+            // ── Persist ───────────────────────────────────────────────────────
             if (_isEditMode && _editingEmployee != null)
             {
-                employee.Id = _editingEmployee.Id;
+                employee.Id        = _editingEmployee.Id;
                 employee.CreatedAt = _editingEmployee.CreatedAt;
 
-                var success = _employeeService.UpdateEmployee(employee);
-                if (success)
+                if (_employeeService.UpdateEmployee(employee))
                 {
-                    // Apply account status AFTER saving main details
-                    TrySetActiveStatusByEmployeeId(employee.Id, isActiveSelected);
-
-                    MessageBox.Show("Employee updated successfully.", "Success",
-                        MessageBoxButton.OK, MessageBoxImage.Information);
-                    OnEmployeeSaved?.Invoke();
-                    Cancel_Click(sender, e);
+                    TrySetActiveStatus(employee.Id, isActiveSelected);
+                    Close(saved: true);
+                    ToastService.Success($"'{employee.FullName}' updated.");
                 }
                 else
                 {
-                    MessageBox.Show("Failed to update employee.", "Error",
-                        MessageBoxButton.OK, MessageBoxImage.Error);
+                    ToastService.Error("Failed to update employee.");
                 }
             }
             else
             {
                 employee.CreatedAt = DateTime.Now;
-                var success = _employeeService.AddEmployee(employee);
-                if (success)
-                {
-                    // Apply account status AFTER we have employee.Id
-                    TrySetActiveStatusByEmployeeId(employee.Id, isActiveSelected);
 
-                    MessageBox.Show("Employee added successfully.", "Success",
-                        MessageBoxButton.OK, MessageBoxImage.Information);
-                    OnEmployeeSaved?.Invoke();
-                    Cancel_Click(sender, e);
+                if (_employeeService.AddEmployee(employee))
+                {
+                    TrySetActiveStatus(employee.Id, isActiveSelected);
+                    Close(saved: true);
+                    ToastService.Success($"'{employee.FullName}' added.");
                 }
                 else
                 {
-                    MessageBox.Show("Failed to add employee.", "Error",
-                        MessageBoxButton.OK, MessageBoxImage.Error);
+                    ToastService.Error("Failed to add employee.");
                 }
             }
         }
 
-        // =======================
-        // Helpers
-        // =======================
+        // ── Helpers ───────────────────────────────────────────────────────────
 
         private void PopulatePositions()
         {
             try
             {
                 var list = _positionSalaryService.Load()
-                                                 .Where(p => p.IsActive)
-                                                 .OrderBy(p => p.Position, StringComparer.OrdinalIgnoreCase)
-                                                 .Select(p => p.Position)
-                                                 .Distinct(StringComparer.OrdinalIgnoreCase)
-                                                 .ToList();
+                    .Where(p => p.IsActive)
+                    .OrderBy(p => p.Position, StringComparer.OrdinalIgnoreCase)
+                    .Select(p => p.Position)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
 
                 PositionComboBox.ItemsSource = list;
             }
             catch (Exception ex)
             {
-                // Non-fatal; just log
-                Console.Error.WriteLine("Failed to load position presets: " + ex.Message);
+                Console.Error.WriteLine("Failed to load positions: " + ex.Message);
             }
         }
 
-        // Load work schedules into the combo
         private void PopulateWorkSchedules()
         {
             try
             {
                 var list = _workScheduleService.Load()
-                                               .Where(s => s.IsActive)
-                                               .OrderBy(s => s.Label, StringComparer.OrdinalIgnoreCase)
-                                               .ToList();
+                    .Where(s => s.IsActive)
+                    .OrderBy(s => s.Label, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
 
                 WorkScheduleComboBox.DisplayMemberPath = "Label";
                 WorkScheduleComboBox.SelectedValuePath = "Id";
-                WorkScheduleComboBox.ItemsSource = list;
-
-                // Optional auto-select one schedule:
-                // if (list.Count == 1) WorkScheduleComboBox.SelectedIndex = 0;
+                WorkScheduleComboBox.ItemsSource       = list;
             }
             catch (Exception ex)
             {
@@ -313,30 +302,25 @@ namespace SihyuPOSPayroll.Views.Admin.Employees
             if (ManualOverrideCheckBox.IsChecked == true) return;
 
             if (_positionSalaryService.TryGetRate(pos, out var rate))
-            {
                 SalaryPerDayTextBox.Text = rate.ToString("0.00", CultureInfo.InvariantCulture);
-            }
-            // else: leave as is if no preset found
         }
 
         private void SetSalaryReadOnlyState()
         {
-            var manual = ManualOverrideCheckBox.IsChecked == true;
+            bool manual = ManualOverrideCheckBox.IsChecked == true;
             SalaryPerDayTextBox.IsReadOnly = !manual;
-            SalaryPerDayTextBox.ToolTip = manual
-                ? "Manual override enabled. You can edit this value."
+            SalaryPerDayTextBox.ToolTip    = manual
+                ? "Manual override enabled — you can edit this value."
                 : "Auto-filled from position. Enable Manual Override to edit.";
         }
 
-        private ComboBoxItem? GetComboBoxItemByContent(ComboBox comboBox, string? content)
+        private ComboBoxItem? GetComboBoxItemByContent(ComboBox cb, string? content)
         {
             if (string.IsNullOrEmpty(content)) return null;
-
-            foreach (var item in comboBox.Items)
-            {
-                if (item is ComboBoxItem cbi && string.Equals(cbi.Content?.ToString(), content, StringComparison.Ordinal))
+            foreach (var item in cb.Items)
+                if (item is ComboBoxItem cbi &&
+                    string.Equals(cbi.Content?.ToString(), content, StringComparison.OrdinalIgnoreCase))
                     return cbi;
-            }
             return null;
         }
 
@@ -345,80 +329,59 @@ namespace SihyuPOSPayroll.Views.Admin.Employees
             if (string.IsNullOrWhiteSpace(_selectedImagePath) || !File.Exists(_selectedImagePath))
                 return null;
 
-            // Save to app-local folder: <app>/Images/Employees/<guid>.<ext>
-            var appDir = AppDomain.CurrentDomain.BaseDirectory;
-            var targetDir = System.IO.Path.Combine(appDir, "Images", "Employees");
+            var appDir    = AppDomain.CurrentDomain.BaseDirectory;
+            var targetDir = Path.Combine(appDir, "Images", "Employees");
             Directory.CreateDirectory(targetDir);
 
-            var ext = System.IO.Path.GetExtension(_selectedImagePath);
+            var ext      = Path.GetExtension(_selectedImagePath);
             var fileName = $"{Guid.NewGuid():N}{ext}";
-            var destPath = System.IO.Path.Combine(targetDir, fileName);
+            var destPath = Path.Combine(targetDir, fileName);
 
             File.Copy(_selectedImagePath, destPath, overwrite: false);
 
-            // Return a relative path (easier to move the app)
-            var relative = System.IO.Path.Combine("Images", "Employees", fileName)
-                            .Replace('\\', '/');
-            return relative;
+            return Path.Combine("Images", "Employees", fileName).Replace('\\', '/');
         }
 
         private void TryShowImagePreview(string path)
         {
             try
             {
-                // Convert relative app path to absolute if needed
-                Uri uri;
-                if (Uri.IsWellFormedUriString(path, UriKind.Absolute))
-                {
-                    uri = new Uri(path, UriKind.Absolute);
-                }
-                else
-                {
-                    var abs = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, path);
-                    uri = new Uri(abs, UriKind.Absolute);
-                }
+                Uri uri = Uri.IsWellFormedUriString(path, UriKind.Absolute)
+                    ? new Uri(path, UriKind.Absolute)
+                    : new Uri(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, path),
+                              UriKind.Absolute);
 
                 var bmp = new BitmapImage();
                 bmp.BeginInit();
                 bmp.CacheOption = BitmapCacheOption.OnLoad;
-                bmp.UriSource = uri;
+                bmp.UriSource   = uri;
                 bmp.EndInit();
 
-                if (ImagePreview != null)
-                {
-                    ImagePreview.Source = bmp;
-                    ImagePreview.Visibility = Visibility.Visible;
-                }
+                ImagePreview.Source     = bmp;
+                ImagePreview.Visibility = Visibility.Visible;
             }
             catch
             {
-                if (ImagePreview != null)
-                {
-                    ImagePreview.Source = null;
-                    ImagePreview.Visibility = Visibility.Collapsed;
-                }
+                ImagePreview.Source     = null;
+                ImagePreview.Visibility = Visibility.Collapsed;
             }
         }
 
-        private bool GetSelectedIsActiveOrDefault()
+        private bool GetSelectedIsActive()
         {
-            // StatusComboBox.SelectedValue comes from ComboBoxItem.Tag ("1" or "0")
             var sv = StatusComboBox?.SelectedValue?.ToString();
-            if (string.IsNullOrWhiteSpace(sv)) return true; // default Active
-            return sv == "1";
+            return string.IsNullOrWhiteSpace(sv) || sv == "1";
         }
 
-        private void TrySetActiveStatusByEmployeeId(int employeeId, bool isActive)
+        private void TrySetActiveStatus(int employeeId, bool isActive)
         {
             try
             {
-                // This will affect 0 rows if there is no linked user yet (which is fine).
                 _employeeService.SetUserActiveStatusByEmployeeId(employeeId, isActive);
             }
             catch (Exception ex)
             {
-                // Non-fatal; keep the main save successful even if status update failed.
-                Console.Error.WriteLine("Failed to set user active status: " + ex.Message);
+                Console.Error.WriteLine("Failed to set active status: " + ex.Message);
             }
         }
     }

@@ -3,117 +3,308 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:helpers="clr-namespace:SihyuPOSPayroll.Helpers"
+    xmlns:components="clr-namespace:SihyuPOSPayroll.Views.Components"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     mc:Ignorable="d"
     Background="#000000"
-    d:DesignHeight="500" d:DesignWidth="800">
+    d:DesignHeight="600" d:DesignWidth="900">
 
     <UserControl.Resources>
-        <helpers:EmptyStringToVisibilityConverter x:Key="EmptyStringToVisibilityConverter" />
+        <helpers:EmptyStringToVisibilityConverter x:Key="EmptyStringToVisibilityConverter"/>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
     </UserControl.Resources>
 
-    <Grid x:Name="RootGrid" Margin="28,24,28,24">
+    <!-- Outer Grid — content + overlay stack -->
+    <Grid>
 
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
+        <!-- ── Page content ───────────────────────────────────────────────── -->
+        <Grid x:Name="PageGrid" Margin="28,24,28,24">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
 
-        <!-- Page Header -->
-        <Border BorderBrush="#072219" BorderThickness="0,0,0,1" Margin="0,0,0,20" Padding="0,0,0,14">
-            <TextBlock Text="Users &amp; Roles Management"
-                       FontSize="26"
-                       FontWeight="Bold"
-                       Foreground="#477C60"/>
-        </Border>
-
-        <!-- Search & Add Button -->
-        <Grid Grid.Row="1" Margin="0,0,0,14">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-
-            <!-- Search box -->
-            <Border Background="#090B17"
-                    CornerRadius="8"
-                    BorderBrush="#0D1117"
-                    BorderThickness="1"
-                    Padding="12,0"
-                    Height="40"
-                    Margin="0,0,12,0">
+            <!-- Page Header -->
+            <Border BorderBrush="#072219" BorderThickness="0,0,0,1"
+                    Margin="0,0,0,20" Padding="0,0,0,14">
                 <Grid>
-                    <TextBlock Text="&#xE721;"
-                               FontFamily="Segoe MDL2 Assets"
-                               FontSize="13"
-                               Foreground="#6B7280"
-                               VerticalAlignment="Center"
-                               HorizontalAlignment="Left"
-                               Margin="0,0,8,0"/>
-                    <TextBox x:Name="SearchBox"
-                             Background="Transparent"
-                             BorderThickness="0"
-                             Foreground="#F3F4F6"
-                             VerticalContentAlignment="Center"
-                             Margin="20,0,0,0"
-                             TextChanged="SearchBox_TextChanged" />
-                    <TextBlock Text="Search users..."
-                               Foreground="#6B7280"
-                               Margin="24,0,0,0"
-                               VerticalAlignment="Center"
-                               IsHitTestVisible="False"
-                               Visibility="{Binding Text.Length, Converter={StaticResource EmptyStringToVisibilityConverter}, ElementName=SearchBox}" />
+                    <StackPanel>
+                        <TextBlock Text="Users &amp; Roles"
+                                   FontSize="26" FontWeight="Bold"
+                                   Foreground="#477C60"/>
+                        <TextBlock Text="Manage login accounts and their access levels."
+                                   FontSize="12" Foreground="#6B7280" Margin="0,4,0,0"/>
+                    </StackPanel>
                 </Grid>
             </Border>
 
-            <!-- Add User Button -->
-            <Button x:Name="AddUserButton"
-                    Grid.Column="1"
-                    Content="+ Add User"
-                    Style="{StaticResource PrimaryButton}"
-                    Padding="18,10"
-                    Click="AddUser_Click"/>
+            <!-- Toolbar: Search + Add button -->
+            <Grid Grid.Row="1" Margin="0,0,0,14">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="12"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Search box -->
+                <Border Background="#090B17" CornerRadius="8"
+                        BorderBrush="#1A1D2E" BorderThickness="1"
+                        Height="40">
+                    <Grid>
+                        <TextBlock Text="&#xE721;"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   FontSize="13" Foreground="#6B7280"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Left"
+                                   Margin="12,0,0,0"/>
+                        <TextBox x:Name="SearchBox"
+                                 Background="Transparent" BorderThickness="0"
+                                 Foreground="#F3F4F6" VerticalContentAlignment="Center"
+                                 Margin="34,0,10,0" FontSize="13"
+                                 CaretBrush="#477C60"
+                                 TextChanged="SearchBox_TextChanged"/>
+                        <TextBlock Text="Search by email, role or employee…"
+                                   Foreground="#374151" Margin="36,0,0,0"
+                                   FontSize="13"
+                                   VerticalAlignment="Center"
+                                   IsHitTestVisible="False"
+                                   Visibility="{Binding Text.Length,
+                                       Converter={StaticResource EmptyStringToVisibilityConverter},
+                                       ElementName=SearchBox}"/>
+                    </Grid>
+                </Border>
+
+                <!-- Add User button -->
+                <Button Grid.Column="2"
+                        Content="+ Add User"
+                        Style="{StaticResource PrimaryButton}"
+                        Height="40" Padding="20,0"
+                        Click="AddUser_Click"/>
+            </Grid>
+
+            <!-- DataGrid card -->
+            <Border Grid.Row="2" Background="#090B17" CornerRadius="10"
+                    BorderBrush="#1A1D2E" BorderThickness="1">
+                <Grid>
+
+                    <!-- User table -->
+                    <DataGrid x:Name="UserDataGrid"
+                              AutoGenerateColumns="False"
+                              CanUserAddRows="False"
+                              IsReadOnly="True"
+                              ColumnHeaderHeight="44"
+                              RowHeight="52"
+                              Background="Transparent"
+                              BorderThickness="0"
+                              RowBackground="Transparent"
+                              AlternatingRowBackground="#050710"
+                              GridLinesVisibility="Horizontal"
+                              HorizontalGridLinesBrush="#0D1117"
+                              SelectionMode="Single"
+                              SelectionUnit="FullRow"
+                              HeadersVisibility="Column">
+                        <DataGrid.ColumnHeaderStyle>
+                            <Style TargetType="DataGridColumnHeader">
+                                <Setter Property="Background"       Value="#0D0F1A"/>
+                                <Setter Property="Foreground"       Value="#6B7280"/>
+                                <Setter Property="FontSize"         Value="11"/>
+                                <Setter Property="FontWeight"       Value="SemiBold"/>
+                                <Setter Property="Padding"          Value="16,0"/>
+                                <Setter Property="BorderBrush"      Value="#1A1D2E"/>
+                                <Setter Property="BorderThickness"  Value="0,0,0,1"/>
+                                <Setter Property="Height"           Value="44"/>
+                                <Setter Property="SeparatorBrush"   Value="Transparent"/>
+                            </Style>
+                        </DataGrid.ColumnHeaderStyle>
+                        <DataGrid.RowStyle>
+                            <Style TargetType="DataGridRow">
+                                <Setter Property="Background"   Value="Transparent"/>
+                                <Setter Property="Foreground"   Value="#D1D5DB"/>
+                                <Setter Property="BorderBrush"  Value="#0D1117"/>
+                                <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="#0D1020"/>
+                                    </Trigger>
+                                    <Trigger Property="IsSelected" Value="True">
+                                        <Setter Property="Background" Value="#0A1F14"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </DataGrid.RowStyle>
+                        <DataGrid.CellStyle>
+                            <Style TargetType="DataGridCell">
+                                <Setter Property="BorderThickness" Value="0"/>
+                                <Setter Property="Padding"         Value="16,0"/>
+                                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                                <Style.Triggers>
+                                    <Trigger Property="IsSelected" Value="True">
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Setter Property="Foreground" Value="#F3F4F6"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </DataGrid.CellStyle>
+                        <DataGrid.Columns>
+
+                            <!-- Email -->
+                            <DataGridTemplateColumn Header="EMAIL" Width="*" SortMemberPath="Email">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
+                                                    Margin="16,0">
+                                            <!-- Avatar circle -->
+                                            <Border Width="32" Height="32" CornerRadius="16"
+                                                    Background="#0D2818" Margin="0,0,10,0">
+                                                <TextBlock Text="&#xE77B;"
+                                                           FontFamily="Segoe MDL2 Assets"
+                                                           FontSize="14" Foreground="#477C60"
+                                                           HorizontalAlignment="Center"
+                                                           VerticalAlignment="Center"/>
+                                            </Border>
+                                            <TextBlock Text="{Binding Email}"
+                                                       Foreground="#F3F4F6" FontSize="13"
+                                                       VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <!-- Role badge -->
+                            <DataGridTemplateColumn Header="ROLE" Width="160" SortMemberPath="Role">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Border x:Name="RoleBadge"
+                                                CornerRadius="6" Padding="10,4"
+                                                HorizontalAlignment="Left"
+                                                Margin="16,0">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="Background" Value="#0D1020"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Role}" Value="Admin">
+                                                            <Setter Property="Background" Value="#052E16"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Role}" Value="Cashier">
+                                                            <Setter Property="Background" Value="#0A1628"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <TextBlock Text="{Binding Role}" FontSize="12"
+                                                       FontWeight="SemiBold">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Foreground" Value="#9CA3AF"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Role}" Value="Admin">
+                                                                <Setter Property="Foreground" Value="#4ADE80"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Role}" Value="Cashier">
+                                                                <Setter Property="Foreground" Value="#60A5FA"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </Border>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <!-- Linked Employee -->
+                            <DataGridTemplateColumn Header="LINKED EMPLOYEE" Width="*"
+                                                    SortMemberPath="Employee.FullName">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Margin="16,0" VerticalAlignment="Center"
+                                                   FontSize="13">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Text"       Value="{Binding Employee.FullName}"/>
+                                                    <Setter Property="Foreground" Value="#D1D5DB"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Employee.FullName}" Value="{x:Null}">
+                                                            <Setter Property="Text"       Value="—"/>
+                                                            <Setter Property="Foreground" Value="#374151"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <!-- Actions -->
+                            <DataGridTemplateColumn Header="ACTIONS" Width="160">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal"
+                                                    HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center"
+                                                    Margin="0">
+                                            <Button Content="Edit"
+                                                    Style="{StaticResource SecondaryButton}"
+                                                    Padding="14,6" FontSize="12"
+                                                    Margin="0,0,8,0"
+                                                    Click="EditUser_Click"/>
+                                            <Button Content="Delete"
+                                                    Style="{StaticResource DangerButton}"
+                                                    Padding="14,6" FontSize="12"
+                                                    Click="DeleteUser_Click"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <!-- Empty state -->
+                    <StackPanel x:Name="EmptyState"
+                                VerticalAlignment="Center"
+                                HorizontalAlignment="Center"
+                                Margin="0,48"
+                                Visibility="Collapsed">
+                        <TextBlock Text="&#xE77B;"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   FontSize="48" Foreground="#1A1D2E"
+                                   HorizontalAlignment="Center"/>
+                        <TextBlock Text="No users found"
+                                   FontSize="16" FontWeight="SemiBold"
+                                   Foreground="#374151"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,12,0,6"/>
+                        <TextBlock Text="Add a user with the button above."
+                                   FontSize="13" Foreground="#1F2937"
+                                   HorizontalAlignment="Center"/>
+                    </StackPanel>
+
+                </Grid>
+            </Border>
+
         </Grid>
 
-        <!-- DataGrid -->
-        <Border Grid.Row="2" Background="#090B17" CornerRadius="10" Padding="0">
-            <DataGrid x:Name="UserDataGrid"
-                      AutoGenerateColumns="False"
-                      CanUserAddRows="False"
-                      IsReadOnly="True"
-                      ColumnHeaderHeight="44"
-                      RowHeight="48"
-                      Background="#090B17"
-                      BorderThickness="0"
-                      RowBackground="#090B17"
-                      AlternatingRowBackground="#000000">
-                <DataGrid.Columns>
-                    <DataGridTextColumn Header="Email" Binding="{Binding Email}" Width="*" />
-                    <DataGridTextColumn Header="Role" Binding="{Binding Role}" Width="*" />
-                    <DataGridTextColumn Header="Linked Employee" Binding="{Binding Employee.FullName}" Width="*" />
-                    <DataGridTemplateColumn Header="Actions" Width="180">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                    <Button Content="Edit"
-                                            ToolTip="Edit"
-                                            Style="{StaticResource SecondaryButton}"
-                                            Padding="12,6"
-                                            Click="EditUser_Click"
-                                            Margin="0,0,8,0"/>
-                                    <Button Content="Delete"
-                                            ToolTip="Delete"
-                                            Style="{StaticResource DangerButton}"
-                                            Padding="12,6"
-                                            Click="DeleteUser_Click"/>
-                                </StackPanel>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                </DataGrid.Columns>
-            </DataGrid>
+        <!-- ── Modal overlay (full-page dim + centered dialog) ────────────── -->
+        <Border x:Name="DialogOverlay"
+                Background="#90000000"
+                Visibility="Collapsed"
+                Panel.ZIndex="50">
+            <ContentPresenter x:Name="DialogHost"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"/>
         </Border>
+
+        <!-- Toast notification — floats top-right -->
+        <components:ToastNotification x:Name="UsersToast"
+                                      Panel.ZIndex="100"
+                                      VerticalAlignment="Top"
+                                      HorizontalAlignment="Right"
+                                      Margin="0,12,16,0"/>
+
     </Grid>
 </UserControl>

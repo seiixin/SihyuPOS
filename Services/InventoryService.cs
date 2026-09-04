@@ -203,6 +203,35 @@ namespace SihyuPOSPayroll.Services
 
         // ── Update ─────────────────────────────────────────────────────────────
 
+        /// <summary>
+        /// Atomically increments the Quantity of an item by <paramref name="delta"/> (default +1).
+        /// Returns the new quantity, or -1 on failure.
+        /// </summary>
+        public int IncrementItemQuantity(int itemId, int delta = 1)
+        {
+            try
+            {
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = @"
+                    UPDATE inventory_items
+                    SET    Quantity   = Quantity + @delta,
+                           UpdatedAt = datetime('now')
+                    WHERE  Id = @id;
+
+                    SELECT Quantity FROM inventory_items WHERE Id = @id;";
+                cmd.Parameters.AddWithValue("@delta", delta);
+                cmd.Parameters.AddWithValue("@id",    itemId);
+                var result = cmd.ExecuteScalar();
+                return result is null ? -1 : Convert.ToInt32(result);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[InventoryService] IncrementItemQuantity: {ex.Message}");
+                return -1;
+            }
+        }
+
         public bool UpdateItem(InventoryItem item)
         {
             if (item == null) throw new ArgumentNullException(nameof(item));

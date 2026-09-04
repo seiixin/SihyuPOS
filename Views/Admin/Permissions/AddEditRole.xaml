@@ -1,0 +1,346 @@
+<UserControl
+    x:Class="SihyuPOSPayroll.Views.Admin.Permissions.AddEditRole"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    mc:Ignorable="d"
+    d:DesignWidth="620" d:DesignHeight="680">
+
+    <UserControl.Resources>
+        <!-- Section header style -->
+        <Style x:Key="SectionHeader" TargetType="TextBlock">
+            <Setter Property="FontSize"   Value="10"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#477C60"/>
+            <Setter Property="Margin"     Value="0,0,0,10"/>
+        </Style>
+
+        <!-- Checkbox style for module items -->
+        <Style x:Key="ModuleCheck" TargetType="CheckBox">
+            <Setter Property="Foreground"         Value="#D1D5DB"/>
+            <Setter Property="FontSize"           Value="13"/>
+            <Setter Property="Margin"             Value="0,0,0,8"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="FocusVisualStyle"   Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="20"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <!-- Custom box -->
+                            <Border x:Name="Box" Grid.Column="0"
+                                    Width="16" Height="16" CornerRadius="4"
+                                    Background="#0D0F1A"
+                                    BorderBrush="#374151" BorderThickness="1.5"
+                                    VerticalAlignment="Center">
+                                <TextBlock x:Name="Check" Text="&#xE73E;"
+                                           FontFamily="Segoe MDL2 Assets"
+                                           FontSize="9" Foreground="#4ADE80"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           Visibility="Collapsed"/>
+                            </Border>
+                            <ContentPresenter Grid.Column="1"
+                                              Margin="8,0,0,0"
+                                              VerticalAlignment="Center"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Box"   Property="Background"   Value="#0D2818"/>
+                                <Setter TargetName="Box"   Property="BorderBrush"  Value="#166534"/>
+                                <Setter TargetName="Check" Property="Visibility"   Value="Visible"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Box" Property="BorderBrush" Value="#477C60"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Border Background="#090B17"
+            BorderBrush="#1A1D2E"
+            BorderThickness="1"
+            CornerRadius="14"
+            Width="580"
+            MaxHeight="720">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="40" Color="#000000" ShadowDepth="0" Opacity="0.70"/>
+        </Border.Effect>
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>  <!-- header -->
+                <RowDefinition Height="*"/>      <!-- scrollable body -->
+                <RowDefinition Height="Auto"/>  <!-- footer -->
+            </Grid.RowDefinitions>
+
+            <!-- ── Header ───────────────────────────────────────────────────── -->
+            <Border Grid.Row="0" Padding="28,22,22,18"
+                    BorderBrush="#1A1D2E" BorderThickness="0,0,0,1">
+                <Grid>
+                    <StackPanel>
+                        <TextBlock x:Name="TitleText" Text="Add Role"
+                                   FontSize="18" FontWeight="Bold" Foreground="#F3F4F6"/>
+                        <TextBlock x:Name="SubtitleText"
+                                   Text="Define a role name and choose which modules it can access."
+                                   FontSize="12" Foreground="#6B7280" Margin="0,4,0,0"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+                    <!-- Close × -->
+                    <Button Content="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="13"
+                            HorizontalAlignment="Right" VerticalAlignment="Top"
+                            Width="32" Height="32" Padding="0" Foreground="#6B7280"
+                            Cursor="Hand" Click="Cancel_Click">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Setter Property="BorderThickness" Value="0"/>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="6">
+                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="Bd" Property="Background" Value="#1A1D2E"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                </Grid>
+            </Border>
+
+            <!-- ── Scrollable body ──────────────────────────────────────────── -->
+            <ScrollViewer Grid.Row="1"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled"
+                          Padding="28,20,28,4">
+                <StackPanel>
+
+                    <!-- Role Name + Description side by side -->
+                    <Grid Margin="0,0,0,20">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="16"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Role Name *" FontSize="12" FontWeight="SemiBold"
+                                       Foreground="#9CA3AF" Margin="0,0,0,6"/>
+                            <Border Background="#0D0F1A" CornerRadius="8"
+                                    BorderBrush="#1A1D2E" BorderThickness="1" Height="40">
+                                <Grid>
+                                    <TextBlock Text="&#xE716;" FontFamily="Segoe MDL2 Assets"
+                                               FontSize="13" Foreground="#374151"
+                                               VerticalAlignment="Center" Margin="12,0,0,0"/>
+                                    <TextBox x:Name="NameTextBox"
+                                             Background="Transparent" BorderThickness="0"
+                                             Foreground="#F3F4F6" VerticalContentAlignment="Center"
+                                             Margin="34,0,10,0" FontSize="13" CaretBrush="#477C60"/>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="Description" FontSize="12" FontWeight="SemiBold"
+                                       Foreground="#9CA3AF" Margin="0,0,0,6"/>
+                            <Border Background="#0D0F1A" CornerRadius="8"
+                                    BorderBrush="#1A1D2E" BorderThickness="1" Height="40">
+                                <TextBox x:Name="DescriptionTextBox"
+                                         Background="Transparent" BorderThickness="0"
+                                         Foreground="#F3F4F6" VerticalContentAlignment="Center"
+                                         Margin="12,0,10,0" FontSize="13" CaretBrush="#477C60"/>
+                            </Border>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Divider -->
+                    <Border Height="1" Background="#1A1D2E" Margin="0,0,0,20"/>
+
+                    <!-- Module permissions label + Select All -->
+                    <Grid Margin="0,0,0,16">
+                        <StackPanel>
+                            <TextBlock Text="MODULE ACCESS"
+                                       FontSize="11" FontWeight="SemiBold"
+                                       Foreground="#6B7280"/>
+                            <TextBlock Text="Choose which parts of the system this role can access."
+                                       FontSize="11" Foreground="#374151" Margin="0,4,0,0"/>
+                        </StackPanel>
+                        <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                            <Button x:Name="SelectAllBtn" Content="Select All"
+                                    FontSize="11" Foreground="#477C60"
+                                    Background="Transparent" BorderThickness="0"
+                                    Cursor="Hand" Padding="0"
+                                    Click="SelectAll_Click">
+                                <Button.Style>
+                                    <Style TargetType="Button">
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Setter Property="BorderThickness" Value="0"/>
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="Button">
+                                                    <TextBlock x:Name="Tb"
+                                                               Text="{TemplateBinding Content}"
+                                                               Foreground="{TemplateBinding Foreground}"
+                                                               FontSize="{TemplateBinding FontSize}"/>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="Tb" Property="TextDecorations" Value="Underline"/>
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                            <TextBlock Text=" · " Foreground="#374151" FontSize="11" VerticalAlignment="Center"/>
+                            <Button x:Name="ClearAllBtn" Content="Clear All"
+                                    FontSize="11" Foreground="#EF4444"
+                                    Background="Transparent" BorderThickness="0"
+                                    Cursor="Hand" Padding="0"
+                                    Click="ClearAll_Click">
+                                <Button.Style>
+                                    <Style TargetType="Button">
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Setter Property="BorderThickness" Value="0"/>
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="Button">
+                                                    <TextBlock x:Name="Tb"
+                                                               Text="{TemplateBinding Content}"
+                                                               Foreground="{TemplateBinding Foreground}"
+                                                               FontSize="{TemplateBinding FontSize}"/>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="Tb" Property="TextDecorations" Value="Underline"/>
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Three columns of grouped checkboxes -->
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="16"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="16"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- ── INFRASTRUCTURE ─────────────────────────────── -->
+                        <Border Grid.Column="0" Background="#0D0F1A" CornerRadius="10"
+                                BorderBrush="#1A1D2E" BorderThickness="1" Padding="16,14">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                    <TextBlock Text="&#xE80F;" FontFamily="Segoe MDL2 Assets"
+                                               FontSize="13" Foreground="#477C60"
+                                               VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <TextBlock Text="INFRASTRUCTURE"
+                                               Style="{StaticResource SectionHeader}"
+                                               Margin="0"/>
+                                </StackPanel>
+                                <CheckBox x:Name="ChkDashboard"  Tag="Dashboard"  Content="Dashboard"  Style="{StaticResource ModuleCheck}"/>
+                                <CheckBox x:Name="ChkInventory"  Tag="Inventory"  Content="Inventory"  Style="{StaticResource ModuleCheck}"/>
+                                <CheckBox x:Name="ChkCategories" Tag="Categories" Content="Categories" Style="{StaticResource ModuleCheck}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- ── ADMIN TOOLS ────────────────────────────────── -->
+                        <Border Grid.Column="2" Background="#0D0F1A" CornerRadius="10"
+                                BorderBrush="#1A1D2E" BorderThickness="1" Padding="16,14">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                    <TextBlock Text="&#xE8D7;" FontFamily="Segoe MDL2 Assets"
+                                               FontSize="13" Foreground="#60A5FA"
+                                               VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <TextBlock Text="ADMIN TOOLS"
+                                               Style="{StaticResource SectionHeader}"
+                                               Margin="0" Foreground="#60A5FA"/>
+                                </StackPanel>
+                                <CheckBox x:Name="ChkUsers"       Tag="Users"       Content="Users"       Style="{StaticResource ModuleCheck}"/>
+                                <CheckBox x:Name="ChkEmployees"   Tag="Employees"   Content="Employees"   Style="{StaticResource ModuleCheck}"/>
+                                <CheckBox x:Name="ChkPositions"   Tag="Positions"   Content="Positions"   Style="{StaticResource ModuleCheck}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- ── FINANCIALS ─────────────────────────────────── -->
+                        <Border Grid.Column="4" Background="#0D0F1A" CornerRadius="10"
+                                BorderBrush="#1A1D2E" BorderThickness="1" Padding="16,14">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                    <TextBlock Text="&#xE9D9;" FontFamily="Segoe MDL2 Assets"
+                                               FontSize="13" Foreground="#FCD34D"
+                                               VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <TextBlock Text="FINANCIALS"
+                                               Style="{StaticResource SectionHeader}"
+                                               Margin="0" Foreground="#FCD34D"/>
+                                </StackPanel>
+                                <CheckBox x:Name="ChkPOS"      Tag="POS"      Content="POS"             Style="{StaticResource ModuleCheck}"/>
+                                <CheckBox x:Name="ChkOrders"   Tag="Orders"   Content="Orders"          Style="{StaticResource ModuleCheck}"/>
+                                <CheckBox x:Name="ChkReceipts" Tag="Receipts" Content="Receipts"        Style="{StaticResource ModuleCheck}"/>
+                            </StackPanel>
+                        </Border>
+
+                    </Grid>
+
+                    <!-- Employee self-service note -->
+                    <Border Background="#0A1F14" CornerRadius="8"
+                            BorderBrush="#166534" BorderThickness="1"
+                            Padding="12,10" Margin="0,16,0,4">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE946;" FontFamily="Segoe MDL2 Assets"
+                                       FontSize="12" Foreground="#4ADE80"
+                                       VerticalAlignment="Top" Margin="0,1,10,0"/>
+                            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="#9CA3AF"
+                                       MaxWidth="460">
+                                <Run FontWeight="SemiBold" Foreground="#4ADE80">Note:</Run>
+                                <Run>Employee self-service modules (Profile, Attendance, Payslip) are always accessible to users whose role maps to the Employee sidebar — the checkboxes above control Admin and Cashier navigation.</Run>
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- ── Footer ───────────────────────────────────────────────────── -->
+            <Border Grid.Row="2" BorderBrush="#1A1D2E" BorderThickness="0,1,0,0" Padding="28,16">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="8"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Button Grid.Column="0" Content="Cancel"
+                            Style="{StaticResource SecondaryButton}"
+                            Height="40" Click="Cancel_Click"/>
+                    <Button Grid.Column="2" x:Name="SaveButton"
+                            Content="Save Role"
+                            Style="{StaticResource PrimaryButton}"
+                            Height="40" Click="Save_Click"/>
+                </Grid>
+            </Border>
+
+        </Grid>
+    </Border>
+</UserControl>

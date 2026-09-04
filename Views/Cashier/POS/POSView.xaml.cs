@@ -59,6 +59,9 @@ namespace SihyuPOSPayroll.Views.Cashier.POS
 
                 ApplyProductFilter();
 
+                // Register center banner so the purchase-success overlay can be triggered
+                CenterBannerService.Register(POSCenterBanner);
+
                 // Always start with focus on the barcode box
                 BarcodeBox.Focus();
             }
@@ -478,6 +481,11 @@ namespace SihyuPOSPayroll.Views.Cashier.POS
 
                 if (result.PrintReceipt && savedOrderId > 0)
                     TriggerPrint(result, savedOrderId);
+
+                // Center banner — prominent purchase confirmation
+                CenterBannerService.Success(
+                    "Purchase Successful",
+                    $"Total ₱{result.Total:N2}  ·  Change ₱{result.Change:N2}");
 
                 // Show a brief confirmation then reset
                 BarcodeFeedback.Text       = $"✓ Paid ₱{result.Total:N2}  Change ₱{result.Change:N2}";

@@ -4,7 +4,9 @@
              xmlns:oxy="http://oxyplot.org/wpf"
              Background="#000000">
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto" Background="#000000">
+    <ScrollViewer Style="{StaticResource MinimalistScrollViewer}"
+                  VerticalScrollBarVisibility="Auto"
+                  Background="#000000">
         <StackPanel Margin="28,24,28,28" Orientation="Vertical">
 
             <!-- Page Header -->
@@ -30,112 +32,207 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="12"/>
                     <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="12"/>
+                    <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
                 <!-- Total Sales Today -->
                 <Border Grid.Column="0" Background="#090B17" CornerRadius="10" Padding="20">
                     <StackPanel>
-                        <Border Width="36" Height="36" Background="#072219"
-                                CornerRadius="8" HorizontalAlignment="Left"
+                        <Border Width="40" Height="40" Background="#072219"
+                                CornerRadius="10" HorizontalAlignment="Left"
                                 Margin="0,0,0,12">
-                            <TextBlock Text="&#xE8EC;"
-                                       FontFamily="Segoe MDL2 Assets" FontSize="16"
+                            <TextBlock Text="&#xE8FD;"
+                                       FontFamily="Segoe MDL2 Assets" FontSize="18"
                                        Foreground="#10B981"
                                        HorizontalAlignment="Center"
                                        VerticalAlignment="Center"/>
                         </Border>
                         <TextBlock Text="{Binding TotalSalesToday}"
                                    FontSize="20" FontWeight="Bold"
-                                   Foreground="#10B981" Margin="0,0,0,4"/>
+                                   Foreground="#F3F4F6" Margin="0,0,0,4"/>
                         <TextBlock Text="Total Sales Today"
-                                   FontSize="12" Foreground="#477C60"/>
+                                   FontSize="12" Foreground="#6B7280"/>
                         <TextBlock Text="{Binding SalesTrend}"
                                    FontSize="11"
                                    Foreground="{Binding SalesTrendBrush}"
-                                   Margin="0,4,0,0" TextWrapping="Wrap"/>
+                                   Margin="0,6,0,0" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Total Sales This Year -->
+                <Border Grid.Column="2" Background="#090B17" CornerRadius="10" Padding="20">
+                    <StackPanel>
+                        <Border Width="40" Height="40" Background="#0A1A14"
+                                CornerRadius="10" HorizontalAlignment="Left"
+                                Margin="0,0,0,12">
+                            <TextBlock Text="&#xE9F9;"
+                                       FontFamily="Segoe MDL2 Assets" FontSize="18"
+                                       Foreground="#34D399"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Text="{Binding TotalSalesThisYear}"
+                                   FontSize="20" FontWeight="Bold"
+                                   Foreground="#F3F4F6" Margin="0,0,0,4"/>
+                        <TextBlock Text="Total Sales This Year"
+                                   FontSize="12" Foreground="#6B7280"/>
                     </StackPanel>
                 </Border>
 
                 <!-- Total Orders Today -->
-                <Border Grid.Column="2" Background="#090B17" CornerRadius="10" Padding="20">
+                <Border Grid.Column="4" Background="#090B17" CornerRadius="10" Padding="20">
                     <StackPanel>
-                        <Border Width="36" Height="36" Background="#0A1A2A"
-                                CornerRadius="8" HorizontalAlignment="Left"
+                        <Border Width="40" Height="40" Background="#0A1A2A"
+                                CornerRadius="10" HorizontalAlignment="Left"
                                 Margin="0,0,0,12">
-                            <TextBlock Text="&#xE8A5;"
-                                       FontFamily="Segoe MDL2 Assets" FontSize="16"
+                            <TextBlock Text="&#xE8B3;"
+                                       FontFamily="Segoe MDL2 Assets" FontSize="18"
                                        Foreground="#60A5FA"
                                        HorizontalAlignment="Center"
                                        VerticalAlignment="Center"/>
                         </Border>
                         <TextBlock Text="{Binding TodayOrderCount}"
                                    FontSize="20" FontWeight="Bold"
-                                   Foreground="#60A5FA" Margin="0,0,0,4"/>
+                                   Foreground="#F3F4F6" Margin="0,0,0,4"/>
                         <TextBlock Text="Orders Today"
-                                   FontSize="12" Foreground="#9CA3AF"/>
+                                   FontSize="12" Foreground="#6B7280"/>
                     </StackPanel>
                 </Border>
 
                 <!-- Active Employees -->
-                <Border Grid.Column="4" Background="#090B17" CornerRadius="10" Padding="20">
+                <Border Grid.Column="6" Background="#090B17" CornerRadius="10" Padding="20">
                     <StackPanel>
-                        <Border Width="36" Height="36" Background="#1A0A0A"
-                                CornerRadius="8" HorizontalAlignment="Left"
+                        <Border Width="40" Height="40" Background="#1A0A1A"
+                                CornerRadius="10" HorizontalAlignment="Left"
                                 Margin="0,0,0,12">
-                            <TextBlock Text="&#xE716;"
-                                       FontFamily="Segoe MDL2 Assets" FontSize="16"
-                                       Foreground="#F87171"
+                            <TextBlock Text="&#xE779;"
+                                       FontFamily="Segoe MDL2 Assets" FontSize="18"
+                                       Foreground="#C084FC"
                                        HorizontalAlignment="Center"
                                        VerticalAlignment="Center"/>
                         </Border>
                         <TextBlock Text="{Binding ActiveEmployees}"
                                    FontSize="20" FontWeight="Bold"
-                                   Foreground="#F87171" Margin="0,0,0,4"/>
+                                   Foreground="#F3F4F6" Margin="0,0,0,4"/>
                         <TextBlock Text="Active Employees"
-                                   FontSize="12" Foreground="#9CA3AF"/>
+                                   FontSize="12" Foreground="#6B7280"/>
                     </StackPanel>
                 </Border>
 
                 <!-- Low Stock Items -->
-                <Border Grid.Column="6" Background="#090B17" CornerRadius="10" Padding="20">
+                <Border Grid.Column="8" Background="#090B17" CornerRadius="10" Padding="20">
                     <StackPanel>
-                        <Border Width="36" Height="36" Background="#1A1000"
-                                CornerRadius="8" HorizontalAlignment="Left"
+                        <Border Width="40" Height="40" Background="#1A1000"
+                                CornerRadius="10" HorizontalAlignment="Left"
                                 Margin="0,0,0,12">
-                            <TextBlock Text="&#xE8F1;"
-                                       FontFamily="Segoe MDL2 Assets" FontSize="16"
+                            <TextBlock Text="&#xE7BA;"
+                                       FontFamily="Segoe MDL2 Assets" FontSize="18"
                                        Foreground="#FBBF24"
                                        HorizontalAlignment="Center"
                                        VerticalAlignment="Center"/>
                         </Border>
                         <TextBlock Text="{Binding LowStockCount}"
                                    FontSize="20" FontWeight="Bold"
-                                   Foreground="#FBBF24" Margin="0,0,0,4"/>
+                                   Foreground="#F3F4F6" Margin="0,0,0,4"/>
                         <TextBlock Text="Low Stock Items"
-                                   FontSize="12" Foreground="#9CA3AF"/>
+                                   FontSize="12" Foreground="#6B7280"/>
                         <TextBlock Text="{Binding LowStockTrend}"
                                    FontSize="11"
                                    Foreground="{Binding LowStockTrendBrush}"
-                                   Margin="0,4,0,0"/>
+                                   Margin="0,6,0,0"/>
                     </StackPanel>
                 </Border>
             </Grid>
 
-            <!-- ── Monthly Sales Chart ────────────────────────────────── -->
+            <!-- ── Sales Chart ────────────────────────────────────────── -->
             <Border Background="#090B17" CornerRadius="10" Padding="20">
                 <StackPanel>
-                    <!-- Chart header: title + month picker -->
+                    <!-- Chart header -->
                     <DockPanel Margin="0,0,0,16">
-                        <TextBlock Text="Monthly Sales"
+                        <!-- Dynamic title -->
+                        <TextBlock Text="{Binding ChartTitle}"
                                    FontSize="16" FontWeight="SemiBold"
                                    Foreground="#F3F4F6"
                                    VerticalAlignment="Center"
                                    DockPanel.Dock="Left"/>
-                        <ComboBox Width="150"
-                                  DockPanel.Dock="Right"
-                                  HorizontalAlignment="Right"
-                                  ItemsSource="{Binding MonthNames}"
-                                  SelectedIndex="{Binding SelectedMonth, Mode=TwoWay}"/>
+
+                        <!-- Right controls: mode toggle + month picker -->
+                        <StackPanel DockPanel.Dock="Right"
+                                    Orientation="Horizontal"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Center">
+
+                            <!-- Month / Year toggle pill -->
+                            <Border Background="#0D1117" CornerRadius="8"
+                                    BorderBrush="#1A1D2E" BorderThickness="1"
+                                    Padding="3" Margin="0,0,10,0">
+                                <StackPanel Orientation="Horizontal">
+                                    <!-- Monthly button -->
+                                    <Border x:Name="MonthlyPill"
+                                            CornerRadius="6" Padding="12,5"
+                                            Cursor="Hand"
+                                            MouseLeftButtonUp="MonthlyPill_Click">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Background" Value="Transparent"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsMonthlyMode}" Value="True">
+                                                        <Setter Property="Background" Value="#072219"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <TextBlock Text="Monthly" FontSize="12" FontWeight="Medium">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground" Value="#6B7280"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsMonthlyMode}" Value="True">
+                                                            <Setter Property="Foreground" Value="#10B981"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </Border>
+                                    <!-- Yearly button -->
+                                    <Border x:Name="YearlyPill"
+                                            CornerRadius="6" Padding="12,5"
+                                            Cursor="Hand"
+                                            MouseLeftButtonUp="YearlyPill_Click">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Background" Value="Transparent"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsYearlyMode}" Value="True">
+                                                        <Setter Property="Background" Value="#072219"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <TextBlock Text="Yearly" FontSize="12" FontWeight="Medium">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground" Value="#6B7280"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsYearlyMode}" Value="True">
+                                                            <Setter Property="Foreground" Value="#10B981"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </Border>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Month picker — hidden in Yearly mode -->
+                            <ComboBox Width="130"
+                                      Visibility="{Binding MonthPickerVisible}"
+                                      ItemsSource="{Binding MonthNames}"
+                                      SelectedIndex="{Binding SelectedMonth, Mode=TwoWay}"/>
+                        </StackPanel>
                     </DockPanel>
 
                     <!-- Chart (OxyPlot) -->
@@ -160,7 +257,7 @@
                                        Foreground="#1A1D2E"
                                        HorizontalAlignment="Center"
                                        Margin="0,0,0,10"/>
-                            <TextBlock Text="No sales data for this month"
+                            <TextBlock Text="No sales data for this period"
                                        Foreground="#6B7280"
                                        FontSize="14"
                                        HorizontalAlignment="Center"/>
@@ -175,35 +272,41 @@
                     <TextBlock Text="Recent Orders"
                                FontSize="16" FontWeight="SemiBold"
                                Foreground="#F3F4F6" Margin="0,0,0,14"/>
-                    <DataGrid x:Name="RecentOrdersGrid"
-                              ItemsSource="{Binding RecentOrders}"
-                              AutoGenerateColumns="False"
-                              CanUserAddRows="False"
-                              IsReadOnly="True"
-                              BorderThickness="0"
-                              Background="Transparent"
-                              ColumnHeaderHeight="40"
-                              RowHeight="44"
-                              MaxHeight="260">
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Header="Date"
-                                                Binding="{Binding CreatedAt, StringFormat=\{0:MM/dd HH:mm\}}"
-                                                Width="1.4*"/>
-                            <DataGridTextColumn Header="Table"
-                                                Binding="{Binding TableNumber}"
-                                                Width="*"
-                                                Visibility="Collapsed"/>
-                            <DataGridTextColumn Header="Total"
-                                                Binding="{Binding TotalAmount, StringFormat=₱{0:N2}}"
-                                                Width="1.2*"/>
-                            <DataGridTextColumn Header="Payment"
-                                                Binding="{Binding PaymentStatus}"
-                                                Width="*"/>
-                            <DataGridTextColumn Header="Status"
-                                                Binding="{Binding OrderStatus}"
-                                                Width="*"/>
-                        </DataGrid.Columns>
-                    </DataGrid>
+                    <ScrollViewer x:Name="RecentOrdersScroller"
+                                  Style="{StaticResource MinimalistScrollViewer}"
+                                  VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled"
+                                  MaxHeight="260">
+                        <DataGrid x:Name="RecentOrdersGrid"
+                                  PreviewMouseWheel="RecentOrdersGrid_PreviewMouseWheel"
+                                  ItemsSource="{Binding RecentOrders}"
+                                  AutoGenerateColumns="False"
+                                  CanUserAddRows="False"
+                                  IsReadOnly="True"
+                                  BorderThickness="0"
+                                  Background="Transparent"
+                                  ColumnHeaderHeight="40"
+                                  RowHeight="44">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Date"
+                                                    Binding="{Binding CreatedAt, StringFormat=\{0:MM/dd HH:mm\}}"
+                                                    Width="1.4*"/>
+                                <DataGridTextColumn Header="Table"
+                                                    Binding="{Binding TableNumber}"
+                                                    Width="*"
+                                                    Visibility="Collapsed"/>
+                                <DataGridTextColumn Header="Total"
+                                                    Binding="{Binding TotalAmount, StringFormat=₱{0:N2}}"
+                                                    Width="1.2*"/>
+                                <DataGridTextColumn Header="Payment"
+                                                    Binding="{Binding PaymentStatus}"
+                                                    Width="*"/>
+                                <DataGridTextColumn Header="Status"
+                                                    Binding="{Binding OrderStatus}"
+                                                    Width="*"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </ScrollViewer>
                 </StackPanel>
             </Border>
 

@@ -16,6 +16,8 @@ using SihyuPOSPayroll.Services;
 
 namespace SihyuPOSPayroll.ViewModels
 {
+    public enum ChartMode { Monthly, Yearly }
+
     public class DashboardViewModel : INotifyPropertyChanged
     {
         // ── Services ───────────────────────────────────────────────────────────
@@ -24,7 +26,8 @@ namespace SihyuPOSPayroll.ViewModels
         private readonly OrderService     _orderService = new();
 
         // ── Stat card backing fields ───────────────────────────────────────────
-        private string _totalSalesToday = "₱0.00";
+        private string _totalSalesToday    = "₱0.00";
+        private string _totalSalesThisYear = "₱0.00";
         private int    _activeEmployees;
         private int    _lowStockCount;
 
@@ -37,10 +40,13 @@ namespace SihyuPOSPayroll.ViewModels
         private SolidColorBrush _lowStockTrendBrush = new(Color.FromRgb(0x6B, 0x72, 0x80));
 
         // ── Chart backing fields ───────────────────────────────────────────────
-        private PlotModel? _salesChartModel;
-        private int        _selectedMonth;
-        private Visibility _chartVisibility  = Visibility.Collapsed;
-        private Visibility _noDataVisibility = Visibility.Visible;
+        private PlotModel?  _salesChartModel;
+        private int         _selectedMonth;
+        private ChartMode   _selectedChartMode  = ChartMode.Monthly;
+        private string      _chartTitle         = "Monthly Sales";
+        private Visibility  _chartVisibility    = Visibility.Collapsed;
+        private Visibility  _noDataVisibility   = Visibility.Visible;
+        private Visibility  _monthPickerVisible = Visibility.Visible;
 
         // ── Accent brushes (reused) ────────────────────────────────────────────
         private static readonly SolidColorBrush EmeraldBrush = new(Color.FromRgb(0x12, 0x88, 0x54));
@@ -52,6 +58,12 @@ namespace SihyuPOSPayroll.ViewModels
         {
             get => _totalSalesToday;
             private set { _totalSalesToday = value; OnPropertyChanged(); }
+        }
+
+        public string TotalSalesThisYear
+        {
+            get => _totalSalesThisYear;
+            private set { _totalSalesThisYear = value; OnPropertyChanged(); }
         }
 
         public int ActiveEmployees
@@ -108,6 +120,48 @@ namespace SihyuPOSPayroll.ViewModels
             private set { _salesChartModel = value; OnPropertyChanged(); }
         }
 
+        public string ChartTitle
+        {
+            get => _chartTitle;
+            private set { _chartTitle = value; OnPropertyChanged(); }
+        }
+
+        // ── Chart mode toggle ─────────────────────────────────────────────────
+        public ChartMode SelectedChartMode
+        {
+            get => _selectedChartMode;
+            set
+            {
+                if (_selectedChartMode == value) return;
+                _selectedChartMode  = value;
+                MonthPickerVisible  = value == ChartMode.Monthly
+                                      ? Visibility.Visible : Visibility.Collapsed;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(IsMonthlyMode));
+                OnPropertyChanged(nameof(IsYearlyMode));
+                _ = LoadDataAsync();
+            }
+        }
+
+        public bool IsMonthlyMode
+        {
+            get => _selectedChartMode == ChartMode.Monthly;
+            set { if (value) SelectedChartMode = ChartMode.Monthly; }
+        }
+
+        public bool IsYearlyMode
+        {
+            get => _selectedChartMode == ChartMode.Yearly;
+            set { if (value) SelectedChartMode = ChartMode.Yearly; }
+        }
+
+        public Visibility MonthPickerVisible
+        {
+            get => _monthPickerVisible;
+            private set { _monthPickerVisible = value; OnPropertyChanged(); }
+        }
+
+        // ── Month picker ──────────────────────────────────────────────────────
         public int SelectedMonth
         {
             get => _selectedMonth;
@@ -152,18 +206,18 @@ namespace SihyuPOSPayroll.ViewModels
         public DashboardViewModel(IEmployeeService? employeeService = null,
                                   InventoryService? inventoryService = null)
         {
-            _employeeService  = employeeService  ?? new EmployeeService();
-            _inventoryService = inventoryService ?? new InventoryService();
-
-            // Default to current month (0-indexed)
-            _selectedMonth = DateTime.Now.Month - 1;
+            _employeeService    = employeeService  ?? new EmployeeService();
+            _inventoryService   = inventoryService ?? new InventoryService();
+            _selectedMonth      = DateTime.Now.Month - 1;
+            _selectedChartMode  = ChartMode.Monthly;
+            _monthPickerVisible = Visibility.Visible;
         }
 
         // ── Data loading ───────────────────────────────────────────────────────
         public async Task LoadDataAsync()
         {
-            // Fetch everything on a background thread…
             string          totalSalesToday = "₱0.00";
+            string          totalSalesYear  = "₱0.00";
             string          salesTrend      = "";
             SolidColorBrush salesBrush      = MutedBrush;
             int             activeEmployees = 0;
@@ -174,45 +228,54 @@ namespace SihyuPOSPayroll.ViewModels
             Visibility      noDataVis       = Visibility.Visible;
             List<OrderModel> recentOrders   = new();
             int             todayOrderCount = 0;
+            string          chartTitle      = "";
+            ChartMode       mode            = _selectedChartMode;
+            int             selMonth        = _selectedMonth;
 
             await Task.Run(() =>
             {
                 try
                 {
-                    // ── Sales today (direct DB query — no receipts dependency) ──
-                    decimal todayTotal    = SalesService.GetTodayTotal();
-                    decimal yesterday     = SalesService.GetYesterdayTotal();
-                    totalSalesToday       = $"₱{todayTotal:N2}";
-                    salesTrend            = ComputeTrend(todayTotal, yesterday, out salesBrush);
+                    decimal todayTotal = SalesService.GetTodayTotal();
+                    decimal yesterday  = SalesService.GetYesterdayTotal();
+                    decimal yearTotal  = SalesService.GetYearTotal();
+                    totalSalesToday    = $"₱{todayTotal:N2}";
+                    totalSalesYear     = $"₱{yearTotal:N2}";
+                    salesTrend         = ComputeTrend(todayTotal, yesterday, out salesBrush);
 
-                    // ── Employee stats ─────────────────────────────────────────
                     var employees   = _employeeService.GetAllEmployees();
                     activeEmployees = employees.Count(e => e.IsActive == true);
 
-                    // ── Inventory low-stock ────────────────────────────────────
                     var lowStock  = _inventoryService.GetLowStockItems();
                     lowStockCount = lowStock.Count;
                     lowStockBrush = lowStockCount > 0 ? RedBrush : MutedBrush;
 
-                    // ── Chart: daily data for selected month ───────────────────
-                    int year      = DateTime.Now.Year;
-                    int month     = _selectedMonth + 1;
-                    var monthData = SalesService.GetDailySalesForMonth(year, month);
+                    int year = DateTime.Now.Year;
 
-                    if (monthData.Count == 0)
+                    if (mode == ChartMode.Monthly)
                     {
-                        chartModel = null;
-                        chartVis   = Visibility.Collapsed;
-                        noDataVis  = Visibility.Visible;
+                        int month  = selMonth + 1;
+                        chartTitle = $"Monthly Sales — {new System.Globalization.DateTimeFormatInfo().GetMonthName(month)} {year}";
+                        var data   = SalesService.GetDailySalesForMonth(year, month);
+                        if (data.Count > 0)
+                        {
+                            chartModel = BuildDailyChartModel(data);
+                            chartVis   = Visibility.Visible;
+                            noDataVis  = Visibility.Collapsed;
+                        }
                     }
                     else
                     {
-                        chartModel = BuildChartModel(monthData);
-                        chartVis   = Visibility.Visible;
-                        noDataVis  = Visibility.Collapsed;
+                        chartTitle = $"Yearly Sales — {year}";
+                        var data   = SalesService.GetMonthlySalesForYear(year);
+                        if (data.Count > 0)
+                        {
+                            chartModel = BuildMonthlyChartModel(data);
+                            chartVis   = Visibility.Visible;
+                            noDataVis  = Visibility.Collapsed;
+                        }
                     }
 
-                    // ── Recent orders (last 10) + today count ─────────────────
                     var allOrders   = _orderService.GetAllOrders();
                     todayOrderCount = allOrders.Count(o => o.CreatedAt.Date == DateTime.Today);
                     recentOrders    = allOrders
@@ -226,16 +289,17 @@ namespace SihyuPOSPayroll.ViewModels
                 }
             });
 
-            // Push results back to UI thread
             Application.Current?.Dispatcher.Invoke(() =>
             {
                 TotalSalesToday    = totalSalesToday;
+                TotalSalesThisYear = totalSalesYear;
                 SalesTrend         = salesTrend;
                 SalesTrendBrush    = salesBrush;
                 ActiveEmployees    = activeEmployees;
                 TodayOrderCount    = todayOrderCount;
                 LowStockCount      = lowStockCount;
                 LowStockTrendBrush = lowStockBrush;
+                ChartTitle         = chartTitle;
                 SalesChartModel    = chartModel;
                 ChartVisibility    = chartVis;
                 NoDataVisibility   = noDataVis;
@@ -246,52 +310,87 @@ namespace SihyuPOSPayroll.ViewModels
             });
         }
 
-        // ── Chart builder — modern dark sparkline ─────────────────────────────
-        private static PlotModel BuildChartModel(List<SalesRow> data)
+        // ── Chart builders ────────────────────────────────────────────────────
+
+        private static PlotModel BuildDailyChartModel(List<SalesRow> data)
+            => BuildChartModel(data, x => (double)x.StartDate.Day, "Day {2:0}\n₱{4:N2}");
+
+        private static PlotModel BuildMonthlyChartModel(List<SalesRow> data)
         {
-            var model = new PlotModel
+            var model = CreateBaseModel();
+            var xAxis = CreateBaseXAxis();
+            xAxis.Minimum         = 1;
+            xAxis.Maximum         = 12;
+            xAxis.AbsoluteMinimum = 1;
+            xAxis.AbsoluteMaximum = 12;
+            xAxis.MajorStep       = 1;
+            xAxis.LabelFormatter  = v =>
             {
-                PlotAreaBackground  = OxyColors.Transparent,
-                Background          = OxyColors.Transparent,
-                TextColor           = OxyColor.Parse("#9CA3AF"),
-                PlotAreaBorderColor = OxyColors.Transparent,
-                Padding             = new OxyThickness(8, 8, 8, 8),
+                int m = (int)Math.Round(v);
+                return m >= 1 && m <= 12
+                    ? new[] { "Jan","Feb","Mar","Apr","May","Jun",
+                               "Jul","Aug","Sep","Oct","Nov","Dec" }[m - 1]
+                    : "";
             };
+            model.Axes.Add(xAxis);
+            model.Axes.Add(CreateBaseYAxis());
+            AddLineSeries(model, data, x => (double)x.StartDate.Month, "{2}\n₱{4:N2}");
+            return model;
+        }
 
-            // X axis — days of month, no grid lines
-            model.Axes.Add(new LinearAxis
-            {
-                Position              = AxisPosition.Bottom,
-                AxislineColor         = OxyColor.Parse("#1A1D2E"),
-                AxislineStyle         = LineStyle.Solid,
-                AxislineThickness     = 1,
-                MajorGridlineStyle    = LineStyle.None,
-                MinorGridlineStyle    = LineStyle.None,
-                TicklineColor         = OxyColor.Parse("#1A1D2E"),
-                TextColor             = OxyColor.Parse("#6B7280"),
-                FontSize              = 11,
-                Minimum               = 1,
-                AbsoluteMinimum       = 1,
-            });
+        private static PlotModel BuildChartModel(List<SalesRow> data,
+            Func<SalesRow, double> xSelector, string trackerFormat)
+        {
+            var model = CreateBaseModel();
+            model.Axes.Add(CreateBaseXAxis());
+            model.Axes.Add(CreateBaseYAxis());
+            AddLineSeries(model, data, xSelector, trackerFormat);
+            return model;
+        }
 
-            // Y axis — subtle dotted grid
-            model.Axes.Add(new LinearAxis
-            {
-                Position              = AxisPosition.Left,
-                AxislineColor         = OxyColor.Parse("#1A1D2E"),
-                AxislineStyle         = LineStyle.Solid,
-                AxislineThickness     = 1,
-                MajorGridlineStyle    = LineStyle.Dot,
-                MajorGridlineColor    = OxyColor.Parse("#1A1D2E"),
-                MinorGridlineStyle    = LineStyle.None,
-                TicklineColor         = OxyColors.Transparent,
-                TextColor             = OxyColor.Parse("#6B7280"),
-                FontSize              = 11,
-                StringFormat          = "₱#,0",
-                AbsoluteMinimum       = 0,
-            });
+        private static PlotModel CreateBaseModel() => new()
+        {
+            PlotAreaBackground  = OxyColors.Transparent,
+            Background          = OxyColors.Transparent,
+            TextColor           = OxyColor.Parse("#9CA3AF"),
+            PlotAreaBorderColor = OxyColors.Transparent,
+            Padding             = new OxyThickness(8, 8, 8, 8),
+        };
 
-            // Gradient fill area under the line
+        private static LinearAxis CreateBaseXAxis() => new()
+        {
+            Position           = AxisPosition.Bottom,
+            AxislineColor      = OxyColor.Parse("#1A1D2E"),
+            AxislineStyle      = LineStyle.Solid,
+            AxislineThickness  = 1,
+            MajorGridlineStyle = LineStyle.None,
+            MinorGridlineStyle = LineStyle.None,
+            TicklineColor      = OxyColor.Parse("#1A1D2E"),
+            TextColor          = OxyColor.Parse("#6B7280"),
+            FontSize           = 11,
+            Minimum            = 1,
+            AbsoluteMinimum    = 1,
+        };
+
+        private static LinearAxis CreateBaseYAxis() => new()
+        {
+            Position           = AxisPosition.Left,
+            AxislineColor      = OxyColor.Parse("#1A1D2E"),
+            AxislineStyle      = LineStyle.Solid,
+            AxislineThickness  = 1,
+            MajorGridlineStyle = LineStyle.Dot,
+            MajorGridlineColor = OxyColor.Parse("#1A1D2E"),
+            MinorGridlineStyle = LineStyle.None,
+            TicklineColor      = OxyColors.Transparent,
+            TextColor          = OxyColor.Parse("#6B7280"),
+            FontSize           = 11,
+            StringFormat       = "₱#,0",
+            AbsoluteMinimum    = 0,
+        };
+
+        private static void AddLineSeries(PlotModel model, List<SalesRow> data,
+            Func<SalesRow, double> xSelector, string trackerFormat)
+        {
             var area = new AreaSeries
             {
                 Fill            = OxyColor.FromArgb(50, 18, 136, 84),
@@ -300,34 +399,29 @@ namespace SihyuPOSPayroll.ViewModels
                 StrokeThickness = 0,
                 RenderInLegend  = false,
             };
-
-            // Main line — emerald, smooth
             var line = new LineSeries
             {
-                Color              = OxyColor.Parse("#10B981"),
-                StrokeThickness    = 2.5,
-                MarkerType         = MarkerType.Circle,
-                MarkerSize         = 4.5,
-                MarkerFill         = OxyColor.Parse("#10B981"),
-                MarkerStroke       = OxyColor.Parse("#000000"),
+                Color                 = OxyColor.Parse("#10B981"),
+                StrokeThickness       = 2.5,
+                MarkerType            = MarkerType.Circle,
+                MarkerSize            = 4.5,
+                MarkerFill            = OxyColor.Parse("#10B981"),
+                MarkerStroke          = OxyColor.Parse("#000000"),
                 MarkerStrokeThickness = 1.5,
-                LineStyle          = LineStyle.Solid,
-                RenderInLegend     = false,
-                TrackerFormatString = "Day {2:0}\n₱{4:N2}",
+                LineStyle             = LineStyle.Solid,
+                RenderInLegend        = false,
+                TrackerFormatString   = trackerFormat,
             };
-
             foreach (var row in data)
             {
-                double x = row.StartDate.Day;
+                double x = xSelector(row);
                 double y = (double)row.TotalAmount;
                 line.Points.Add(new DataPoint(x, y));
                 area.Points.Add(new DataPoint(x, y));
                 area.Points2.Add(new DataPoint(x, 0));
             }
-
             model.Series.Add(area);
             model.Series.Add(line);
-            return model;
         }
 
         // ── Helpers ────────────────────────────────────────────────────────────
@@ -339,9 +433,7 @@ namespace SihyuPOSPayroll.ViewModels
                 brush = MutedBrush;
                 return current > 0 ? "First sale today!" : "";
             }
-
             double pct = (double)((current - previous) / previous * 100);
-
             if (pct > 0)      { brush = EmeraldBrush; return $"↑ {pct:F1}% vs yesterday"; }
             else if (pct < 0) { brush = RedBrush;     return $"↓ {Math.Abs(pct):F1}% vs yesterday"; }
             else              { brush = MutedBrush;   return "No change vs yesterday"; }

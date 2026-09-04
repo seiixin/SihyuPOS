@@ -11,84 +11,104 @@ namespace SihyuPOSPayroll.Views.Admin.Users
     public partial class Users : UserControl
     {
         private readonly UserService _userService = new();
-        private readonly EmployeeService _employeeService = new();
         private List<UserModel> _allUsers = new();
 
         public Users()
         {
             InitializeComponent();
+            ToastService.Register(UsersToast);
             LoadUsers();
         }
+
+        // ── Data ─────────────────────────────────────────────────────────────
 
         private void LoadUsers()
         {
             try
             {
                 _allUsers = _userService.GetAllUsers();
-                UserDataGrid.ItemsSource = _allUsers;
+                ApplyFilter(SearchBox?.Text ?? string.Empty);
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Failed to load users.\n\n" + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                ToastService.Error("Failed to load users: " + ex.Message);
             }
         }
 
-        private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
+        private void ApplyFilter(string query)
         {
-            string query = SearchBox.Text.Trim().ToLower();
+            query = query.Trim().ToLower();
 
-            var filtered = string.IsNullOrWhiteSpace(query)
+            var list = string.IsNullOrWhiteSpace(query)
                 ? _allUsers
-                : _allUsers.Where(user =>
-                    (!string.IsNullOrEmpty(user.Email) && user.Email.ToLower().Contains(query)) ||
-                    (!string.IsNullOrEmpty(user.Role) && user.Role.ToLower().Contains(query)) ||
-                    (user.Employee != null && !string.IsNullOrEmpty(user.Employee.FullName) && user.Employee.FullName.ToLower().Contains(query))
-                ).ToList();
+                : _allUsers.Where(u =>
+                      (u.Email    != null && u.Email.ToLower().Contains(query)) ||
+                      (u.Role     != null && u.Role.ToLower().Contains(query))  ||
+                      (u.Employee != null && u.Employee.FullName != null &&
+                       u.Employee.FullName.ToLower().Contains(query))
+                  ).ToList();
 
-            UserDataGrid.ItemsSource = filtered;
+            UserDataGrid.ItemsSource = list;
+            EmptyState.Visibility   = list.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         }
+
+        // ── Overlay helpers ───────────────────────────────────────────────────
+
+        private void OpenDialog(AddEditUser dialog)
+        {
+            dialog.DialogClosed += OnDialogClosed;
+            DialogHost.Content      = dialog;
+            DialogOverlay.Visibility = Visibility.Visible;
+        }
+
+        private void OnDialogClosed(object? sender, bool saved)
+        {
+            DialogOverlay.Visibility = Visibility.Collapsed;
+            DialogHost.Content       = null;
+            if (saved) LoadUsers();
+        }
+
+        // ── Event handlers ────────────────────────────────────────────────────
+
+        private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
+            => ApplyFilter(SearchBox.Text);
 
         private void AddUser_Click(object sender, RoutedEventArgs e)
-        {
-            var addUserPopup = new AddEditUser();
-            addUserPopup.OnUserSaved += () => LoadUsers();
-            RootGrid.Children.Add(addUserPopup);
-        }
+            => OpenDialog(new AddEditUser());
 
         private void EditUser_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button btn && btn.DataContext is UserModel user)
-            {
-                var editUserPopup = new AddEditUser(user);
-                editUserPopup.OnUserSaved += () => LoadUsers();
-                RootGrid.Children.Add(editUserPopup);
-            }
+            if (sender is FrameworkElement fe && fe.DataContext is UserModel user)
+                OpenDialog(new AddEditUser(user));
         }
 
         private void DeleteUser_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button btn && btn.DataContext is UserModel user)
+            if (sender is FrameworkElement fe && fe.DataContext is UserModel user)
             {
-                var confirm = MessageBox.Show($"Are you sure you want to delete {user.Email}?", "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Warning);
-                if (confirm == MessageBoxResult.Yes)
+                var confirm = MessageBox.Show(
+                    $"Delete '{user.Email}'?\nThis cannot be undone.",
+                    "Confirm Delete",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+
+                if (confirm != MessageBoxResult.Yes) return;
+
+                try
                 {
-                    try
+                    if (_userService.DeleteUserById(user.Id))
                     {
-                        bool success = _userService.DeleteUserById(user.Id);
-                        if (success)
-                        {
-                            MessageBox.Show($"Deleted user: {user.Email}");
-                            LoadUsers();
-                        }
-                        else
-                        {
-                            MessageBox.Show("Failed to delete user.");
-                        }
+                        LoadUsers();
+                        ToastService.Info($"User '{user.Email}' deleted.");
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        MessageBox.Show("Error deleting user:\n" + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        ToastService.Error("Failed to delete user.");
                     }
+                }
+                catch (Exception ex)
+                {
+                    ToastService.Error("Error: " + ex.Message);
                 }
             }
         }

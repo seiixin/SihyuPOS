@@ -54,11 +54,42 @@ namespace SihyuPOSPayroll.Views.Admin.Inventory
             QuantityTextBox.Text = "0";
             PriceTextBox.Text    = ".00";
             LoadCategories();
+            PreviewKeyDown += Dialog_PreviewKeyDown;
             Loaded += (_, __) =>
             {
                 if (!string.IsNullOrWhiteSpace(BarcodeTextBox.Text))
                     ApplyJsonLookup(BarcodeTextBox.Text, overwriteBlankOnly: true);
+
+                // Auto-focus the Price field so the user can type immediately
+                // without needing a mouse click. SelectAll clears the default ".00".
+                // DispatcherPriority.ContextIdle ensures this runs after the button's
+                // MouseUp event finishes — preventing the click from deselecting the text.
+                Dispatcher.InvokeAsync(() =>
+                {
+                    PriceTextBox.Focus();
+                    PriceTextBox.SelectAll();
+                }, System.Windows.Threading.DispatcherPriority.ContextIdle);
             };
+        }
+
+        // ── Keyboard shortcuts ─────────────────────────────────────────────────
+        private void Dialog_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            switch (e.Key)
+            {
+                case Key.Enter:
+                    // Don't intercept Enter inside a ComboBox drop-down or DatePicker
+                    if (Keyboard.FocusedElement is ComboBox || Keyboard.FocusedElement is DatePicker)
+                        return;
+                    e.Handled = true;
+                    SaveButton_Click(this, new RoutedEventArgs());
+                    break;
+
+                case Key.Escape:
+                    e.Handled = true;
+                    CancelButton_Click(this, new RoutedEventArgs());
+                    break;
+            }
         }
 
         /// <summary>
@@ -442,6 +473,9 @@ namespace SihyuPOSPayroll.Views.Admin.Inventory
         }
 
         private void PriceTextBox_GotFocus(object sender, RoutedEventArgs e)
+            => Dispatcher.InvokeAsync(() => ((TextBox)sender).SelectAll());
+
+        private void QuantityTextBox_GotFocus(object sender, RoutedEventArgs e)
             => Dispatcher.InvokeAsync(() => ((TextBox)sender).SelectAll());
     }
 }

@@ -1,0 +1,116 @@
+<UserControl x:Class="SihyuPOSPayroll.Views.Components.CenterBanner"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignWidth="400" d:DesignHeight="200"
+             IsHitTestVisible="False">
+
+    <UserControl.Resources>
+
+        <!-- Scale + fade in -->
+        <Storyboard x:Key="ShowAnim">
+            <DoubleAnimation Storyboard.TargetName="Backdrop"
+                             Storyboard.TargetProperty="Opacity"
+                             From="0" To="1" Duration="0:0:0.20"/>
+            <DoubleAnimation Storyboard.TargetName="RootBorder"
+                             Storyboard.TargetProperty="Opacity"
+                             From="0" To="1" Duration="0:0:0.20">
+                <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="ScaleT"
+                             Storyboard.TargetProperty="ScaleX"
+                             From="0.82" To="1" Duration="0:0:0.24">
+                <DoubleAnimation.EasingFunction><BackEase EasingMode="EaseOut" Amplitude="0.25"/></DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="ScaleT"
+                             Storyboard.TargetProperty="ScaleY"
+                             From="0.82" To="1" Duration="0:0:0.24">
+                <DoubleAnimation.EasingFunction><BackEase EasingMode="EaseOut" Amplitude="0.25"/></DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+
+        <!-- Fade + scale out -->
+        <Storyboard x:Key="HideAnim" Completed="HideAnim_Completed">
+            <DoubleAnimation Storyboard.TargetName="Backdrop"
+                             Storyboard.TargetProperty="Opacity"
+                             From="1" To="0" Duration="0:0:0.18"/>
+            <DoubleAnimation Storyboard.TargetName="RootBorder"
+                             Storyboard.TargetProperty="Opacity"
+                             From="1" To="0" Duration="0:0:0.18"/>
+            <DoubleAnimation Storyboard.TargetName="ScaleT"
+                             Storyboard.TargetProperty="ScaleX"
+                             From="1" To="0.90" Duration="0:0:0.18"/>
+            <DoubleAnimation Storyboard.TargetName="ScaleT"
+                             Storyboard.TargetProperty="ScaleY"
+                             From="1" To="0.90" Duration="0:0:0.18"/>
+        </Storyboard>
+
+    </UserControl.Resources>
+
+    <!-- Full-area dim backdrop + centered card, stacked -->
+    <Grid>
+
+        <!-- Dim backdrop -->
+        <Border x:Name="Backdrop"
+                Background="#60000000"
+                Opacity="0"/>
+
+        <!-- Centered card -->
+        <Border x:Name="RootBorder"
+                CornerRadius="16"
+                Padding="44,36"
+                MinWidth="300"
+                MaxWidth="420"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Opacity="0">
+            <Border.RenderTransform>
+                <ScaleTransform x:Name="ScaleT" ScaleX="1" ScaleY="1"/>
+            </Border.RenderTransform>
+            <Border.RenderTransformOrigin>0.5,0.5</Border.RenderTransformOrigin>
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="40" Color="#000000"
+                                  ShadowDepth="0" Opacity="0.65"/>
+            </Border.Effect>
+
+            <StackPanel HorizontalAlignment="Center">
+
+                <!-- Circle icon badge -->
+                <Border x:Name="IconBadge"
+                        Width="64" Height="64"
+                        CornerRadius="32"
+                        HorizontalAlignment="Center"
+                        Margin="0,0,0,18">
+                    <TextBlock x:Name="IconText"
+                               FontFamily="Segoe MDL2 Assets"
+                               FontSize="28"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"/>
+                </Border>
+
+                <!-- Title -->
+                <TextBlock x:Name="TitleText"
+                           FontSize="18"
+                           FontWeight="Bold"
+                           Foreground="#F3F4F6"
+                           HorizontalAlignment="Center"
+                           TextAlignment="Center"
+                           Margin="0,0,0,6"/>
+
+                <!-- Sub-message (optional second line) -->
+                <TextBlock x:Name="SubText"
+                           FontSize="13"
+                           Foreground="#9CA3AF"
+                           HorizontalAlignment="Center"
+                           TextAlignment="Center"
+                           TextWrapping="Wrap"
+                           MaxWidth="320"
+                           Visibility="Collapsed"/>
+
+            </StackPanel>
+        </Border>
+    </Grid>
+
+</UserControl>

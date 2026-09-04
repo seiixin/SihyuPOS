@@ -84,7 +84,7 @@ namespace SihyuPOSPayroll.Services
                     }
                 }
 
-                var posService = new PositionSalaryService(_connectionString);
+                var posService = new PositionSalaryService();
 
                 foreach (var emp in employees)
                 {

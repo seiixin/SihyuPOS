@@ -8,7 +8,6 @@ using System.Windows.Input;
 using SihyuPOSPayroll.Models;
 using SihyuPOSPayroll.Services;
 using SihyuPOSPayroll.Views.Admin.Inventory;
-
 namespace SihyuPOSPayroll.ViewModels
 {
     public class InventoryViewModel : INotifyPropertyChanged
@@ -23,6 +22,11 @@ namespace SihyuPOSPayroll.ViewModels
         private bool _showQty      = true;
         private bool _showExpiry   = true;
         private bool _showCategory = true;
+        // Barcode scan action — 3-state, persisted in app_settings as an int:
+        //   -1 = not set → ModalPrompt (default)
+        //    1 = QuickAdd (+1 qty, no modal)
+        //    2 = QuickUpdate (open edit modal)
+        private int _barcodeAction = -1;
 
         public InventoryViewModel()
         {
@@ -31,9 +35,11 @@ namespace SihyuPOSPayroll.ViewModels
 
             // Ensure app_settings table exists then load persisted column states
             AppSettingsService.EnsureTable();
-            _showQty      = AppSettingsService.GetColumnVisibility("inventory", "qty");
-            _showCategory = AppSettingsService.GetColumnVisibility("inventory", "category");
-            _showExpiry   = AppSettingsService.GetColumnVisibility("inventory", "expiry_date");
+            _showQty       = AppSettingsService.GetColumnVisibility("inventory", "qty");
+            _showCategory  = AppSettingsService.GetColumnVisibility("inventory", "category");
+            _showExpiry    = AppSettingsService.GetColumnVisibility("inventory", "expiry_date");
+            // -1 = not set (ModalPrompt default), 1 = QuickAdd, 2 = QuickUpdate
+            _barcodeAction = AppSettingsService.GetIntSetting("inventory", "barcode_scan_action", defaultValue: -1);
 
             AddItemCommand    = new DelegateCommand(AddItem);
             EditItemCommand   = new DelegateCommand<InventoryItem>(EditItem);
@@ -84,6 +90,40 @@ namespace SihyuPOSPayroll.ViewModels
                 OnPropertyChanged();
                 AppSettingsService.SetColumnVisibility("inventory", "category", value);
             }
+        }
+
+        // ── Barcode scan action (persisted per-page, not global) ───────────────
+
+        // Convention: -1 = not set (ModalPrompt), 1 = QuickAdd, 2 = QuickUpdate
+        private void SetBarcodeAction(int value)
+        {
+            if (_barcodeAction == value) return;
+            _barcodeAction = value;
+            OnPropertyChanged(nameof(BarcodeActionIsDefault));
+            OnPropertyChanged(nameof(BarcodeActionIsQuickAdd));
+            OnPropertyChanged(nameof(BarcodeActionIsQuickUpdate));
+            AppSettingsService.SetIntSetting("inventory", "barcode_scan_action", value);
+        }
+
+        /// <summary>True when no scan action has been set (ModalPrompt default).</summary>
+        public bool BarcodeActionIsDefault
+        {
+            get => _barcodeAction == -1;
+            set { if (value) SetBarcodeAction(-1); }
+        }
+
+        /// <summary>Silently add +1 qty on scan.</summary>
+        public bool BarcodeActionIsQuickAdd
+        {
+            get => _barcodeAction == 1;
+            set { if (value) SetBarcodeAction(1); }
+        }
+
+        /// <summary>Open pre-filled Edit modal on scan.</summary>
+        public bool BarcodeActionIsQuickUpdate
+        {
+            get => _barcodeAction == 2;
+            set { if (value) SetBarcodeAction(2); }
         }
 
         /// <summary>True when the system is running in StoreMode.</summary>
@@ -191,19 +231,16 @@ namespace SihyuPOSPayroll.ViewModels
                     if (_inventoryService.UpdateItem(item))
                     {
                         RefreshData();
-                        MessageBox.Show("Item updated successfully!", "Success",
-                            MessageBoxButton.OK, MessageBoxImage.Information);
+                        CenterBannerService.Success("Item Updated", $"'{item.ProductName}' saved successfully.");
                     }
                     else
                     {
-                        MessageBox.Show("Failed to update item.", "Error",
-                            MessageBoxButton.OK, MessageBoxImage.Error);
+                        ToastService.Error("Failed to update item.");
                     }
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Error updating item: {ex.Message}", "Error",
-                        MessageBoxButton.OK, MessageBoxImage.Error);
+                    ToastService.Error($"Update error: {ex.Message}");
                 }
             };
             CurrentDialog = dialog;
@@ -213,8 +250,10 @@ namespace SihyuPOSPayroll.ViewModels
         {
             if (item == null) return;
 
+            // Confirmation is intentionally still a blocking dialog — the user
+            // must explicitly confirm a destructive action before it executes.
             var result = MessageBox.Show(
-                $"Are you sure you want to delete '{item.ProductName}'?",
+                $"Delete '{item.ProductName}'?",
                 "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Question);
 
             if (result != MessageBoxResult.Yes) return;
@@ -224,19 +263,16 @@ namespace SihyuPOSPayroll.ViewModels
                 if (_inventoryService.DeleteItem(item.Id))
                 {
                     RefreshData();
-                    MessageBox.Show("Item deleted successfully!", "Success",
-                        MessageBoxButton.OK, MessageBoxImage.Information);
+                    CenterBannerService.Warning("Item Deleted", $"'{item.ProductName}' removed from inventory.");
                 }
                 else
                 {
-                    MessageBox.Show("Failed to delete item.", "Error",
-                        MessageBoxButton.OK, MessageBoxImage.Error);
+                    ToastService.Error("Failed to delete item.");
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error deleting item: {ex.Message}", "Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                ToastService.Error($"Delete error: {ex.Message}");
             }
         }
 
@@ -249,28 +285,49 @@ namespace SihyuPOSPayroll.ViewModels
         public event Action<string, bool>? LookupStatusChanged;
 
         /// <summary>
-        /// 3-step barcode lookup:
-        ///   1. Local JSON (ph_grocery_starter.json)
-        ///   2. Open Food Facts REST API (cloud fallback)
-        ///   3. Manual entry modal if everything else fails / is offline
-        /// Must be called from the UI thread.
+        /// Barcode scan entry point — called from Inventory.xaml.cs on Enter.
+        ///
+        /// For EXISTING inventory items the behaviour depends on BarcodeScanAction:
+        ///   QuickAdd     — silent +1 stock increment, no modal
+        ///   QuickUpdate  — opens the full Edit modal pre-filled
+        ///   ModalPrompt  — shows the compact BarcodeActionDialog with two buttons
+        ///
+        /// For NEW barcodes (not yet in inventory) falls through to the 3-step
+        /// lookup chain: Local JSON → Open Food Facts → Manual entry.
         /// </summary>
         public async Task QuickAddByBarcodeAsync(string barcode)
         {
             string bc = barcode?.Trim() ?? string.Empty;
             if (string.IsNullOrWhiteSpace(bc)) return;
 
-            // ── Guard: already in a dialog ───────────────────────────────────
             if (CurrentDialog != null) return;
-
-            // ── Guard: duplicate scan while lookup is running ────────────────
             if (IsLookingUp) return;
 
+            // ── Check inventory first ────────────────────────────────────────
+            var existing = _inventoryService.GetItemByBarcode(bc);
+            if (existing != null)
+            {
+                // Read action from local VM property (persisted per page via AppSettingsService)
+                if (_barcodeAction == 1)
+                {
+                    HandleQuickAddExisting(existing);
+                }
+                else if (_barcodeAction == 2)
+                {
+                    HandleQuickUpdateExisting(existing);
+                }
+                else
+                {
+                    // -1 or any unset value → ModalPrompt (default)
+                    HandleModalPrompt(existing);
+                }
+                return;
+            }
+
+            // ── New barcode — 3-step lookup chain ────────────────────────────
             QuickAddPrefill prefill;
 
-            // ────────────────────────────────────────────────────────────────
             // Step 1 — Local JSON
-            // ────────────────────────────────────────────────────────────────
             var localHit = BarcodeLookupService.Lookup(bc);
             if (localHit != null)
             {
@@ -288,9 +345,7 @@ namespace SihyuPOSPayroll.ViewModels
                 return;
             }
 
-            // ────────────────────────────────────────────────────────────────
             // Step 2 — Open Food Facts API
-            // ────────────────────────────────────────────────────────────────
             IsLookingUp = true;
             LookupStatusChanged?.Invoke("Searching online…", false);
 
@@ -319,9 +374,7 @@ namespace SihyuPOSPayroll.ViewModels
                 return;
             }
 
-            // ────────────────────────────────────────────────────────────────
             // Step 3 — Manual entry fallback
-            // ────────────────────────────────────────────────────────────────
             string hint = offResult.Status switch
             {
                 OFFLookupResult.LookupStatus.Offline  => "Offline — enter manually",
@@ -337,6 +390,60 @@ namespace SihyuPOSPayroll.ViewModels
                 Source  = QuickAddPrefill.PrefillSource.ManualEntry,
             };
             OpenQuickAddDialog(prefill);
+        }
+
+        // ── Existing-item scan handlers ───────────────────────────────────────
+
+        /// <summary>QuickAdd — silently increments stock by +1, no modal.</summary>
+        private void HandleQuickAddExisting(InventoryItem item)
+        {
+            int newQty = _inventoryService.IncrementItemQuantity(item.Id, delta: 1);
+            if (newQty >= 0)
+            {
+                item.Quantity = newQty;
+                RefreshData();
+                CenterBannerService.Success("Stock Updated", $"+1 added — {item.ProductName}  (stock: {newQty})");
+                LookupStatusChanged?.Invoke($"+1 → {item.ProductName} (stock: {newQty})", false);
+            }
+            else
+            {
+                ToastService.Error($"Failed to update stock for '{item.ProductName}'.");
+                LookupStatusChanged?.Invoke("Failed to update stock.", true);
+            }
+        }
+
+        /// <summary>QuickUpdate — opens the full Edit modal pre-filled with item details.</summary>
+        private void HandleQuickUpdateExisting(InventoryItem item)
+        {
+            LookupStatusChanged?.Invoke($"Edit: {item.ProductName}", false);
+            EditItem(item);
+        }
+
+        /// <summary>ModalPrompt — shows the compact BarcodeActionDialog.</summary>
+        private void HandleModalPrompt(InventoryItem item)
+        {
+            LookupStatusChanged?.Invoke($"Found: {item.ProductName}", false);
+
+            var dialog = new BarcodeActionDialog(item);
+            dialog.ActionChosen += (_, action) =>
+            {
+                CurrentDialog = null;
+                LookupStatusChanged?.Invoke(string.Empty, false);
+
+                switch (action)
+                {
+                    case BarcodeActionDialog.BarcodeDialogAction.AddStock:
+                        HandleQuickAddExisting(item);
+                        break;
+
+                    case BarcodeActionDialog.BarcodeDialogAction.Edit:
+                        HandleQuickUpdateExisting(item);
+                        break;
+
+                    // Cancel — do nothing
+                }
+            };
+            CurrentDialog = dialog;
         }
 
         private void OpenQuickAddDialog(QuickAddPrefill prefill)
@@ -371,19 +478,16 @@ namespace SihyuPOSPayroll.ViewModels
                 if (_inventoryService.AddItem(newItem))
                 {
                     RefreshData();
-                    MessageBox.Show("Item added successfully!", "Success",
-                        MessageBoxButton.OK, MessageBoxImage.Information);
+                    CenterBannerService.Success("Item Added", $"'{newItem.ProductName}' saved to inventory.");
                 }
                 else
                 {
-                    MessageBox.Show("Failed to add item.", "Error",
-                        MessageBoxButton.OK, MessageBoxImage.Error);
+                    ToastService.Error("Failed to add item.");
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error adding item: {ex.Message}", "Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                ToastService.Error($"Add error: {ex.Message}");
             }
         }
 

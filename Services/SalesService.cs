@@ -152,6 +152,49 @@ namespace SihyuPOSPayroll.Services
             }
         }
 
+        // ── GetYearTotal ──────────────────────────────────────────────────────
+
+        /// <summary>Returns cumulative sales total for the current calendar year.</summary>
+        public static decimal GetYearTotal()
+        {
+            try
+            {
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                int year = DateTime.Now.Year;
+
+                // Primary: receipts
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"
+                        SELECT COALESCE(SUM(amount_paid), 0)
+                        FROM   receipts
+                        WHERE  strftime('%Y', issued_at) = @year;";
+                    cmd.Parameters.AddWithValue("@year", year.ToString("D4"));
+                    var obj = cmd.ExecuteScalar();
+                    decimal v = (obj == null || obj == DBNull.Value) ? 0m : Convert.ToDecimal(obj);
+                    if (v > 0) return v;
+                }
+
+                // Fallback: paid orders
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"
+                        SELECT COALESCE(SUM(total_amount), 0)
+                        FROM   orders
+                        WHERE  payment_status = 'Paid'
+                          AND  strftime('%Y', created_at) = @year;";
+                    cmd.Parameters.AddWithValue("@year", year.ToString("D4"));
+                    var obj = cmd.ExecuteScalar();
+                    return (obj == null || obj == DBNull.Value) ? 0m : Convert.ToDecimal(obj);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[SalesService] GetYearTotal: {ex.Message}");
+                return 0m;
+            }
+        }
+
         // ── GetYesterdayTotal ─────────────────────────────────────────────────
 
         /// <summary>Returns total sales for yesterday.</summary>
@@ -254,6 +297,62 @@ namespace SihyuPOSPayroll.Services
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[SalesService] GetDailySalesForMonth: {ex.Message}");
+            }
+            return rows;
+        }
+
+        // ── GetMonthlySalesForYear ────────────────────────────────────────────
+
+        /// <summary>
+        /// Monthly aggregated sales for a full calendar year (one row per month).
+        /// Reads from receipts first; falls back to paid orders.
+        /// </summary>
+        public static List<SalesRow> GetMonthlySalesForYear(int year)
+        {
+            var rows = new List<SalesRow>();
+            try
+            {
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                string yearStr = year.ToString("D4");
+
+                // Primary: receipts
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"
+                        SELECT strftime('%Y-%m-01', issued_at) AS sdate,
+                               SUM(amount_paid)                AS total,
+                               COUNT(*)                        AS cnt
+                        FROM   receipts
+                        WHERE  strftime('%Y', issued_at) = @yr
+                        GROUP  BY strftime('%Y-%m', issued_at)
+                        ORDER  BY sdate;";
+                    cmd.Parameters.AddWithValue("@yr", yearStr);
+                    using var rd = cmd.ExecuteReader();
+                    while (rd.Read()) rows.Add(MapDailyRow(rd));
+                }
+
+                if (rows.Count > 0) return rows;
+
+                // Fallback: paid orders
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"
+                        SELECT strftime('%Y-%m-01', created_at) AS sdate,
+                               SUM(total_amount)                AS total,
+                               COUNT(*)                         AS cnt
+                        FROM   orders
+                        WHERE  payment_status = 'Paid'
+                          AND  strftime('%Y', created_at) = @yr
+                        GROUP  BY strftime('%Y-%m', created_at)
+                        ORDER  BY sdate;";
+                    cmd.Parameters.AddWithValue("@yr", yearStr);
+                    using var rd = cmd.ExecuteReader();
+                    while (rd.Read()) rows.Add(MapDailyRow(rd));
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[SalesService] GetMonthlySalesForYear: {ex.Message}");
             }
             return rows;
         }

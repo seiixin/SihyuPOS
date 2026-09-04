@@ -64,6 +64,7 @@ namespace SihyuPOSPayroll.Data
             ExecuteSql(conn, POSTables,       "POS");
             ExecuteSql(conn, SettingsTables,  "Settings");
             MigrateOrderTypeColumn(conn);
+            MigrateRolePermissionsTable(conn);
         }
 
         private static void ExecuteSql(SqliteConnection conn, string sql, string label)
@@ -366,6 +367,71 @@ namespace SihyuPOSPayroll.Data
             var affected = cmd.ExecuteNonQuery();
             if (affected > 0)
                 Debug.WriteLine($"[Schema] Seeded {affected} role(s).");
+
+            // Seed default per-role module permissions
+            SeedRolePermissions(conn);
+        }
+
+        /// <summary>
+        /// Creates the role_permissions table if absent and inserts the default
+        /// module grants for Admin, Cashier, and Employee.
+        /// Safe to call repeatedly — uses INSERT OR IGNORE.
+        /// </summary>
+        private static void MigrateRolePermissionsTable(SqliteConnection conn)
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = @"
+                CREATE TABLE IF NOT EXISTS role_permissions (
+                    role_name  TEXT NOT NULL,
+                    module_key TEXT NOT NULL,
+                    PRIMARY KEY (role_name, module_key)
+                );
+                CREATE INDEX IF NOT EXISTS idx_rp_role ON role_permissions(role_name);
+            ";
+            cmd.ExecuteNonQuery();
+            Debug.WriteLine("[Schema] role_permissions table ensured.");
+        }
+
+        private static void SeedRolePermissions(SqliteConnection conn)
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = @"
+                -- Admin: every module
+                INSERT OR IGNORE INTO role_permissions (role_name, module_key) VALUES
+                    ('Admin', 'Dashboard'),
+                    ('Admin', 'Inventory'),
+                    ('Admin', 'Categories'),
+                    ('Admin', 'Users'),
+                    ('Admin', 'Employees'),
+                    ('Admin', 'Permissions'),
+                    ('Admin', 'Positions'),
+                    ('Admin', 'Payroll'),
+                    ('Admin', 'Menu'),
+                    ('Admin', 'Receipts'),
+                    ('Admin', 'Orders'),
+                    ('Admin', 'POS'),
+                    ('Admin', 'Tables'),
+                    ('Admin', 'Sales'),
+                    ('Admin', 'Attendance'),
+                    ('Admin', 'PayslipRequests'),
+                    ('Admin', 'Settings');
+
+                -- Cashier: POS-facing modules
+                INSERT OR IGNORE INTO role_permissions (role_name, module_key) VALUES
+                    ('Cashier', 'POS'),
+                    ('Cashier', 'Inventory'),
+                    ('Cashier', 'Receipts'),
+                    ('Cashier', 'Orders'),
+                    ('Cashier', 'Tables');
+
+                -- Employee: self-service modules
+                INSERT OR IGNORE INTO role_permissions (role_name, module_key) VALUES
+                    ('Employee', 'Attendance'),
+                    ('Employee', 'PayslipRequests'),
+                    ('Employee', 'Profile');
+            ";
+            cmd.ExecuteNonQuery();
+            Debug.WriteLine("[Schema] Default role permissions seeded.");
         }
 
         /// <summary>
@@ -409,6 +475,7 @@ namespace SihyuPOSPayroll.Data
             {
                 "Attendance", "Dashboard", "Employees", "Inventory",
                 "Menu", "Orders", "Payroll", "PayslipRequests",
+                "Permissions", "Positions",
                 "Receipts", "Sales", "Tables", "Users", "Settings"
             };
 

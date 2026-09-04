@@ -5,60 +5,155 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     mc:Ignorable="d"
-    d:DesignWidth="400" d:DesignHeight="400"
-    Background="#AA000000">
+    d:DesignWidth="520" d:DesignHeight="520">
 
-    <Border
-        Background="#090B17"
-        BorderBrush="#072219"
-        BorderThickness="1"
-        CornerRadius="12"
-        Width="420"
-        Padding="28"
-        VerticalAlignment="Center"
-        HorizontalAlignment="Center">
+    <Border Background="#090B17"
+            BorderBrush="#1A1D2E"
+            BorderThickness="1"
+            CornerRadius="14"
+            Width="460"
+            Padding="32,28">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="40" Color="#000000" ShadowDepth="0" Opacity="0.70"/>
+        </Border.Effect>
 
         <StackPanel>
-            <!-- Title -->
-            <TextBlock x:Name="TitleText"
-                       Text="Add / Edit User"
-                       FontSize="20"
-                       FontWeight="Bold"
-                       Foreground="#477C60"
-                       Margin="0,0,0,20"
-                       TextAlignment="Center" />
 
-            <!-- Email -->
-            <TextBlock Text="Email:" FontWeight="SemiBold" Foreground="#9CA3AF"/>
-            <TextBox x:Name="EmailTextBox" Margin="0,4,0,14" />
+            <!-- ── Header ─────────────────────────────────────────────────── -->
+            <Grid Margin="0,0,0,24">
+                <StackPanel>
+                    <TextBlock x:Name="TitleText"
+                               Text="Add New User"
+                               FontSize="20" FontWeight="Bold"
+                               Foreground="#F3F4F6"/>
+                    <TextBlock x:Name="SubtitleText"
+                               Text="Fill in the details below to create a new account."
+                               FontSize="12" Foreground="#6B7280"
+                               Margin="0,4,0,0" TextWrapping="Wrap"/>
+                </StackPanel>
+                <!-- Close × button -->
+                <Button Content="&#xE711;"
+                        FontFamily="Segoe MDL2 Assets"
+                        FontSize="13"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Top"
+                        Width="32" Height="32"
+                        Padding="0"
+                        Foreground="#6B7280"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Cursor="Hand"
+                        Click="Cancel_Click">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border x:Name="Bd" Background="{TemplateBinding Background}"
+                                                CornerRadius="6">
+                                            <ContentPresenter HorizontalAlignment="Center"
+                                                              VerticalAlignment="Center"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Bd" Property="Background" Value="#1A1D2E"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </Button.Style>
+                </Button>
+            </Grid>
 
-            <!-- Password -->
-            <TextBlock Text="Password:" FontWeight="SemiBold" Foreground="#9CA3AF"/>
-            <PasswordBox x:Name="PasswordBox" Margin="0,4,0,14" />
+            <!-- ── Email ──────────────────────────────────────────────────── -->
+            <TextBlock Text="Email" FontSize="12" FontWeight="SemiBold"
+                       Foreground="#9CA3AF" Margin="0,0,0,6"/>
+            <Border Background="#0D0F1A" CornerRadius="8"
+                    BorderBrush="#1A1D2E" BorderThickness="1"
+                    Height="40" Margin="0,0,0,16">
+                <Grid>
+                    <TextBlock Text="&#xE715;" FontFamily="Segoe MDL2 Assets"
+                               FontSize="13" Foreground="#374151"
+                               VerticalAlignment="Center" Margin="12,0,0,0"/>
+                    <TextBox x:Name="EmailTextBox"
+                             Background="Transparent" BorderThickness="0"
+                             Foreground="#F3F4F6" VerticalContentAlignment="Center"
+                             Margin="34,0,10,0" FontSize="13"
+                             CaretBrush="#477C60"/>
+                </Grid>
+            </Border>
 
-            <!-- Role -->
-            <TextBlock Text="Role:" FontWeight="SemiBold" Foreground="#9CA3AF"/>
-            <ComboBox x:Name="RoleComboBox" Margin="0,4,0,14" ItemsSource="{Binding Roles}" />
+            <!-- ── Password ───────────────────────────────────────────────── -->
+            <TextBlock Text="Password" FontSize="12" FontWeight="SemiBold"
+                       Foreground="#9CA3AF" Margin="0,0,0,6"/>
+            <Border Background="#0D0F1A" CornerRadius="8"
+                    BorderBrush="#1A1D2E" BorderThickness="1"
+                    Height="40" Margin="0,0,0,4">
+                <Grid>
+                    <TextBlock Text="&#xE72E;" FontFamily="Segoe MDL2 Assets"
+                               FontSize="13" Foreground="#374151"
+                               VerticalAlignment="Center" Margin="12,0,0,0"/>
+                    <PasswordBox x:Name="PasswordBox"
+                                 Background="Transparent" BorderThickness="0"
+                                 Foreground="#F3F4F6" VerticalContentAlignment="Center"
+                                 Margin="34,0,10,0" FontSize="13"/>
+                </Grid>
+            </Border>
+            <TextBlock x:Name="PasswordHint"
+                       FontSize="11" Foreground="#4B5563"
+                       Margin="0,0,0,16" TextWrapping="Wrap"/>
 
-            <!-- Linked Employee -->
-            <TextBlock Text="Linked Employee (optional):" FontWeight="SemiBold" Foreground="#9CA3AF"/>
+            <!-- ── Role ───────────────────────────────────────────────────── -->
+            <TextBlock Text="Role" FontSize="12" FontWeight="SemiBold"
+                       Foreground="#9CA3AF" Margin="0,0,0,6"/>
+            <ComboBox x:Name="RoleComboBox"
+                      Height="40" Margin="0,0,0,16"
+                      Background="#0D0F1A"
+                      Foreground="#F3F4F6"
+                      BorderBrush="#1A1D2E"
+                      FontSize="13"/>
+
+            <!-- ── Linked Employee ─────────────────────────────────────────── -->
+            <TextBlock Text="Linked Employee" FontSize="12" FontWeight="SemiBold"
+                       Foreground="#9CA3AF" Margin="0,0,0,6"/>
+            <TextBlock Text="Optional — connects this login to an employee record."
+                       FontSize="11" Foreground="#4B5563" Margin="0,0,0,6"/>
             <ComboBox x:Name="EmployeeComboBox"
-                      Margin="0,4,0,20"
+                      Height="40" Margin="0,0,0,28"
+                      Background="#0D0F1A"
+                      Foreground="#F3F4F6"
+                      BorderBrush="#1A1D2E"
+                      FontSize="13"
                       DisplayMemberPath="FullName"
-                      SelectedValuePath="Id"
-                      ItemsSource="{Binding Employees}" />
+                      SelectedValuePath="Id"/>
 
-            <!-- Buttons -->
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button Content="Cancel"
-                        Margin="0,0,10,0"
+            <!-- ── Divider ─────────────────────────────────────────────────── -->
+            <Border Height="1" Background="#1A1D2E" Margin="0,0,0,20"/>
+
+            <!-- ── Action buttons ─────────────────────────────────────────── -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="8"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Button Grid.Column="0"
+                        Content="Cancel"
                         Style="{StaticResource SecondaryButton}"
-                        Click="Cancel_Click" />
-                <Button x:Name="SaveButton"
+                        Height="40"
+                        Click="Cancel_Click"/>
+                <Button Grid.Column="2"
+                        x:Name="SaveButton"
                         Content="Save"
                         Style="{StaticResource PrimaryButton}"
-                        Click="Save_Click" />
-            </StackPanel>
+                        Height="40"
+                        Click="Save_Click"/>
+            </Grid>
+
         </StackPanel>
     </Border>
 </UserControl>

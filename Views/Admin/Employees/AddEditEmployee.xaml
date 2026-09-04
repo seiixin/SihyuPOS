@@ -5,167 +5,436 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     mc:Ignorable="d"
-    d:DesignWidth="450"
-    d:DesignHeight="600"
-    Background="#AA000000">
+    d:DesignWidth="520" d:DesignHeight="700">
 
-    <Border
-        Style="{StaticResource CardBorder}"
-        Width="450"
-        Padding="24"
-        VerticalAlignment="Center"
-        HorizontalAlignment="Center"
-        MaxHeight="600">
+    <Border Background="#090B17"
+            BorderBrush="#1A1D2E"
+            BorderThickness="1"
+            CornerRadius="14"
+            Width="500"
+            MaxHeight="700">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="40" Color="#000000" ShadowDepth="0" Opacity="0.70"/>
+        </Border.Effect>
 
-        <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="560">
-            <StackPanel>
-                <!-- Title -->
-                <TextBlock x:Name="TitleText"
-                           Text="Add / Edit Employee"
-                           FontSize="20"
-                           FontWeight="Bold"
-                           Foreground="{StaticResource AccentEmeraldBrush}"
-                           Margin="0,0,0,16"
-                           TextAlignment="Center" />
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>   <!-- header -->
+                <RowDefinition Height="*"/>       <!-- scrollable body -->
+                <RowDefinition Height="Auto"/>   <!-- footer buttons -->
+            </Grid.RowDefinitions>
 
-                <!-- Helper note for auto-fill -->
-                <Border Style="{StaticResource CardBorder}" Padding="12" Margin="0,0,0,12" Background="#1A3D33">
-                    <TextBlock
-                        Text="Tip: Selecting a Position will auto-fill Salary Per Day from Payroll &gt; Positions &amp; Salaries. Enable Manual Override to edit salary."
-                        Foreground="{StaticResource TextSecondaryBrush}"
-                        TextWrapping="Wrap"/>
-                </Border>
+            <!-- ── Modal header ───────────────────────────────────────────── -->
+            <Border Grid.Row="0" Padding="28,22,22,18"
+                    BorderBrush="#1A1D2E" BorderThickness="0,0,0,1">
+                <Grid>
+                    <StackPanel>
+                        <TextBlock x:Name="TitleText"
+                                   Text="Add New Employee"
+                                   FontSize="18" FontWeight="Bold"
+                                   Foreground="#F3F4F6"/>
+                        <TextBlock x:Name="SubtitleText"
+                                   Text="Fill in the employee details below."
+                                   FontSize="12" Foreground="#6B7280"
+                                   Margin="0,4,0,0"/>
+                    </StackPanel>
+                    <!-- Close × -->
+                    <Button Content="&#xE711;"
+                            FontFamily="Segoe MDL2 Assets" FontSize="13"
+                            HorizontalAlignment="Right" VerticalAlignment="Top"
+                            Width="32" Height="32" Padding="0"
+                            Foreground="#6B7280" Cursor="Hand"
+                            Click="Cancel_Click">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Setter Property="BorderThickness" Value="0"/>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border x:Name="Bd" Background="{TemplateBinding Background}"
+                                                    CornerRadius="6">
+                                                <ContentPresenter HorizontalAlignment="Center"
+                                                                  VerticalAlignment="Center"/>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="Bd" Property="Background" Value="#1A1D2E"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                </Grid>
+            </Border>
 
-                <!-- Full Name -->
-                <TextBlock Text="Full Name:" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" />
-                <TextBox x:Name="FullNameTextBox" Margin="0,4,0,12" />
+            <!-- ── Scrollable body ────────────────────────────────────────── -->
+            <ScrollViewer Grid.Row="1"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled"
+                          Padding="28,20,28,4">
+                <StackPanel>
 
-                <!-- Age -->
-                <TextBlock Text="Age:" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" />
-                <TextBox x:Name="AgeTextBox" Margin="0,4,0,12" />
+                    <!-- Auto-fill tip -->
+                    <Border Background="#0A1F14" CornerRadius="8"
+                            BorderBrush="#166534" BorderThickness="1"
+                            Padding="12,10" Margin="0,0,0,20">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE946;" FontFamily="Segoe MDL2 Assets"
+                                       FontSize="13" Foreground="#4ADE80"
+                                       VerticalAlignment="Top" Margin="0,1,10,0"/>
+                            <TextBlock TextWrapping="Wrap" FontSize="12"
+                                       Foreground="#9CA3AF" MaxWidth="380">
+                                Selecting a <Run Foreground="#4ADE80">Position</Run> auto-fills Salary Per Day from
+                                the Positions &amp; Salaries setup. Enable <Run Foreground="#4ADE80">Manual Override</Run>
+                                to enter a custom salary.
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
 
-                <!-- Sex -->
-                <TextBlock Text="Sex:" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" />
-                <ComboBox x:Name="SexComboBox" Margin="0,4,0,12" SelectedIndex="0">
-                    <ComboBoxItem Content="Male" />
-                    <ComboBoxItem Content="Female" />
-                    <ComboBoxItem Content="Other" />
-                </ComboBox>
+                    <!-- Section: Personal Info -->
+                    <TextBlock Text="PERSONAL INFORMATION"
+                               FontSize="10" FontWeight="SemiBold"
+                               Foreground="#374151" Margin="0,0,0,12"/>
 
-                <!-- Address -->
-                <TextBlock Text="Address:" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" />
-                <TextBox x:Name="AddressTextBox" Margin="0,4,0,12" />
+                    <!-- Full Name -->
+                    <TextBlock Text="Full Name *" FontSize="12" FontWeight="SemiBold"
+                               Foreground="#9CA3AF" Margin="0,0,0,6"/>
+                    <Border Background="#0D0F1A" CornerRadius="8"
+                            BorderBrush="#1A1D2E" BorderThickness="1"
+                            Height="40" Margin="0,0,0,14">
+                        <Grid>
+                            <TextBlock Text="&#xE77B;" FontFamily="Segoe MDL2 Assets"
+                                       FontSize="13" Foreground="#374151"
+                                       VerticalAlignment="Center" Margin="12,0,0,0"/>
+                            <TextBox x:Name="FullNameTextBox"
+                                     Background="Transparent" BorderThickness="0"
+                                     Foreground="#F3F4F6" VerticalContentAlignment="Center"
+                                     Margin="34,0,10,0" FontSize="13" CaretBrush="#477C60"/>
+                        </Grid>
+                    </Border>
 
-                <!-- Birthday -->
-                <TextBlock Text="Birthday:" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" />
-                <DatePicker x:Name="BirthdayDatePicker" Margin="0,4,0,12" SelectedDateFormat="Short" />
+                    <!-- Age + Sex row -->
+                    <Grid Margin="0,0,0,14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Age" FontSize="12" FontWeight="SemiBold"
+                                       Foreground="#9CA3AF" Margin="0,0,0,6"/>
+                            <Border Background="#0D0F1A" CornerRadius="8"
+                                    BorderBrush="#1A1D2E" BorderThickness="1" Height="40">
+                                <TextBox x:Name="AgeTextBox"
+                                         Background="Transparent" BorderThickness="0"
+                                         Foreground="#F3F4F6" VerticalContentAlignment="Center"
+                                         Margin="12,0,10,0" FontSize="13" CaretBrush="#477C60"/>
+                            </Border>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="Sex" FontSize="12" FontWeight="SemiBold"
+                                       Foreground="#9CA3AF" Margin="0,0,0,6"/>
+                            <ComboBox x:Name="SexComboBox" Height="40"
+                                      Background="#0D0F1A" Foreground="#F3F4F6"
+                                      BorderBrush="#1A1D2E" FontSize="13"
+                                      SelectedIndex="0">
+                                <ComboBoxItem Content="Male"/>
+                                <ComboBoxItem Content="Female"/>
+                                <ComboBoxItem Content="Other"/>
+                            </ComboBox>
+                        </StackPanel>
+                    </Grid>
 
-                <!-- Contact Number -->
-                <TextBlock Text="Contact Number:" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" />
-                <TextBox x:Name="ContactNumberTextBox" Margin="0,4,0,12" />
+                    <!-- Birthday + Date Hired row -->
+                    <Grid Margin="0,0,0,14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Birthday" FontSize="12" FontWeight="SemiBold"
+                                       Foreground="#9CA3AF" Margin="0,0,0,6"/>
+                            <DatePicker x:Name="BirthdayDatePicker" Height="40"
+                                        SelectedDateFormat="Short"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="Date Hired" FontSize="12" FontWeight="SemiBold"
+                                       Foreground="#9CA3AF" Margin="0,0,0,6"/>
+                            <DatePicker x:Name="DateHiredDatePicker" Height="40"
+                                        SelectedDateFormat="Short"/>
+                        </StackPanel>
+                    </Grid>
 
-                <!-- Position -->
-                <TextBlock Text="Position:" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" />
-                <ComboBox x:Name="PositionComboBox"
-                          IsEditable="True"
-                          Margin="0,4,0,4"
-                          StaysOpenOnEdit="True"
-                          IsTextSearchEnabled="True"
-                          SelectionChanged="PositionComboBox_SelectionChanged"/>
-                <TextBlock Text="(Start typing to search...)"
-                           Foreground="{StaticResource TextMutedBrush}" FontSize="11" Margin="0,0,0,12"/>
+                    <!-- Address -->
+                    <TextBlock Text="Address" FontSize="12" FontWeight="SemiBold"
+                               Foreground="#9CA3AF" Margin="0,0,0,6"/>
+                    <Border Background="#0D0F1A" CornerRadius="8"
+                            BorderBrush="#1A1D2E" BorderThickness="1"
+                            Height="40" Margin="0,0,0,14">
+                        <TextBox x:Name="AddressTextBox"
+                                 Background="Transparent" BorderThickness="0"
+                                 Foreground="#F3F4F6" VerticalContentAlignment="Center"
+                                 Margin="12,0,10,0" FontSize="13" CaretBrush="#477C60"/>
+                    </Border>
 
-                <!-- Salary Per Day + manual override -->
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,4">
-                    <TextBlock Text="Salary Per Day:" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"/>
-                    <CheckBox x:Name="ManualOverrideCheckBox"
-                              Content="Manual Override"
-                              Margin="16,0,0,0"
-                              VerticalAlignment="Center"
-                              Checked="ManualOverrideCheckBox_Checked"
-                              Unchecked="ManualOverrideCheckBox_Unchecked"/>
+                    <!-- Contact + Emergency Contact -->
+                    <Grid Margin="0,0,0,14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Contact Number" FontSize="12" FontWeight="SemiBold"
+                                       Foreground="#9CA3AF" Margin="0,0,0,6"/>
+                            <Border Background="#0D0F1A" CornerRadius="8"
+                                    BorderBrush="#1A1D2E" BorderThickness="1" Height="40">
+                                <TextBox x:Name="ContactNumberTextBox"
+                                         Background="Transparent" BorderThickness="0"
+                                         Foreground="#F3F4F6" VerticalContentAlignment="Center"
+                                         Margin="12,0,10,0" FontSize="13" CaretBrush="#477C60"/>
+                            </Border>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="Emergency Contact" FontSize="12" FontWeight="SemiBold"
+                                       Foreground="#9CA3AF" Margin="0,0,0,6"/>
+                            <Border Background="#0D0F1A" CornerRadius="8"
+                                    BorderBrush="#1A1D2E" BorderThickness="1" Height="40">
+                                <TextBox x:Name="EmergencyContactTextBox"
+                                         Background="Transparent" BorderThickness="0"
+                                         Foreground="#F3F4F6" VerticalContentAlignment="Center"
+                                         Margin="12,0,10,0" FontSize="13" CaretBrush="#477C60"/>
+                            </Border>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Divider -->
+                    <Border Height="1" Background="#1A1D2E" Margin="0,4,0,20"/>
+
+                    <!-- Section: Job Details -->
+                    <TextBlock Text="JOB DETAILS"
+                               FontSize="10" FontWeight="SemiBold"
+                               Foreground="#374151" Margin="0,0,0,12"/>
+
+                    <!-- Position -->
+                    <TextBlock Text="Position *" FontSize="12" FontWeight="SemiBold"
+                               Foreground="#9CA3AF" Margin="0,0,0,6"/>
+                    <ComboBox x:Name="PositionComboBox"
+                              Height="40" Margin="0,0,0,4"
+                              IsEditable="True" StaysOpenOnEdit="True"
+                              IsTextSearchEnabled="True"
+                              Background="#0D0F1A" Foreground="#F3F4F6"
+                              BorderBrush="#1A1D2E" FontSize="13"
+                              SelectionChanged="PositionComboBox_SelectionChanged"/>
+                    <TextBlock Text="Start typing to filter positions…"
+                               FontSize="11" Foreground="#374151"
+                               Margin="0,0,0,14"/>
+
+                    <!-- Salary + Manual Override -->
+                    <Grid Margin="0,0,0,14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Salary Per Day" FontSize="12" FontWeight="SemiBold"
+                                       Foreground="#9CA3AF" Margin="0,0,0,6"/>
+                            <Border Background="#0D0F1A" CornerRadius="8"
+                                    BorderBrush="#1A1D2E" BorderThickness="1" Height="40">
+                                <Grid>
+                                    <TextBlock Text="₱" Foreground="#374151" FontSize="13"
+                                               VerticalAlignment="Center" Margin="12,0,0,0"/>
+                                    <TextBox x:Name="SalaryPerDayTextBox"
+                                             Background="Transparent" BorderThickness="0"
+                                             Foreground="#F3F4F6" VerticalContentAlignment="Center"
+                                             Margin="26,0,10,0" FontSize="13" CaretBrush="#477C60"
+                                             IsReadOnly="True"
+                                             ToolTip="Auto-filled from position. Enable Manual Override to edit."/>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" VerticalAlignment="Bottom" Margin="0,0,0,8">
+                            <CheckBox x:Name="ManualOverrideCheckBox"
+                                      Content="Manual Override"
+                                      Foreground="#9CA3AF" FontSize="12"
+                                      Checked="ManualOverrideCheckBox_Checked"
+                                      Unchecked="ManualOverrideCheckBox_Unchecked"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Work Schedule + Shift -->
+                    <Grid Margin="0,0,0,14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Work Schedule" FontSize="12" FontWeight="SemiBold"
+                                       Foreground="#9CA3AF" Margin="0,0,0,6"/>
+                            <ComboBox x:Name="WorkScheduleComboBox" Height="40"
+                                      Background="#0D0F1A" Foreground="#F3F4F6"
+                                      BorderBrush="#1A1D2E" FontSize="13"
+                                      DisplayMemberPath="Label" SelectedValuePath="Id"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="Shift" FontSize="12" FontWeight="SemiBold"
+                                       Foreground="#9CA3AF" Margin="0,0,0,6"/>
+                            <ComboBox x:Name="ShiftComboBox" Height="40"
+                                      Background="#0D0F1A" Foreground="#F3F4F6"
+                                      BorderBrush="#1A1D2E" FontSize="13"
+                                      SelectedIndex="0">
+                                <ComboBoxItem Content="Morning"/>
+                                <ComboBoxItem Content="Afternoon"/>
+                                <ComboBoxItem Content="Night"/>
+                            </ComboBox>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Divider -->
+                    <Border Height="1" Background="#1A1D2E" Margin="0,4,0,20"/>
+
+                    <!-- Section: Government IDs -->
+                    <TextBlock Text="GOVERNMENT IDs"
+                               FontSize="10" FontWeight="SemiBold"
+                               Foreground="#374151" Margin="0,0,0,12"/>
+
+                    <Grid Margin="0,0,0,14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="SSS Number" FontSize="12" FontWeight="SemiBold"
+                                       Foreground="#9CA3AF" Margin="0,0,0,6"/>
+                            <Border Background="#0D0F1A" CornerRadius="8"
+                                    BorderBrush="#1A1D2E" BorderThickness="1" Height="40">
+                                <TextBox x:Name="SssNumberTextBox"
+                                         Background="Transparent" BorderThickness="0"
+                                         Foreground="#F3F4F6" VerticalContentAlignment="Center"
+                                         Margin="10,0" FontSize="12" CaretBrush="#477C60"/>
+                            </Border>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="PhilHealth" FontSize="12" FontWeight="SemiBold"
+                                       Foreground="#9CA3AF" Margin="0,0,0,6"/>
+                            <Border Background="#0D0F1A" CornerRadius="8"
+                                    BorderBrush="#1A1D2E" BorderThickness="1" Height="40">
+                                <TextBox x:Name="PhilhealthNumberTextBox"
+                                         Background="Transparent" BorderThickness="0"
+                                         Foreground="#F3F4F6" VerticalContentAlignment="Center"
+                                         Margin="10,0" FontSize="12" CaretBrush="#477C60"/>
+                            </Border>
+                        </StackPanel>
+                        <StackPanel Grid.Column="4">
+                            <TextBlock Text="Pag-IBIG" FontSize="12" FontWeight="SemiBold"
+                                       Foreground="#9CA3AF" Margin="0,0,0,6"/>
+                            <Border Background="#0D0F1A" CornerRadius="8"
+                                    BorderBrush="#1A1D2E" BorderThickness="1" Height="40">
+                                <TextBox x:Name="PagibigNumberTextBox"
+                                         Background="Transparent" BorderThickness="0"
+                                         Foreground="#F3F4F6" VerticalContentAlignment="Center"
+                                         Margin="10,0" FontSize="12" CaretBrush="#477C60"/>
+                            </Border>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Divider -->
+                    <Border Height="1" Background="#1A1D2E" Margin="0,4,0,20"/>
+
+                    <!-- Section: Photo + Account Status -->
+                    <TextBlock Text="PHOTO &amp; ACCOUNT"
+                               FontSize="10" FontWeight="SemiBold"
+                               Foreground="#374151" Margin="0,0,0,12"/>
+
+                    <!-- Profile photo -->
+                    <Grid Margin="0,0,0,14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="16"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Preview circle -->
+                        <Border Grid.Column="0" Width="72" Height="72" CornerRadius="36"
+                                Background="#0D2818" ClipToBounds="True"
+                                BorderBrush="#1A1D2E" BorderThickness="1">
+                            <Grid>
+                                <TextBlock Text="&#xE77B;" FontFamily="Segoe MDL2 Assets"
+                                           FontSize="30" Foreground="#1F2937"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"/>
+                                <Image x:Name="ImagePreview"
+                                       Stretch="UniformToFill"
+                                       Visibility="Collapsed"/>
+                            </Grid>
+                        </Border>
+
+                        <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                            <Button x:Name="UploadImageButton"
+                                    Content="Choose Photo"
+                                    Style="{StaticResource SecondaryButton}"
+                                    Height="36" Padding="16,0"
+                                    HorizontalAlignment="Left"
+                                    Click="UploadImage_Click"/>
+                            <TextBlock x:Name="SelectedImageLabel"
+                                       Text="No file selected"
+                                       FontSize="11" Foreground="#4B5563"
+                                       Margin="0,6,0,0"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Account status -->
+                    <TextBlock Text="Account Status" FontSize="12" FontWeight="SemiBold"
+                               Foreground="#9CA3AF" Margin="0,0,0,6"/>
+                    <TextBlock Text="Controls whether this employee can log in to the system."
+                               FontSize="11" Foreground="#4B5563" Margin="0,0,0,8"/>
+                    <ComboBox x:Name="StatusComboBox"
+                              Height="40" Margin="0,0,0,20"
+                              Background="#0D0F1A" Foreground="#F3F4F6"
+                              BorderBrush="#1A1D2E" FontSize="13"
+                              SelectedIndex="0"
+                              SelectedValuePath="Tag">
+                        <ComboBoxItem Content="Active — can log in"    Tag="1"/>
+                        <ComboBoxItem Content="Inactive — cannot log in" Tag="0"/>
+                    </ComboBox>
+
                 </StackPanel>
+            </ScrollViewer>
 
-                <TextBox x:Name="SalaryPerDayTextBox"
-                         Margin="0,4,0,12"
-                         IsReadOnly="True"
-                         ToolTip="Auto-filled from position. Enable Manual Override to edit." />
-
-                <!-- Work Schedule -->
-                <TextBlock Text="Work Schedule:" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" />
-                <ComboBox x:Name="WorkScheduleComboBox"
-                          Margin="0,4,0,12"
-                          DisplayMemberPath="Label"
-                          SelectedValuePath="Id" />
-
-                <!-- Shift -->
-                <TextBlock Text="Shift:" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" />
-                <ComboBox x:Name="ShiftComboBox" Margin="0,4,0,12" SelectedIndex="0">
-                    <ComboBoxItem Content="Morning" />
-                    <ComboBoxItem Content="Afternoon" />
-                    <ComboBoxItem Content="Night" />
-                </ComboBox>
-
-                <!-- SSS -->
-                <TextBlock Text="SSS Number:" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" />
-                <TextBox x:Name="SssNumberTextBox" Margin="0,4,0,12" />
-
-                <!-- Philhealth -->
-                <TextBlock Text="Philhealth Number:" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" />
-                <TextBox x:Name="PhilhealthNumberTextBox" Margin="0,4,0,12" />
-
-                <!-- Pagibig -->
-                <TextBlock Text="Pagibig Number:" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" />
-                <TextBox x:Name="PagibigNumberTextBox" Margin="0,4,0,12" />
-
-                <!-- Profile Photo -->
-                <TextBlock Text="Profile Photo:" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" />
-                <StackPanel Orientation="Horizontal" Margin="0,4,0,12" VerticalAlignment="Center">
-                    <Button x:Name="UploadImageButton"
-                            Content="Upload Photo"
+            <!-- ── Footer buttons ─────────────────────────────────────────── -->
+            <Border Grid.Row="2"
+                    BorderBrush="#1A1D2E" BorderThickness="0,1,0,0"
+                    Padding="28,16">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="8"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Button Grid.Column="0"
+                            Content="Cancel"
                             Style="{StaticResource SecondaryButton}"
-                            Click="UploadImage_Click"/>
-                    <TextBlock x:Name="SelectedImageLabel"
-                               Margin="12,0,0,0"
-                               VerticalAlignment="Center"
-                               Foreground="{StaticResource TextSecondaryBrush}"
-                               Text="No file selected"/>
-                </StackPanel>
+                            Height="40"
+                            Click="Cancel_Click"/>
+                    <Button Grid.Column="2"
+                            x:Name="SaveButton"
+                            Content="Save Employee"
+                            Style="{StaticResource PrimaryButton}"
+                            Height="40"
+                            Click="Save_Click"/>
+                </Grid>
+            </Border>
 
-                <!-- Optional preview -->
-                <Image x:Name="ImagePreview"
-                       Height="120"
-                       Stretch="Uniform"
-                       Margin="0,0,0,12"
-                       Visibility="Collapsed"/>
-
-                <!-- Emergency Contact -->
-                <TextBlock Text="Emergency Contact:" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" />
-                <TextBox x:Name="EmergencyContactTextBox" Margin="0,4,0,12" />
-
-                <!-- Date Hired -->
-                <TextBlock Text="Date Hired:" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" />
-                <DatePicker x:Name="DateHiredDatePicker" Margin="0,4,0,12" SelectedDateFormat="Short" />
-
-                <!-- ========================= -->
-                <!-- Account Status (AFTER details) -->
-                <!-- ========================= -->
-                <Separator Margin="0,8,0,12"/>
-                <TextBlock Text="Account Status:" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" />
-                <ComboBox x:Name="StatusComboBox"
-                          Margin="0,4,0,16"
-                          SelectedIndex="0"
-                          SelectedValuePath="Tag">
-                    <ComboBoxItem Content="Active (can log in)"    Tag="1"/>
-                    <ComboBoxItem Content="Inactive (cannot log in)" Tag="0"/>
-                </ComboBox>
-
-                <!-- Buttons -->
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button Content="Cancel" Style="{StaticResource SecondaryButton}" Margin="0,0,10,0" Click="Cancel_Click" />
-                    <Button x:Name="SaveButton" Content="Save" Style="{StaticResource PrimaryButton}" Click="Save_Click" />
-                </StackPanel>
-            </StackPanel>
-        </ScrollViewer>
+        </Grid>
     </Border>
 </UserControl>

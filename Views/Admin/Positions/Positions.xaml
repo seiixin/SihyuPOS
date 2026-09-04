@@ -1,26 +1,24 @@
 <UserControl
-    x:Class="SihyuPOSPayroll.Views.Admin.Employees.Employees"
+    x:Class="SihyuPOSPayroll.Views.Admin.Positions.Positions"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:helpers="clr-namespace:SihyuPOSPayroll.Helpers"
     xmlns:components="clr-namespace:SihyuPOSPayroll.Views.Components"
-    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     mc:Ignorable="d"
     Background="#000000"
-    d:DesignHeight="600" d:DesignWidth="960">
+    d:DesignHeight="600" d:DesignWidth="860">
 
     <UserControl.Resources>
         <helpers:EmptyStringToVisibilityConverter x:Key="EmptyStringToVisibilityConverter"/>
-        <helpers:BoolToBrushConverter  x:Key="BoolToBrush"/>
-        <helpers:BoolToTextConverter   x:Key="BoolToText"/>
-        <BooleanToVisibilityConverter  x:Key="BoolToVis"/>
+        <helpers:BoolToBrushConverter x:Key="BoolToBrush"/>
+        <helpers:BoolToTextConverter  x:Key="BoolToText"/>
     </UserControl.Resources>
 
-    <!-- Outer stack: page content + overlay + toast -->
     <Grid>
 
-        <!-- ── Page content ───────────────────────────────────────────────── -->
+        <!-- Page content -->
         <Grid x:Name="PageGrid" Margin="28,24,28,24">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -28,22 +26,18 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <!-- Page Header -->
+            <!-- Header -->
             <Border BorderBrush="#072219" BorderThickness="0,0,0,1"
                     Margin="0,0,0,20" Padding="0,0,0,14">
-                <Grid>
-                    <StackPanel>
-                        <TextBlock Text="Employees"
-                                   FontSize="26" FontWeight="Bold"
-                                   Foreground="#477C60"/>
-                        <TextBlock Text="Manage employee profiles, schedules and account status."
-                                   FontSize="12" Foreground="#6B7280"
-                                   Margin="0,4,0,0"/>
-                    </StackPanel>
-                </Grid>
+                <StackPanel>
+                    <TextBlock Text="Positions &amp; Salaries"
+                               FontSize="26" FontWeight="Bold" Foreground="#477C60"/>
+                    <TextBlock Text="Manage job positions and their default daily rates for payroll."
+                               FontSize="12" Foreground="#6B7280" Margin="0,4,0,0"/>
+                </StackPanel>
             </Border>
 
-            <!-- Toolbar: Search + Add -->
+            <!-- Toolbar -->
             <Grid Grid.Row="1" Margin="0,0,0,14">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -51,27 +45,21 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- Search box -->
                 <Border Background="#090B17" CornerRadius="8"
-                        BorderBrush="#1A1D2E" BorderThickness="1"
-                        Height="40">
+                        BorderBrush="#1A1D2E" BorderThickness="1" Height="40">
                     <Grid>
-                        <TextBlock Text="&#xE721;"
-                                   FontFamily="Segoe MDL2 Assets"
+                        <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets"
                                    FontSize="13" Foreground="#6B7280"
-                                   VerticalAlignment="Center"
-                                   HorizontalAlignment="Left"
+                                   VerticalAlignment="Center" HorizontalAlignment="Left"
                                    Margin="12,0,0,0"/>
                         <TextBox x:Name="SearchBox"
                                  Background="Transparent" BorderThickness="0"
                                  Foreground="#F3F4F6" VerticalContentAlignment="Center"
-                                 Margin="34,0,10,0" FontSize="13"
-                                 CaretBrush="#477C60"
+                                 Margin="34,0,10,0" FontSize="13" CaretBrush="#477C60"
                                  TextChanged="SearchBox_TextChanged"/>
-                        <TextBlock Text="Search by name, position or contact…"
+                        <TextBlock Text="Search positions…"
                                    Foreground="#374151" FontSize="13"
-                                   Margin="36,0,0,0"
-                                   VerticalAlignment="Center"
+                                   Margin="36,0,0,0" VerticalAlignment="Center"
                                    IsHitTestVisible="False"
                                    Visibility="{Binding Text.Length,
                                        Converter={StaticResource EmptyStringToVisibilityConverter},
@@ -79,26 +67,22 @@
                     </Grid>
                 </Border>
 
-                <!-- Add Employee button — wired to Click handler -->
-                <Button Grid.Column="2"
-                        Content="+ Add Employee"
+                <Button Grid.Column="2" Content="+ Add Position"
                         Style="{StaticResource PrimaryButton}"
                         Height="40" Padding="20,0"
-                        Click="AddEmployee_Click"/>
+                        Click="AddPosition_Click"/>
             </Grid>
 
             <!-- DataGrid card -->
             <Border Grid.Row="2" Background="#090B17" CornerRadius="10"
                     BorderBrush="#1A1D2E" BorderThickness="1">
                 <Grid>
-
-                    <!-- Employee table -->
-                    <DataGrid x:Name="EmployeeDataGrid"
+                    <DataGrid x:Name="PositionsDataGrid"
                               AutoGenerateColumns="False"
                               CanUserAddRows="False"
                               IsReadOnly="True"
                               ColumnHeaderHeight="44"
-                              RowHeight="56"
+                              RowHeight="52"
                               Background="Transparent"
                               BorderThickness="0"
                               RowBackground="Transparent"
@@ -125,9 +109,9 @@
 
                         <DataGrid.RowStyle>
                             <Style TargetType="DataGridRow">
-                                <Setter Property="Background"    Value="Transparent"/>
-                                <Setter Property="Foreground"    Value="#D1D5DB"/>
-                                <Setter Property="BorderBrush"   Value="#0D1117"/>
+                                <Setter Property="Background"      Value="Transparent"/>
+                                <Setter Property="Foreground"      Value="#D1D5DB"/>
+                                <Setter Property="BorderBrush"     Value="#0D1117"/>
                                 <Setter Property="BorderThickness" Value="0,0,0,1"/>
                                 <Style.Triggers>
                                     <Trigger Property="IsMouseOver" Value="True">
@@ -142,10 +126,10 @@
 
                         <DataGrid.CellStyle>
                             <Style TargetType="DataGridCell">
-                                <Setter Property="BorderThickness" Value="0"/>
-                                <Setter Property="Padding"         Value="16,0"/>
+                                <Setter Property="BorderThickness"          Value="0"/>
+                                <Setter Property="Padding"                  Value="16,0"/>
                                 <Setter Property="VerticalContentAlignment" Value="Center"/>
-                                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                                <Setter Property="FocusVisualStyle"         Value="{x:Null}"/>
                                 <Style.Triggers>
                                     <Trigger Property="IsSelected" Value="True">
                                         <Setter Property="Background" Value="Transparent"/>
@@ -157,84 +141,64 @@
 
                         <DataGrid.Columns>
 
-                            <!-- Name + avatar -->
-                            <DataGridTemplateColumn Header="EMPLOYEE" Width="2*"
-                                                    SortMemberPath="FullName">
+                            <!-- Position name -->
+                            <DataGridTemplateColumn Header="POSITION" Width="2*"
+                                                    SortMemberPath="Position">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <StackPanel Orientation="Horizontal"
-                                                    VerticalAlignment="Center"
-                                                    Margin="16,0">
-                                            <!-- Avatar circle with initials placeholder -->
+                                                    VerticalAlignment="Center" Margin="16,0">
                                             <Border Width="36" Height="36" CornerRadius="18"
-                                                    Background="#0D2818" Margin="0,0,12,0">
-                                                <TextBlock Text="&#xE77B;"
+                                                    Background="#0A1628" Margin="0,0,12,0">
+                                                <TextBlock Text="&#xE821;"
                                                            FontFamily="Segoe MDL2 Assets"
-                                                           FontSize="16" Foreground="#477C60"
+                                                           FontSize="16" Foreground="#60A5FA"
                                                            HorizontalAlignment="Center"
                                                            VerticalAlignment="Center"/>
                                             </Border>
-                                            <StackPanel VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding FullName}"
-                                                           Foreground="#F3F4F6"
-                                                           FontSize="13" FontWeight="Medium"/>
-                                                <TextBlock Text="{Binding ContactNumber}"
-                                                           Foreground="#6B7280" FontSize="11"
-                                                           Margin="0,2,0,0"/>
-                                            </StackPanel>
+                                            <TextBlock Text="{Binding Position}"
+                                                       Foreground="#F3F4F6" FontSize="13"
+                                                       FontWeight="Medium"
+                                                       VerticalAlignment="Center"/>
                                         </StackPanel>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
 
-                            <!-- Position badge -->
-                            <DataGridTemplateColumn Header="POSITION" Width="*"
-                                                    SortMemberPath="Position">
+                            <!-- Daily Rate -->
+                            <DataGridTemplateColumn Header="DAILY RATE" Width="160"
+                                                    SortMemberPath="DailyRate">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock Text="{Binding Position}"
-                                                   Foreground="#D1D5DB" FontSize="13"
-                                                   VerticalAlignment="Center"
-                                                   Margin="16,0"/>
+                                        <TextBlock Foreground="#4ADE80" FontSize="13"
+                                                   FontWeight="Medium"
+                                                   VerticalAlignment="Center" Margin="16,0">
+                                            <TextBlock.Text>
+                                                <MultiBinding StringFormat="₱{0:N2}">
+                                                    <Binding Path="DailyRate"/>
+                                                </MultiBinding>
+                                            </TextBlock.Text>
+                                        </TextBlock>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
 
-                            <!-- Shift -->
-                            <DataGridTemplateColumn Header="SHIFT" Width="100"
-                                                    SortMemberPath="Shift">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding Shift}"
-                                                   Foreground="#9CA3AF" FontSize="12"
-                                                   VerticalAlignment="Center"
-                                                   Margin="16,0"/>
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
-
-                            <!-- Account status dot + text -->
+                            <!-- Status -->
                             <DataGridTemplateColumn Header="STATUS" Width="130"
-                                                    SortMemberPath="StatusText">
+                                                    SortMemberPath="IsActive">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <StackPanel Orientation="Horizontal"
-                                                    VerticalAlignment="Center"
-                                                    Margin="16,0">
+                                                    VerticalAlignment="Center" Margin="16,0">
                                             <Ellipse Width="8" Height="8" Margin="0,0,8,0"
-                                                     Fill="{Binding IsActive,
-                                                            Converter={StaticResource BoolToBrush}}"/>
+                                                     Fill="{Binding IsActive, Converter={StaticResource BoolToBrush}}"/>
                                             <TextBlock FontSize="12"
-                                                       Text="{Binding IsActive,
-                                                              Converter={StaticResource BoolToText},
-                                                              ConverterParameter='Active|Inactive|No Login'}">
+                                                       Text="{Binding IsActive, Converter={StaticResource BoolToText},
+                                                              ConverterParameter='Active|Inactive|—'}">
                                                 <TextBlock.Style>
                                                     <Style TargetType="TextBlock">
                                                         <Setter Property="Foreground" Value="#9CA3AF"/>
                                                         <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding HasLogin}" Value="False">
-                                                                <Setter Property="Foreground" Value="#374151"/>
-                                                            </DataTrigger>
                                                             <DataTrigger Binding="{Binding IsActive}" Value="True">
                                                                 <Setter Property="Foreground" Value="#4ADE80"/>
                                                             </DataTrigger>
@@ -243,6 +207,18 @@
                                                 </TextBlock.Style>
                                             </TextBlock>
                                         </StackPanel>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <!-- Last Updated -->
+                            <DataGridTemplateColumn Header="UPDATED" Width="160"
+                                                    SortMemberPath="UpdatedAt">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding UpdatedAt, StringFormat=\{0:MM/dd/yyyy\}}"
+                                                   Foreground="#6B7280" FontSize="12"
+                                                   VerticalAlignment="Center" Margin="16,0"/>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
@@ -258,11 +234,11 @@
                                                     Style="{StaticResource SecondaryButton}"
                                                     Padding="14,6" FontSize="12"
                                                     Margin="0,0,8,0"
-                                                    Click="EditEmployee_Click"/>
+                                                    Click="EditPosition_Click"/>
                                             <Button Content="Delete"
                                                     Style="{StaticResource DangerButton}"
                                                     Padding="14,6" FontSize="12"
-                                                    Click="DeleteEmployee_Click"/>
+                                                    Click="DeletePosition_Click"/>
                                         </StackPanel>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
@@ -273,45 +249,37 @@
 
                     <!-- Empty state -->
                     <StackPanel x:Name="EmptyState"
-                                VerticalAlignment="Center"
-                                HorizontalAlignment="Center"
-                                Margin="0,48"
-                                Visibility="Collapsed">
-                        <TextBlock Text="&#xE77B;"
-                                   FontFamily="Segoe MDL2 Assets"
+                                VerticalAlignment="Center" HorizontalAlignment="Center"
+                                Margin="0,48" Visibility="Collapsed">
+                        <TextBlock Text="&#xE821;" FontFamily="Segoe MDL2 Assets"
                                    FontSize="48" Foreground="#1A1D2E"
                                    HorizontalAlignment="Center"/>
-                        <TextBlock Text="No employees found"
+                        <TextBlock Text="No positions found"
                                    FontSize="16" FontWeight="SemiBold"
-                                   Foreground="#374151"
-                                   HorizontalAlignment="Center"
+                                   Foreground="#374151" HorizontalAlignment="Center"
                                    Margin="0,12,0,6"/>
-                        <TextBlock Text="Add an employee with the button above."
+                        <TextBlock Text="Add a position with the button above."
                                    FontSize="13" Foreground="#1F2937"
                                    HorizontalAlignment="Center"/>
                     </StackPanel>
-
                 </Grid>
             </Border>
 
         </Grid>
 
-        <!-- ── Full-page modal overlay ─────────────────────────────────────── -->
-        <Border x:Name="DialogOverlay"
-                Background="#90000000"
-                Visibility="Collapsed"
-                Panel.ZIndex="50">
+        <!-- Modal overlay -->
+        <Border x:Name="DialogOverlay" Background="#90000000"
+                Visibility="Collapsed" Panel.ZIndex="50">
             <ContentPresenter x:Name="DialogHost"
                               HorizontalAlignment="Center"
                               VerticalAlignment="Center"/>
         </Border>
 
-        <!-- Toast notification -->
-        <components:ToastNotification x:Name="EmployeesToast"
+        <!-- Toast -->
+        <components:ToastNotification x:Name="PositionsToast"
                                       Panel.ZIndex="100"
                                       VerticalAlignment="Top"
                                       HorizontalAlignment="Right"
                                       Margin="0,12,16,0"/>
-
     </Grid>
 </UserControl>

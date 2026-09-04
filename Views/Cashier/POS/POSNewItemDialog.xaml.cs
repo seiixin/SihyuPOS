@@ -39,11 +39,32 @@ namespace SihyuPOSPayroll.Views.Cashier.POS
             QuantityBox.Text = "0";
             PriceBox.Text    = ".00";
 
+            PreviewKeyDown += Dialog_PreviewKeyDown;
+
             Loaded += (_, __) =>
             {
                 LoadCategories();
                 RunBarcodeLookupAsync(barcode);
             };
+        }
+
+        // ── Keyboard shortcuts ─────────────────────────────────────────────────
+        private void Dialog_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            switch (e.Key)
+            {
+                case Key.Enter:
+                    if (Keyboard.FocusedElement is ComboBox || Keyboard.FocusedElement is DatePicker)
+                        return;
+                    e.Handled = true;
+                    Save_Click(this, new RoutedEventArgs());
+                    break;
+
+                case Key.Escape:
+                    e.Handled = true;
+                    Cancel_Click(this, new RoutedEventArgs());
+                    break;
+            }
         }
 
         // ── Category list ─────────────────────────────────────────────────────

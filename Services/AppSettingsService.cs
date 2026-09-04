@@ -101,5 +101,69 @@ namespace SihyuPOSPayroll.Services
                 Debug.WriteLine($"[AppSettingsService] SetColumnVisibility: {ex.Message}");
             }
         }
+
+        // ── Int read/write (reuses is_show column for arbitrary small integers) ─
+
+        /// <summary>
+        /// Returns an integer setting, or <paramref name="defaultValue"/> if not set.
+        /// Stored in the same app_settings table using the is_show INTEGER column.
+        /// </summary>
+        public static int GetIntSetting(
+            string page,
+            string columnName,
+            int    defaultValue = 0,
+            string user         = "global")
+        {
+            try
+            {
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = @"
+                    SELECT is_show
+                    FROM   app_settings
+                    WHERE  user        = @user
+                      AND  page        = @page
+                      AND  column_name = @col
+                    LIMIT 1;";
+                cmd.Parameters.AddWithValue("@user", user);
+                cmd.Parameters.AddWithValue("@page", page);
+                cmd.Parameters.AddWithValue("@col",  columnName);
+                var result = cmd.ExecuteScalar();
+                if (result is null || result == DBNull.Value) return defaultValue;
+                return Convert.ToInt32(result);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[AppSettingsService] GetIntSetting: {ex.Message}");
+                return defaultValue;
+            }
+        }
+
+        /// <summary>Upserts an integer setting.</summary>
+        public static void SetIntSetting(
+            string page,
+            string columnName,
+            int    value,
+            string user = "global")
+        {
+            try
+            {
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = @"
+                    INSERT INTO app_settings (user, page, column_name, is_show)
+                    VALUES (@user, @page, @col, @val)
+                    ON CONFLICT(user, page, column_name) DO UPDATE SET is_show = excluded.is_show;";
+                cmd.Parameters.AddWithValue("@user", user);
+                cmd.Parameters.AddWithValue("@page", page);
+                cmd.Parameters.AddWithValue("@col",  columnName);
+                cmd.Parameters.AddWithValue("@val",  value);
+                cmd.ExecuteNonQuery();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[AppSettingsService] SetIntSetting: {ex.Message}");
+            }
+        }
     }
 }
