@@ -200,9 +200,14 @@ namespace SihyuPOSPayroll.ViewModels
             dialog.DialogClosed += (sender, saved) =>
             {
                 CurrentDialog = null;
-                if (!saved) return;
+                if (!saved)
+                {
+                    FocusBarcodeRequested?.Invoke();
+                    return;
+                }
                 if (sender is not AddEditInventoryDialog src) return;
                 PersistNewItem(src);
+                FocusBarcodeRequested?.Invoke();
             };
             CurrentDialog = dialog;
         }
@@ -215,7 +220,11 @@ namespace SihyuPOSPayroll.ViewModels
             dialog.DialogClosed += (sender, saved) =>
             {
                 CurrentDialog = null;
-                if (!saved) return;
+                if (!saved)
+                {
+                    FocusBarcodeRequested?.Invoke();
+                    return;
+                }
                 if (sender is not AddEditInventoryDialog src) return;
 
                 item.Barcode      = src.Barcode;
@@ -242,6 +251,7 @@ namespace SihyuPOSPayroll.ViewModels
                 {
                     ToastService.Error($"Update error: {ex.Message}");
                 }
+                FocusBarcodeRequested?.Invoke();
             };
             CurrentDialog = dialog;
         }
@@ -283,6 +293,12 @@ namespace SihyuPOSPayroll.ViewModels
         // in the barcode strip while the lookup is running / finished.
         // Format: (hintText, isError)
         public event Action<string, bool>? LookupStatusChanged;
+
+        /// <summary>
+        /// Fired after an Add or Edit dialog closes (saved or cancelled) so the
+        /// view can return keyboard focus to the quick-add barcode input.
+        /// </summary>
+        public event Action? FocusBarcodeRequested;
 
         /// <summary>
         /// Barcode scan entry point — called from Inventory.xaml.cs on Enter.

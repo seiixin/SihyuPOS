@@ -25,6 +25,7 @@ namespace SihyuPOSPayroll.Services
         // ── In-memory state ───────────────────────────────────────────────────
         public SystemMode        CurrentMode       { get; private set; } = SystemMode.StoreMode;
         public BarcodeScanAction BarcodeScanAction { get; private set; } = BarcodeScanAction.ModalPrompt;
+        public string            StoreName         { get; private set; } = "SihyuPOS";
 
         private Dictionary<string, bool> _visibility =
             new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
@@ -69,6 +70,16 @@ namespace SihyuPOSPayroll.Services
                     cmd.CommandText =
                         "SELECT SettingValue FROM SystemSettings WHERE SettingKey = 'BarcodeScanAction' LIMIT 1;";
                     BarcodeScanAction = ParseBarcodeScanAction(cmd.ExecuteScalar() as string);
+                }
+
+                // Read StoreName
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText =
+                        "SELECT SettingValue FROM SystemSettings WHERE SettingKey = 'StoreName' LIMIT 1;";
+                    var raw = cmd.ExecuteScalar() as string;
+                    if (!string.IsNullOrWhiteSpace(raw))
+                        StoreName = raw;
                 }
 
                 // Read ModuleVisibility
@@ -158,6 +169,28 @@ namespace SihyuPOSPayroll.Services
         // Legacy overload kept for any callers that pass a connection string (ignored)
         public void Save(SystemMode mode, IEnumerable<ModuleConfig> modules, string _)
             => Save(mode, modules);
+
+        // ── SaveStoreName ─────────────────────────────────────────────────────
+        /// <summary>Persists only the store name without touching mode or modules.</summary>
+        public void SaveStoreName(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return;
+            name = name.Trim();
+            using var conn = SqliteConnectionFactory.CreateOpenConnection();
+            using var tx   = conn.BeginTransaction();
+            try
+            {
+                UpsertSetting(conn, tx, "StoreName", name);
+                tx.Commit();
+                StoreName = name;
+                NotifyChanged();
+            }
+            catch
+            {
+                tx.Rollback();
+                throw;
+            }
+        }
 
         // ── NotifyChanged ─────────────────────────────────────────────────────
         internal void NotifyChanged() => SettingsChanged?.Invoke();

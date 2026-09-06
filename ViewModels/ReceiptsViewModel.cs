@@ -52,6 +52,7 @@ namespace SihyuPOSPayroll.ViewModels
         public ICommand EditCommand { get; }
         public ICommand DeleteCommand { get; }
         public ICommand PrintCommand { get; }
+        public ICommand RenameStoreCommand { get; }
 
         // ----------- Ctor -----------
         public ReceiptsViewModel()
@@ -67,12 +68,35 @@ namespace SihyuPOSPayroll.ViewModels
             // IMPORTANT: PrintCommand now accepts parameter
             PrintCommand = new RelayCommand(p => PrintReceipt(p));
 
+            RenameStoreCommand = new RelayCommand(_ => RenameStore());
+
             LoadReceipts();
         }
 
-        // ----------- Data ops -----------
-        public void LoadReceipts(string? term = null)
+        // ----------- Store rename -----------
+        private void RenameStore()
         {
+            var dialog = new Views.Dialogs.RenameStoreDialog(SettingsService.Instance.StoreName);
+            var main = System.Windows.Application.Current.MainWindow;
+            if (main != null && main.IsLoaded && main.IsVisible)
+                dialog.Owner = main;
+
+            if (dialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(dialog.NewName))
+            {
+                try
+                {
+                    SettingsService.Instance.SaveStoreName(dialog.NewName);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to save store name.\n{ex.Message}", "Rename Store",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+        // ----------- Data ops -----------
+        public void LoadReceipts(string? term = null)        {
             try
             {
                 // Non-fatal bulk sync so Paid orders have receipts
@@ -220,13 +244,17 @@ namespace SihyuPOSPayroll.ViewModels
 
         private void ExportReceiptAsPdf(ReceiptDetailsModel d)
         {
-            var doc = BuildReceiptDocument(d);
+            // Measure true content height using the visual builder (StackPanel layout is accurate).
+            // Then build the FlowDocument with PageHeight set to that exact height so no blank
+            // space is added at the bottom.
+            var visual = (FrameworkElement)BuildReceiptVisual(d);
+            visual.Measure(new Size(ReceiptWidth, double.PositiveInfinity));
+            double contentHeight = Math.Ceiling(visual.DesiredSize.Height) + 8; // +8 for bottom safety
+
+            var doc = BuildReceiptDocument(d, contentHeight);
             var dlg = new PrintDialog();
             if (dlg.ShowDialog() == true)
             {
-                // Keep the slim receipt page width; let height auto-paginate
-                doc.PageWidth  = doc.PageWidth;   // already set to slim thermal width
-                doc.PageHeight = dlg.PrintableAreaHeight;
                 dlg.PrintDocument(((IDocumentPaginatorSource)doc).DocumentPaginator,
                     $"Receipt #{d.Header.ReceiptId}");
             }
@@ -270,7 +298,9 @@ namespace SihyuPOSPayroll.ViewModels
 
         private const double ReceiptWidth   = 310;
         private const double ReceiptPadding = 16;
-        private const string StoreName      = "SihyuPOS";
+
+        // Store name is read live from SettingsService so it reflects any rename.
+        private static string StoreName => SettingsService.Instance.StoreName;
 
         /// <summary>Builds a slim thermal-style WPF visual for JPG export.</summary>
         private FrameworkElement BuildReceiptVisual(ReceiptDetailsModel d)
@@ -427,7 +457,7 @@ namespace SihyuPOSPayroll.ViewModels
         }
 
         /// <summary>Builds a slim thermal-style FlowDocument for PDF/print output.</summary>
-        private FlowDocument BuildReceiptDocument(ReceiptDetailsModel d)
+        private FlowDocument BuildReceiptDocument(ReceiptDetailsModel d, double pageHeight = 4000)
         {
             var h    = d.Header;
             var font = new FontFamily("Courier New");
@@ -436,9 +466,9 @@ namespace SihyuPOSPayroll.ViewModels
             {
                 FontFamily    = font,
                 FontSize      = 10,
-                PageWidth     = 220,
-                PageHeight    = 2200,
-                PagePadding   = new Thickness(16, 32, 16, 32),
+                PageWidth     = 260,
+                PageHeight    = pageHeight,    // caller passes measured content height
+                PagePadding   = new Thickness(12, 28, 12, 28),
                 ColumnWidth   = double.PositiveInfinity,
                 TextAlignment = TextAlignment.Left
             };
@@ -473,11 +503,12 @@ namespace SihyuPOSPayroll.ViewModels
             fd.Blocks.Add(Para(Dashes(), 8, TextAlignment.Center, fg: Brushes.Gray, spaceAfter: 4));
 
             // ── Items table ──
+            // Items table — columns sum to 236px (= PageWidth 260 − padding 12×2)
             var tbl = new Table { CellSpacing = 0, FontFamily = font, FontSize = 9.5 };
-            tbl.Columns.Add(new TableColumn { Width = new GridLength(94) });
-            tbl.Columns.Add(new TableColumn { Width = new GridLength(22) });
-            tbl.Columns.Add(new TableColumn { Width = new GridLength(42) });
-            tbl.Columns.Add(new TableColumn { Width = new GridLength(46) });
+            tbl.Columns.Add(new TableColumn { Width = new GridLength(118) }); // ITEM
+            tbl.Columns.Add(new TableColumn { Width = new GridLength(24) });  // QTY
+            tbl.Columns.Add(new TableColumn { Width = new GridLength(46) });  // UNIT
+            tbl.Columns.Add(new TableColumn { Width = new GridLength(48) });  // TOTAL
             tbl.RowGroups.Add(new TableRowGroup());
 
             TableCell TC(string text, bool bold = false,
@@ -525,9 +556,10 @@ namespace SihyuPOSPayroll.ViewModels
             fd.Blocks.Add(Para(Dashes(), 8, TextAlignment.Center, fg: Brushes.Gray, spaceAfter: 2));
 
             // ── Totals ──
+            // Totals table — fixed widths (Star/Auto unreliable in FlowDocument)
             var totTbl = new Table { CellSpacing = 0, FontFamily = font };
-            totTbl.Columns.Add(new TableColumn { Width = new GridLength(1, GridUnitType.Star) });
-            totTbl.Columns.Add(new TableColumn { Width = GridLength.Auto });
+            totTbl.Columns.Add(new TableColumn { Width = new GridLength(164) }); // label
+            totTbl.Columns.Add(new TableColumn { Width = new GridLength(72) });  // value
             totTbl.RowGroups.Add(new TableRowGroup());
 
             void TotRow(string label, string value, bool bold)

@@ -489,6 +489,15 @@ namespace SihyuPOSPayroll.Data
             }
 
             Debug.WriteLine("[Schema] Settings and ModuleVisibility seeded.");
+
+            // Seed default StoreName
+            using (var cmd = conn.CreateCommand())
+            {
+                cmd.CommandText = @"
+                    INSERT OR IGNORE INTO SystemSettings (SettingKey, SettingValue)
+                    VALUES ('StoreName', 'SihyuPOS');";
+                cmd.ExecuteNonQuery();
+            }
         }
     }
 }

@@ -30,14 +30,16 @@ namespace SihyuPOSPayroll.Views.Admin.Inventory
         {
             if (_subscribedVm != null)
             {
-                _subscribedVm.LookupStatusChanged -= OnLookupStatusChanged;
-                _subscribedVm.PropertyChanged     -= OnVmPropertyChanged;
+                _subscribedVm.LookupStatusChanged  -= OnLookupStatusChanged;
+                _subscribedVm.PropertyChanged      -= OnVmPropertyChanged;
+                _subscribedVm.FocusBarcodeRequested -= OnFocusBarcodeRequested;
             }
             _subscribedVm = e.NewValue as InventoryViewModel;
             if (_subscribedVm != null)
             {
-                _subscribedVm.LookupStatusChanged += OnLookupStatusChanged;
-                _subscribedVm.PropertyChanged     += OnVmPropertyChanged;
+                _subscribedVm.LookupStatusChanged  += OnLookupStatusChanged;
+                _subscribedVm.PropertyChanged      += OnVmPropertyChanged;
+                _subscribedVm.FocusBarcodeRequested += OnFocusBarcodeRequested;
             }
         }
 
@@ -46,8 +48,9 @@ namespace SihyuPOSPayroll.Views.Admin.Inventory
             if (_subscribedVm == null && VM != null)
             {
                 _subscribedVm = VM;
-                _subscribedVm.LookupStatusChanged += OnLookupStatusChanged;
-                _subscribedVm.PropertyChanged     += OnVmPropertyChanged;
+                _subscribedVm.LookupStatusChanged  += OnLookupStatusChanged;
+                _subscribedVm.PropertyChanged      += OnVmPropertyChanged;
+                _subscribedVm.FocusBarcodeRequested += OnFocusBarcodeRequested;
             }
             // Register the toast control so ToastService can reach it from the ViewModel
             ToastService.Register(InventoryToast);
@@ -96,6 +99,12 @@ namespace SihyuPOSPayroll.Views.Admin.Inventory
             SpinnerBorder.Visibility = (VM?.IsLookingUp ?? false)
                 ? Visibility.Visible
                 : Visibility.Collapsed;
+        }
+
+        // ── Focus restore callback ────────────────────────────────────────────
+        private void OnFocusBarcodeRequested()
+        {
+            QuickAddBarcodeBox.Focus();
         }
 
         // ── Page-level key capture (barcode scanner redirect) ─────────────────

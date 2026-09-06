@@ -360,16 +360,27 @@ namespace SihyuPOSPayroll.Services
 
                 using (var cmd = conn.CreateCommand())
                 {
-                    cmd.CommandText = @"
-                        SELECT
-                            oi.product_id  AS ProductId,
-                            m.Name         AS ProductName,
-                            oi.quantity    AS Quantity,
-                            oi.unit_price  AS UnitPrice
-                        FROM   order_items oi
-                        INNER JOIN orders o ON o.id = oi.order_id
-                        LEFT  JOIN menu   m ON m.Id = oi.product_id
-                        WHERE  o.id = @orderId;";
+                    bool isStoreMode = SettingsService.Instance.CurrentMode == SystemMode.StoreMode;
+
+                    cmd.CommandText = isStoreMode
+                        ? @"SELECT
+                                oi.product_id   AS ProductId,
+                                inv.ProductName AS ProductName,
+                                oi.quantity     AS Quantity,
+                                oi.unit_price   AS UnitPrice
+                            FROM   order_items oi
+                            INNER JOIN orders o  ON o.id  = oi.order_id
+                            LEFT  JOIN inventory_items inv ON inv.Id = oi.product_id
+                            WHERE  o.id = @orderId;"
+                        : @"SELECT
+                                oi.product_id AS ProductId,
+                                m.Name        AS ProductName,
+                                oi.quantity   AS Quantity,
+                                oi.unit_price AS UnitPrice
+                            FROM   order_items oi
+                            INNER JOIN orders o ON o.id = oi.order_id
+                            LEFT  JOIN menu   m ON m.Id = oi.product_id
+                            WHERE  o.id = @orderId;";
                     cmd.Parameters.AddWithValue("@orderId", header.OrderId);
                     using var rl = cmd.ExecuteReader();
                     while (rl.Read())

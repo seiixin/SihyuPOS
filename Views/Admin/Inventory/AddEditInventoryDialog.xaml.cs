@@ -466,9 +466,13 @@ namespace SihyuPOSPayroll.Views.Admin.Inventory
         private void PriceValidationTextBox(object sender, TextCompositionEventArgs e)
         {
             var tb = (TextBox)sender;
-            string candidate = (tb.CaretIndex > 0 ? tb.Text.Insert(tb.CaretIndex, e.Text) : tb.Text + e.Text);
+            // Build the candidate string correctly — if text is selected, the new character
+            // replaces the selection (same as how WPF TextBox actually handles typed input).
+            string current = tb.Text;
+            int start = tb.SelectionStart;
+            int len   = tb.SelectionLength;
+            string candidate = current.Remove(start, len).Insert(start, e.Text);
             if (string.IsNullOrEmpty(candidate) || candidate == ".") { e.Handled = false; return; }
-            // Allow up to one decimal, digits only otherwise
             e.Handled = !Regex.IsMatch(candidate, @"^\d{0,10}(\.\d{0,2})?$");
         }
 

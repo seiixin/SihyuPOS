@@ -30,6 +30,7 @@
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <Border Background="#090B17"
                     CornerRadius="8"
@@ -62,7 +63,63 @@
             </Border>
             <Button Grid.Column="1" Content="Search" Command="{Binding SearchCommand}" Style="{StaticResource PrimaryButton}" Margin="0,0,8,0"/>
             <Button Grid.Column="2" Content="Clear" Command="{Binding ClearSearchCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"/>
-            <Button Grid.Column="3" Content="Refresh" Command="{Binding RefreshCommand}" Style="{StaticResource PrimaryButton}"/>
+            <Button Grid.Column="3" Content="Refresh" Command="{Binding RefreshCommand}" Style="{StaticResource PrimaryButton}" Margin="0,0,8,0"/>
+
+            <!-- Settings gear with dropdown -->
+            <Button Grid.Column="4"
+                    Width="40" Height="40"
+                    Cursor="Hand"
+                    ToolTip="Settings"
+                    Click="SettingsBtn_Click">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd"
+                                Background="#090B17"
+                                BorderBrush="#1A1D2E"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Width="40" Height="40">
+                            <TextBlock Text="&#xE713;"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="15"
+                                       Foreground="#6B7280"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#0F1220"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="#477C60"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.8"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Button.Template>
+                <Button.ContextMenu>
+                    <ContextMenu Background="#0F1220"
+                                 BorderBrush="#1A1D2E"
+                                 BorderThickness="1">
+                        <MenuItem Header="Rename Store"
+                                  Command="{Binding PlacementTarget.Tag,
+                                            RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                  Foreground="#F3F4F6"
+                                  Background="Transparent">
+                            <MenuItem.Icon>
+                                <TextBlock Text="&#xE70F;"
+                                           FontFamily="Segoe MDL2 Assets"
+                                           FontSize="12"
+                                           Foreground="#128854"/>
+                            </MenuItem.Icon>
+                        </MenuItem>
+                    </ContextMenu>
+                </Button.ContextMenu>
+                <!-- Tag carries the command so ContextMenu can bind to it -->
+                <Button.Tag>
+                    <Binding Path="RenameStoreCommand"/>
+                </Button.Tag>
+            </Button>
         </Grid>
 
         <!-- Receipts grid -->
