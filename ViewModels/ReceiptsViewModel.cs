@@ -244,14 +244,27 @@ namespace SihyuPOSPayroll.ViewModels
 
         private void ExportReceiptAsPdf(ReceiptDetailsModel d)
         {
-            // Measure true content height using the visual builder (StackPanel layout is accurate).
-            // Then build the FlowDocument with PageHeight set to that exact height so no blank
-            // space is added at the bottom.
+            // Strategy: start with a generous height estimate from the visual,
+            // then ask the paginator how many pages it actually needs.
+            // If it spills to page 2, keep growing until it fits on one page.
+            const double docUsableWidth = 260 - 12 - 12; // PageWidth 260 − padding 12×2
             var visual = (FrameworkElement)BuildReceiptVisual(d);
-            visual.Measure(new Size(ReceiptWidth, double.PositiveInfinity));
-            double contentHeight = Math.Ceiling(visual.DesiredSize.Height) + 8; // +8 for bottom safety
+            visual.Measure(new Size(docUsableWidth, double.PositiveInfinity));
+            double estimate = Math.Ceiling(visual.DesiredSize.Height * 1.15) + 32;
 
-            var doc = BuildReceiptDocument(d, contentHeight);
+            FlowDocument doc = BuildReceiptDocument(d, estimate);
+
+            // Grow height until everything fits on a single page.
+            // Each iteration adds 60px and rebuilds — converges in 1–3 iterations.
+            for (int attempt = 0; attempt < 10; attempt++)
+            {
+                var paginator = ((IDocumentPaginatorSource)doc).DocumentPaginator;
+                paginator.PageSize = new Size(doc.PageWidth, doc.PageHeight);
+                if (paginator.PageCount <= 1) break;
+                estimate += 60;
+                doc = BuildReceiptDocument(d, estimate);
+            }
+
             var dlg = new PrintDialog();
             if (dlg.ShowDialog() == true)
             {
