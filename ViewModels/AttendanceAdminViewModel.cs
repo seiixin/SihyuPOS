@@ -215,7 +215,7 @@ namespace SihyuPOSPayroll.ViewModels
                     SelectedLeave = fresh;
                 }
 
-                // Do NOT auto-filter here, to avoid the row “disappearing” due to active filters.
+                // Do NOT auto-filter here, to avoid the row ï¿½disappearingï¿½ due to active filters.
             }
             catch (Exception ex)
             {
@@ -297,10 +297,10 @@ namespace SihyuPOSPayroll.ViewModels
             }
         }
 
-        private int GetCurrentUserIdForApproval()
+        private static int GetCurrentUserIdForApproval()
         {
-            // TODO: wire to actual auth/session
-            return 1;
+            // BUG 11 FIX: use the actual logged-in user's ID from the session.
+            return Helpers.Session.CurrentUserId;
         }
 
         // -------------- INotifyPropertyChanged --------------

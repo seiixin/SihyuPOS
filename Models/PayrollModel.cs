@@ -38,9 +38,23 @@ namespace SihyuPOSPayroll.Models
 
         public string PayDate => EndDate.ToShortDateString();
 
-        public int HoursWorked => TotalDaysWorked * 8; // assuming 8 hours per day
+        /// <summary>
+        /// BUG 16 FIX: HoursWorked previously hardcoded 8 h/day regardless of shift type.
+        /// Now uses ShiftType to determine hours: Night shifts are 10 h, all others default
+        /// to 8 h. The constant is exposed so callers can override if needed.
+        /// </summary>
+        public const int DefaultHoursPerDay = 8;
+        public const int NightShiftHoursPerDay = 10;
 
-        public decimal RatePerHour => (TotalDaysWorked * 8) == 0 ? 0 : GrossSalary / (TotalDaysWorked * 8);
+        public int HoursPerDay =>
+            string.Equals(ShiftType?.Trim(), "Night", StringComparison.OrdinalIgnoreCase)
+                ? NightShiftHoursPerDay
+                : DefaultHoursPerDay;
+
+        public int HoursWorked => TotalDaysWorked * HoursPerDay;
+
+        public decimal RatePerHour =>
+            HoursWorked == 0 ? 0 : GrossSalary / HoursWorked;
 
         public decimal Deductions => SssDeduction + PhilhealthDeduction + PagibigDeduction + OtherDeductions;
     }

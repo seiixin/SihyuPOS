@@ -212,17 +212,34 @@ namespace SihyuPOSPayroll.Services
             try
             {
                 using var conn = SqliteConnectionFactory.CreateOpenConnection();
-                using var cmd  = conn.CreateCommand();
-                cmd.CommandText = @"
-                    UPDATE inventory_items
-                    SET    Quantity   = Quantity + @delta,
-                           UpdatedAt = datetime('now')
-                    WHERE  Id = @id;
 
-                    SELECT Quantity FROM inventory_items WHERE Id = @id;";
-                cmd.Parameters.AddWithValue("@delta", delta);
-                cmd.Parameters.AddWithValue("@id",    itemId);
-                var result = cmd.ExecuteScalar();
+                // BUG 4 FIX: SQLite's ExecuteScalar() returns null for an UPDATE because
+                // UPDATE produces no result set. Split into two separate commands so the
+                // SELECT actually executes.
+                // BUG 25 FIX: when delta is negative (a deduction), only apply it if
+                // sufficient stock remains. This prevents Quantity going below zero.
+                using (var updateCmd = conn.CreateCommand())
+                {
+                    updateCmd.CommandText = delta >= 0
+                        ? @"UPDATE inventory_items
+                            SET    Quantity   = Quantity + @delta,
+                                   UpdatedAt = datetime('now')
+                            WHERE  Id = @id;"
+                        : @"UPDATE inventory_items
+                            SET    Quantity   = Quantity + @delta,
+                                   UpdatedAt = datetime('now')
+                            WHERE  Id = @id AND Quantity >= @absDelta;";
+                    updateCmd.Parameters.AddWithValue("@delta", delta);
+                    updateCmd.Parameters.AddWithValue("@id",    itemId);
+                    if (delta < 0)
+                        updateCmd.Parameters.AddWithValue("@absDelta", Math.Abs(delta));
+                    updateCmd.ExecuteNonQuery();
+                }
+
+                using var selectCmd = conn.CreateCommand();
+                selectCmd.CommandText = "SELECT Quantity FROM inventory_items WHERE Id = @id;";
+                selectCmd.Parameters.AddWithValue("@id", itemId);
+                var result = selectCmd.ExecuteScalar();
                 return result is null ? -1 : Convert.ToInt32(result);
             }
             catch (Exception ex)

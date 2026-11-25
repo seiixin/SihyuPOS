@@ -41,6 +41,7 @@ namespace SihyuPOSPayroll.Data
                 CreateTables(conn);
                 SeedRoles(conn);
                 SeedDefaultAdmin(conn);
+                SeedDefaultTestUsers(conn);
                 SeedSettings(conn);
                 _initialized = true;
                 Debug.WriteLine("[Schema] All tables ensured.");
@@ -63,8 +64,10 @@ namespace SihyuPOSPayroll.Data
             ExecuteSql(conn, MenuTables,      "Menu");
             ExecuteSql(conn, POSTables,       "POS");
             ExecuteSql(conn, SettingsTables,  "Settings");
+            ExecuteSql(conn, HRTables,        "HR");
             MigrateOrderTypeColumn(conn);
             MigrateRolePermissionsTable(conn);
+            MigrateAttendanceDropUnique(conn);
         }
 
         private static void ExecuteSql(SqliteConnection conn, string sql, string label)
@@ -332,6 +335,106 @@ namespace SihyuPOSPayroll.Data
             CREATE INDEX IF NOT EXISTS idx_rec_issued  ON receipts(issued_at);
         ";
 
+        // ── HR (Attendance, Payroll, Leave) ───────────────────────────────────
+
+        private const string HRTables = @"
+            -- ── attendance ────────────────────────────────────────────────────
+            -- Multiple entries per day are allowed so employees can clock in/out
+            -- multiple times (e.g. break periods). No UNIQUE constraint on (employee_id, date).
+            CREATE TABLE IF NOT EXISTS attendance (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                employee_id INTEGER NOT NULL,
+                date        TEXT    NOT NULL,              -- 'YYYY-MM-DD'
+                time_in     TEXT,                          -- 'HH:MM:SS' or null
+                time_out    TEXT,                          -- 'HH:MM:SS' or null
+                status      TEXT,                          -- 'Clocked In' | 'Present' | etc.
+                created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
+                FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_att_employee ON attendance(employee_id);
+            CREATE INDEX IF NOT EXISTS idx_att_date     ON attendance(date);
+
+            -- ── payroll ────────────────────────────────────────────────────────
+            CREATE TABLE IF NOT EXISTS payroll (
+                id                   INTEGER PRIMARY KEY AUTOINCREMENT,
+                employee_id          INTEGER NOT NULL,
+                start_date           TEXT    NOT NULL,
+                end_date             TEXT    NOT NULL,
+                total_days_worked    INTEGER NOT NULL DEFAULT 0,
+                gross_salary         REAL    NOT NULL DEFAULT 0,
+                sss_deduction        REAL    NOT NULL DEFAULT 0,
+                philhealth_deduction REAL    NOT NULL DEFAULT 0,
+                pagibig_deduction    REAL    NOT NULL DEFAULT 0,
+                other_deductions     REAL    NOT NULL DEFAULT 0,
+                bonus                REAL    NOT NULL DEFAULT 0,
+                net_salary           REAL    NOT NULL DEFAULT 0,
+                branch_name          TEXT,
+                shift_type           TEXT,
+                created_at           TEXT    NOT NULL DEFAULT (datetime('now')),
+                FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_pay_employee ON payroll(employee_id);
+            CREATE INDEX IF NOT EXISTS idx_pay_period   ON payroll(start_date, end_date);
+
+            -- ── leave_requests ─────────────────────────────────────────────────
+            CREATE TABLE IF NOT EXISTS leave_requests (
+                id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                employee_id  INTEGER NOT NULL,
+                leave_type   TEXT    NOT NULL,
+                reason       TEXT,
+                date_from    TEXT    NOT NULL,              -- 'YYYY-MM-DD'
+                date_to      TEXT    NOT NULL,              -- 'YYYY-MM-DD'
+                half_day     INTEGER NOT NULL DEFAULT 0,    -- 0 = false, 1 = true
+                status       TEXT    NOT NULL DEFAULT 'Pending',
+                approver_id  INTEGER,
+                approved_at  TEXT,
+                created_at   TEXT    NOT NULL DEFAULT (datetime('now')),
+                updated_at   TEXT,
+                FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE,
+                FOREIGN KEY (approver_id) REFERENCES users(id)     ON DELETE SET NULL
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_lr_employee ON leave_requests(employee_id);
+            CREATE INDEX IF NOT EXISTS idx_lr_status   ON leave_requests(status);
+            CREATE INDEX IF NOT EXISTS idx_lr_dates    ON leave_requests(date_from, date_to);
+
+            -- ── PayslipRequests ────────────────────────────────────────────────
+            CREATE TABLE IF NOT EXISTS PayslipRequests (
+                Id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                EmployeeId  INTEGER NOT NULL,
+                PayrollId   INTEGER,
+                FullName    TEXT    NOT NULL DEFAULT '',
+                RequestDate TEXT    NOT NULL DEFAULT (datetime('now')),
+                Status      TEXT    NOT NULL DEFAULT 'Pending',
+                Reason      TEXT,
+                UpdatedDate TEXT,
+                FOREIGN KEY (EmployeeId) REFERENCES employees(id) ON DELETE CASCADE,
+                FOREIGN KEY (PayrollId)  REFERENCES payroll(id)   ON DELETE SET NULL
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_pr_employee ON PayslipRequests(EmployeeId);
+            CREATE INDEX IF NOT EXISTS idx_pr_status   ON PayslipRequests(Status);
+
+            -- ── Payslips ───────────────────────────────────────────────────────
+            CREATE TABLE IF NOT EXISTS Payslips (
+                PayslipId   INTEGER PRIMARY KEY AUTOINCREMENT,
+                EmployeeId  INTEGER NOT NULL,
+                PayDate     TEXT    NOT NULL,
+                HoursWorked REAL    NOT NULL DEFAULT 0,
+                RatePerHour REAL    NOT NULL DEFAULT 0,
+                Deductions  REAL    NOT NULL DEFAULT 0,
+                NetSalary   REAL    NOT NULL DEFAULT 0,
+                UpdatedDate TEXT,
+                UNIQUE (EmployeeId, PayDate),
+                FOREIGN KEY (EmployeeId) REFERENCES employees(id) ON DELETE CASCADE
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_ps_employee ON Payslips(EmployeeId);
+            CREATE INDEX IF NOT EXISTS idx_ps_paydate  ON Payslips(PayDate);
+        ";
+
         /// <summary>
         /// Adds the order_type column to orders if it doesn't exist yet.
         /// SQLite has no ALTER TABLE ... ADD COLUMN IF NOT EXISTS, so we attempt
@@ -352,8 +455,56 @@ namespace SihyuPOSPayroll.Data
             }
         }
 
-        // ── Seed data ─────────────────────────────────────────────────────────
+        // ── Migrations ────────────────────────────────────────────────────────
 
+        /// <summary>
+        /// Removes the UNIQUE(employee_id, date) constraint from the attendance table
+        /// so multiple clock-in/out entries per day are allowed.
+        /// SQLite can't DROP CONSTRAINT, so we recreate the table without it.
+        /// Safe to run repeatedly — checks the CREATE TABLE SQL first.
+        /// </summary>
+        private static void MigrateAttendanceDropUnique(SqliteConnection conn)
+        {
+            try
+            {
+                using var checkCmd = conn.CreateCommand();
+                checkCmd.CommandText = @"
+                    SELECT COUNT(*) FROM sqlite_master
+                    WHERE  type = 'table' AND name = 'attendance'
+                      AND  sql LIKE '%UNIQUE (employee_id, date)%';";
+                var hasUnique = Convert.ToInt32(checkCmd.ExecuteScalar()) > 0;
+                if (!hasUnique) return;
+
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = @"
+                    ALTER TABLE attendance RENAME TO attendance_old;
+
+                    CREATE TABLE attendance (
+                        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                        employee_id INTEGER NOT NULL,
+                        date        TEXT    NOT NULL,
+                        time_in     TEXT,
+                        time_out    TEXT,
+                        status      TEXT,
+                        created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+                        FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE
+                    );
+
+                    INSERT INTO attendance (id, employee_id, date, time_in, time_out, status, created_at)
+                    SELECT id, employee_id, date, time_in, time_out, status, created_at
+                    FROM   attendance_old;
+
+                    DROP TABLE attendance_old;";
+                cmd.ExecuteNonQuery();
+                Debug.WriteLine("[Schema] attendance UNIQUE constraint removed.");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[Schema] MigrateAttendanceDropUnique: {ex.Message}");
+            }
+        }
+
+        // ── Seed data ─────────────────────────────────────────────────────────
         private static void SeedRoles(SqliteConnection conn)
         {
             const string sql = @"
@@ -435,27 +586,75 @@ namespace SihyuPOSPayroll.Data
         }
 
         /// <summary>
-        /// Seeds a default Admin account only when the users table is empty.
+        /// Seeds a default Admin account when no active admin exists.
+        ///
+        /// BUG 24 FIX: previously only seeded on an empty users table, so deleting
+        /// the last admin left the app with no way to log in. Now also re-seeds
+        /// when the table has users but none has role='Admin' and is_active=1.
+        ///
         /// Credentials: admin@sihyupos.com / admin123
         /// </summary>
         private static void SeedDefaultAdmin(SqliteConnection conn)
         {
-            using var countCmd = conn.CreateCommand();
-            countCmd.CommandText = "SELECT COUNT(*) FROM users;";
-            var count = Convert.ToInt64(countCmd.ExecuteScalar() ?? 0L);
-            if (count > 0) return;
+            // If any active admin already exists, nothing to do.
+            using var adminCheckCmd = conn.CreateCommand();
+            adminCheckCmd.CommandText =
+                "SELECT COUNT(*) FROM users WHERE role = 'Admin' AND is_active = 1;";
+            var activeAdminCount = Convert.ToInt64(adminCheckCmd.ExecuteScalar() ?? 0L);
+            if (activeAdminCount > 0) return;
 
             var hash = BCrypt.Net.BCrypt.HashPassword("admin123", workFactor: 12);
 
+            // INSERT OR IGNORE ensures we don't violate the UNIQUE email constraint if
+            // the account already exists (e.g. deactivated). The UPDATE re-activates it.
             using var insertCmd = conn.CreateCommand();
             insertCmd.CommandText = @"
-                INSERT INTO users (email, password, role, is_active, created_at)
-                VALUES (@email, @password, 'Admin', 1, datetime('now'));";
+                INSERT OR IGNORE INTO users (email, password, role, is_active, created_at)
+                VALUES (@email, @password, 'Admin', 1, datetime('now'));
+
+                UPDATE users
+                SET    is_active = 1,
+                       role      = 'Admin',
+                       password  = @password
+                WHERE  email = @email;";
             insertCmd.Parameters.AddWithValue("@email",    "admin@sihyupos.com");
             insertCmd.Parameters.AddWithValue("@password", hash);
             insertCmd.ExecuteNonQuery();
 
-            Debug.WriteLine("[Schema] Default admin seeded: admin@sihyupos.com");
+            Debug.WriteLine("[Schema] Default admin seeded/recovered: admin@sihyupos.com");
+        }
+
+        /// <summary>Seeds one default Cashier and one default Employee account for testing.</summary>
+        private static void SeedDefaultTestUsers(SqliteConnection conn)
+        {
+            var accounts = new[]
+            {
+                (Email: "cashier@sihyupos.com", Password: "cashier123", Role: "Cashier"),
+                (Email: "employee@sihyupos.com", Password: "employee123", Role: "Employee"),
+            };
+
+            foreach (var (email, password, role) in accounts)
+            {
+                // Skip if this email already exists (idempotent).
+                using var checkCmd = conn.CreateCommand();
+                checkCmd.CommandText = "SELECT COUNT(*) FROM users WHERE email = @email;";
+                checkCmd.Parameters.AddWithValue("@email", email);
+                var exists = Convert.ToInt64(checkCmd.ExecuteScalar() ?? 0L) > 0;
+                if (exists) continue;
+
+                var hash = BCrypt.Net.BCrypt.HashPassword(password, workFactor: 12);
+
+                using var insertCmd = conn.CreateCommand();
+                insertCmd.CommandText = @"
+                    INSERT INTO users (email, password, role, is_active, created_at)
+                    VALUES (@email, @password, @role, 1, datetime('now'));";
+                insertCmd.Parameters.AddWithValue("@email",    email);
+                insertCmd.Parameters.AddWithValue("@password", hash);
+                insertCmd.Parameters.AddWithValue("@role",     role);
+                insertCmd.ExecuteNonQuery();
+
+                Debug.WriteLine($"[Schema] Default {role} seeded: {email}");
+            }
         }
 
         /// <summary>Seeds SystemMode and all 13 default module visibility rows.</summary>

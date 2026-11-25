@@ -198,8 +198,18 @@ namespace SihyuPOSPayroll.Services
                 using var conn = SqliteConnectionFactory.CreateOpenConnection();
                 using var tx   = conn.BeginTransaction();
 
+                // BUG 23 FIX: deactivate the linked user account BEFORE unlinking,
+                // so a dismissed employee can no longer log in.
+                using (var deactivateCmd = conn.CreateCommand())
+                {
+                    deactivateCmd.Transaction = tx;
+                    deactivateCmd.CommandText = "UPDATE users SET is_active = 0 WHERE employee_id = @eid;";
+                    deactivateCmd.Parameters.AddWithValue("@eid", employeeId);
+                    deactivateCmd.ExecuteNonQuery();
+                }
+
                 // FK ON DELETE CASCADE handles login_sessions; users FK is ON DELETE SET NULL.
-                // Explicitly nullify the user's employee_id link first.
+                // Explicitly nullify the user's employee_id link after deactivating.
                 using (var unlinkCmd = conn.CreateCommand())
                 {
                     unlinkCmd.Transaction  = tx;

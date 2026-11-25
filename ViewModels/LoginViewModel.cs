@@ -149,10 +149,13 @@ namespace SihyuPOSPayroll.ViewModels
 
             // Stamp the session as logged-out if the user simply closes the dashboard window
             // (covers the case where logout is not triggered through the sidebar button).
+            // BUG 18 FIX: also dispose the SidebarViewModel to unsubscribe the SettingsChanged
+            // event handler and prevent memory leaks across multiple login/logout cycles.
             window.Closed += (_, __) =>
             {
                 if (Session.IsLoggedIn)
                     _authService.Logout();
+                (mainLayout.DataContext as IDisposable)?.Dispose();
             };
 
             window.Show();
@@ -161,9 +164,13 @@ namespace SihyuPOSPayroll.ViewModels
             if (loginWindowParam is Window loginWindow)
                 loginWindow.Close();
 
+            // BUG 8 FIX: use Math.Min so a token shorter than 8 chars never throws
+            // ArgumentOutOfRangeException.
+            var tokenPreview = Session.ActiveToken is { } t
+                ? t[..Math.Min(8, t.Length)]
+                : "(none)";
             System.Diagnostics.Debug.WriteLine(
-                $"[Login] OK — userId={user.Id}, role={user.Role}, " +
-                $"token={Session.ActiveToken?[..8]}…");
+                $"[Login] OK — userId={user.Id}, role={user.Role}, token={tokenPreview}…");
         }
 
         // ── INotifyPropertyChanged ────────────────────────────────────────────

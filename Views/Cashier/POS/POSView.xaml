@@ -1,10 +1,10 @@
-<UserControl
+﻿<UserControl
     x:Class="SihyuPOSPayroll.Views.Cashier.POS.POSView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:helpers="clr-namespace:SihyuPOSPayroll.Helpers"
     xmlns:components="clr-namespace:SihyuPOSPayroll.Views.Components"
-    Background="#000000">
+    >
 
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
@@ -36,10 +36,10 @@
         </Grid.RowDefinitions>
 
         <!-- ── Page Header ── -->
-        <Border BorderBrush="#072219" BorderThickness="0,0,0,1"
+        <Border BorderBrush="#D1FAE5" BorderThickness="0,0,0,1"
                 Margin="0,0,0,20" Padding="0,0,0,14">
             <TextBlock Text="POS Panel"
-                       FontSize="26" FontWeight="Bold" Foreground="#477C60"/>
+                       FontSize="26" FontWeight="Bold" Foreground="#15803D"/>
         </Border>
 
         <!-- ── Main two-column layout ── -->
@@ -69,27 +69,27 @@
                     </Grid.ColumnDefinitions>
 
                     <Border Grid.Column="0"
-                            Background="#090B17"
+                            Background="#F7FCFA"
                             CornerRadius="8"
-                            BorderBrush="#0D1117"
+                            BorderBrush="#EBF7F1"
                             BorderThickness="1">
                         <Grid>
                             <TextBlock Text="&#xE943;"
                                        FontFamily="Segoe MDL2 Assets"
                                        FontSize="13"
-                                       Foreground="#477C60"
+                                       Foreground="#15803D"
                                        VerticalAlignment="Center"
                                        HorizontalAlignment="Left"
                                        Margin="12,0,0,0"/>
                             <TextBox x:Name="BarcodeBox"
                                      Background="Transparent"
                                      BorderThickness="0"
-                                     Foreground="#F3F4F6"
+                                     Foreground="#111827"
                                      Padding="34,10,10,10"
                                      KeyDown="BarcodeBox_KeyDown"
                                      TextChanged="BarcodeBox_TextChanged"/>
                             <TextBlock Text="Scan or type barcode…"
-                                       Foreground="#6B7280"
+                                       Foreground="#4B6358"
                                        Margin="36,0,0,0"
                                        VerticalAlignment="Center"
                                        IsHitTestVisible="False"
@@ -121,14 +121,14 @@
                                 </EventTrigger>
                             </Border.Triggers>
                             <Ellipse Width="20" Height="20"
-                                     Stroke="#477C60"
+                                     Stroke="#15803D"
                                      StrokeThickness="2.5"
                                      StrokeDashArray="5,3"/>
                         </Border>
 
                         <TextBlock x:Name="BarcodeFeedback"
                                    Text=""
-                                   Foreground="#477C60"
+                                   Foreground="#15803D"
                                    VerticalAlignment="Center"
                                    Margin="0,0,12,0"
                                    FontWeight="Medium"
@@ -149,26 +149,26 @@
                     </Grid.ColumnDefinitions>
 
                     <!-- Search box -->
-                    <Border Background="#090B17"
+                    <Border Background="#F7FCFA"
                             CornerRadius="8"
-                            BorderBrush="#1A1D2E"
+                            BorderBrush="#A5D6BE"
                             BorderThickness="1">
                         <Grid>
                             <TextBlock Text="&#xE721;"
                                        FontFamily="Segoe MDL2 Assets"
                                        FontSize="13"
-                                       Foreground="#6B7280"
+                                       Foreground="#4B6358"
                                        VerticalAlignment="Center"
                                        HorizontalAlignment="Left"
                                        Margin="12,0,0,0"/>
                             <TextBox x:Name="SearchBox"
                                      Background="Transparent"
                                      BorderThickness="0"
-                                     Foreground="#F3F4F6"
+                                     Foreground="#111827"
                                      Padding="34,10,10,10"
                                      TextChanged="SearchBox_TextChanged"/>
                             <TextBlock Text="Search products…"
-                                       Foreground="#6B7280"
+                                       Foreground="#4B6358"
                                        Margin="36,0,0,0"
                                        VerticalAlignment="Center"
                                        IsHitTestVisible="False"
@@ -214,9 +214,9 @@
                                         <ControlTemplate TargetType="Button">
                                             <Border x:Name="CardBorder"
                                                     Width="148"
-                                                    Background="#090B17"
+                                                    Background="#F7FCFA"
                                                     CornerRadius="12"
-                                                    BorderBrush="#1A1D2E"
+                                                    BorderBrush="#A5D6BE"
                                                     BorderThickness="1"
                                                     Padding="0,0,0,12">
                                                 <StackPanel>
@@ -224,18 +224,18 @@
                                                     <Border CornerRadius="12,12,0,0"
                                                             Height="100"
                                                             ClipToBounds="True"
-                                                            Background="#0D0F1A">
+                                                            Background="#EBF7F1">
                                                         <Grid>
                                                             <!-- Placeholder icon -->
                                                             <Border Width="52" Height="52"
                                                                     CornerRadius="26"
-                                                                    Background="#072219"
+                                                                    Background="#D1FAE5"
                                                                     HorizontalAlignment="Center"
                                                                     VerticalAlignment="Center">
                                                                 <TextBlock Text="&#xE8B9;"
                                                                            FontFamily="Segoe MDL2 Assets"
                                                                            FontSize="22"
-                                                                           Foreground="#128854"
+                                                                           Foreground="#15803D"
                                                                            HorizontalAlignment="Center"
                                                                            VerticalAlignment="Center"/>
                                                             </Border>
@@ -260,7 +260,7 @@
 
                                                     <!-- Name -->
                                                     <TextBlock Text="{Binding Name}"
-                                                               Foreground="#F3F4F6"
+                                                               Foreground="#111827"
                                                                FontSize="13"
                                                                FontWeight="SemiBold"
                                                                TextWrapping="Wrap"
@@ -276,7 +276,7 @@
                                                         </Grid.ColumnDefinitions>
 
                                                         <TextBlock Text="{Binding Price, StringFormat=₱{0:N2}}"
-                                                                   Foreground="#10B981"
+                                                                   Foreground="#15803D"
                                                                    FontSize="14"
                                                                    FontWeight="Bold"
                                                                    VerticalAlignment="Center"/>
@@ -286,13 +286,11 @@
                                                                 x:Name="PlusBadge"
                                                                 Width="32" Height="32"
                                                                 CornerRadius="16"
-                                                                Background="#10B981">
+                                                                Background="#15803D">
                                                             <TextBlock Text="+"
                                                                        FontSize="18"
                                                                        FontWeight="Bold"
-                                                                       Foreground="#000000"
-                                                                       HorizontalAlignment="Center"
-                                                                       VerticalAlignment="Center"/>
+                                                                       Foreground="#F7FCFA" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                         </Border>
                                                     </Grid>
                                                 </StackPanel>
@@ -301,14 +299,14 @@
                                             <!-- Hover / press visual triggers -->
                                             <ControlTemplate.Triggers>
                                                 <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter TargetName="CardBorder" Property="BorderBrush" Value="#10B981"/>
-                                                    <Setter TargetName="CardBorder" Property="Background" Value="#0D1220"/>
-                                                    <Setter TargetName="PlusBadge"  Property="Background" Value="#128854"/>
+                                                    <Setter TargetName="CardBorder" Property="BorderBrush" Value="#15803D"/>
+                                                    <Setter TargetName="CardBorder" Property="Background" Value="#DDF2E8"/>
+                                                    <Setter TargetName="PlusBadge"  Property="Background" Value="#15803D"/>
                                                 </Trigger>
                                                 <Trigger Property="IsPressed" Value="True">
-                                                    <Setter TargetName="CardBorder" Property="Background" Value="#0A1A18"/>
-                                                    <Setter TargetName="CardBorder" Property="BorderBrush" Value="#128854"/>
-                                                    <Setter TargetName="PlusBadge"  Property="Background" Value="#0D6B43"/>
+                                                    <Setter TargetName="CardBorder" Property="Background" Value="#D1FAE5"/>
+                                                    <Setter TargetName="CardBorder" Property="BorderBrush" Value="#15803D"/>
+                                                    <Setter TargetName="PlusBadge"  Property="Background" Value="#FF4F8A"/>
                                                 </Trigger>
                                             </ControlTemplate.Triggers>
                                         </ControlTemplate>
@@ -333,7 +331,7 @@
 
                 <!-- Order header -->
                 <Border Grid.Row="0"
-                        Background="#090B17"
+                        Background="#F7FCFA"
                         CornerRadius="10,10,0,0"
                         Padding="16,14">
                     <Grid>
@@ -343,14 +341,14 @@
 
                         <TextBlock Text="Current Order"
                                    FontSize="17" FontWeight="Bold"
-                                   Foreground="#F3F4F6"
+                                   Foreground="#111827"
                                    VerticalAlignment="Center"/>
 
                         <!-- Payment (hidden in POS) -->
                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center"
                                     Visibility="Collapsed">
                             <TextBlock Text="Payment:"
-                                       Foreground="#6B7280" FontSize="12"
+                                       Foreground="#4B6358" FontSize="12"
                                        VerticalAlignment="Center" Margin="0,0,6,0"/>
                             <ComboBox Width="105"
                                       ItemsSource="{Binding PaymentStatuses}"
@@ -361,7 +359,7 @@
                         <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center"
                                     Visibility="Collapsed">
                             <TextBlock Text="Status:"
-                                       Foreground="#6B7280" FontSize="12"
+                                       Foreground="#4B6358" FontSize="12"
                                        VerticalAlignment="Center" Margin="0,0,6,0"/>
                             <ComboBox Width="120"
                                       ItemsSource="{Binding OrderStatuses}"
@@ -371,7 +369,7 @@
                 </Border>
 
                 <!-- Order items DataGrid -->
-                <Border Grid.Row="1" Background="#090B17">
+                <Border Grid.Row="1" Background="#F7FCFA">
                     <DataGrid x:Name="ItemsGrid"
                               ItemsSource="{Binding EditingItems}"
                               AutoGenerateColumns="False"
@@ -381,18 +379,18 @@
                               Background="Transparent"
                               BorderThickness="0"
                               GridLinesVisibility="Horizontal"
-                              HorizontalGridLinesBrush="#0F1220"
+                              HorizontalGridLinesBrush="#DDF2E8"
                               ColumnHeaderHeight="40"
                               RowHeight="52"
                               CellEditEnding="ItemsGrid_CellEditEnding">
                         <DataGrid.Resources>
                             <Style TargetType="DataGridColumnHeader">
-                                <Setter Property="Background" Value="#0D1117"/>
-                                <Setter Property="Foreground" Value="#6B7280"/>
+                                <Setter Property="Background" Value="#EBF7F1"/>
+                                <Setter Property="Foreground" Value="#4B6358"/>
                                 <Setter Property="FontWeight" Value="SemiBold"/>
                                 <Setter Property="FontSize" Value="11"/>
                                 <Setter Property="Padding" Value="12,8"/>
-                                <Setter Property="BorderBrush" Value="#0F1220"/>
+                                <Setter Property="BorderBrush" Value="#DDF2E8"/>
                                 <Setter Property="BorderThickness" Value="0,0,0,1"/>
                                 <Setter Property="HorizontalContentAlignment" Value="Left"/>
                             </Style>
@@ -404,10 +402,10 @@
                                     <DataTemplate>
                                         <StackPanel Margin="8,0">
                                             <TextBlock Text="{Binding ProductName}"
-                                                       Foreground="#F3F4F6"
+                                                       Foreground="#111827"
                                                        FontSize="13" FontWeight="SemiBold"/>
                                             <TextBlock Text="{Binding UnitPrice, StringFormat=₱{0:N2} each}"
-                                                       Foreground="#6B7280"
+                                                       Foreground="#4B6358"
                                                        FontSize="11"/>
                                         </StackPanel>
                                     </DataTemplate>
@@ -433,27 +431,27 @@
                                             <Button Content="−"
                                                     Width="24" Height="24"
                                                     FontSize="14" FontWeight="Bold"
-                                                    Foreground="#F3F4F6"
+                                                    Foreground="#111827"
                                                     Cursor="Hand"
                                                     Click="DecrQty_Click">
                                                 <Button.Template>
                                                     <ControlTemplate TargetType="Button">
                                                         <Border x:Name="Bg" CornerRadius="12"
-                                                                Background="#1A1D2E"
+                                                                Background="#A5D6BE"
                                                                 Width="24" Height="24">
                                                             <ContentPresenter HorizontalAlignment="Center"
                                                                               VerticalAlignment="Center"/>
                                                         </Border>
                                                         <ControlTemplate.Triggers>
                                                             <Trigger Property="IsMouseOver" Value="True">
-                                                                <Setter TargetName="Bg" Property="Background" Value="#272A3A"/>
+                                                                <Setter TargetName="Bg" Property="Background" Value="#EDE9F8"/>
                                                             </Trigger>
                                                         </ControlTemplate.Triggers>
                                                     </ControlTemplate>
                                                 </Button.Template>
                                             </Button>
                                             <TextBlock Text="{Binding Quantity}"
-                                                       Foreground="#F3F4F6"
+                                                       Foreground="#111827"
                                                        FontSize="14" FontWeight="SemiBold"
                                                        Width="28"
                                                        TextAlignment="Center"
@@ -461,20 +459,20 @@
                                             <Button Content="+"
                                                     Width="24" Height="24"
                                                     FontSize="14" FontWeight="Bold"
-                                                    Foreground="#000000"
+                                                    Foreground="#F7FCFA"
                                                     Cursor="Hand"
                                                     Click="IncrQty_Click">
                                                 <Button.Template>
                                                     <ControlTemplate TargetType="Button">
                                                         <Border x:Name="Bg" CornerRadius="12"
-                                                                Background="#10B981"
+                                                                Background="#15803D"
                                                                 Width="24" Height="24">
                                                             <ContentPresenter HorizontalAlignment="Center"
                                                                               VerticalAlignment="Center"/>
                                                         </Border>
                                                         <ControlTemplate.Triggers>
                                                             <Trigger Property="IsMouseOver" Value="True">
-                                                                <Setter TargetName="Bg" Property="Background" Value="#128854"/>
+                                                                <Setter TargetName="Bg" Property="Background" Value="#15803D"/>
                                                             </Trigger>
                                                         </ControlTemplate.Triggers>
                                                     </ControlTemplate>
@@ -498,7 +496,7 @@
                                                 Click="RemoveLine_Click"
                                                 Cursor="Hand"
                                                 FontSize="12"
-                                                Foreground="#6B7280"
+                                                Foreground="#4B6358"
                                                 Width="28" Height="28">
                                             <Button.Template>
                                                 <ControlTemplate TargetType="Button">
@@ -509,7 +507,7 @@
                                                     </Border>
                                                     <ControlTemplate.Triggers>
                                                         <Trigger Property="IsMouseOver" Value="True">
-                                                            <Setter TargetName="Bg" Property="Background" Value="#331A1A"/>
+                                                            <Setter TargetName="Bg" Property="Background" Value="#D1FAE5"/>
                                                             <Setter Property="Foreground" Value="#EF4444"/>
                                                         </Trigger>
                                                     </ControlTemplate.Triggers>
@@ -525,9 +523,9 @@
 
                 <!-- Total summary bar -->
                 <Border Grid.Row="2"
-                        Background="#0D1117"
+                        Background="#EBF7F1"
                         Padding="16,12"
-                        BorderBrush="#072219"
+                        BorderBrush="#D1FAE5"
                         BorderThickness="0,1,0,0">
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -535,12 +533,12 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="Total"
-                                   Foreground="#9CA3AF"
+                                   Foreground="#4B6358"
                                    FontSize="15" FontWeight="SemiBold"
                                    VerticalAlignment="Center"/>
                         <TextBlock Grid.Column="1"
                                    Text="{Binding EditingOrder.TotalAmount, StringFormat=₱{0:N2}}"
-                                   Foreground="#10B981"
+                                   Foreground="#15803D"
                                    FontSize="22" FontWeight="Bold"
                                    VerticalAlignment="Center"/>
                     </Grid>
@@ -548,10 +546,10 @@
 
                 <!-- Footer: Order Type + action buttons -->
                 <Border Grid.Row="3"
-                        Background="#090B17"
+                        Background="#F7FCFA"
                         CornerRadius="0,0,10,10"
                         Padding="16,12"
-                        BorderBrush="#0F1220"
+                        BorderBrush="#DDF2E8"
                         BorderThickness="0,1,0,0">
                     <DockPanel LastChildFill="False">
 
@@ -562,16 +560,16 @@
                                     Visibility="{Binding IsOrderTypeRequired, Converter={StaticResource BoolToVisibilityConverter}}"
                                     Margin="0,0,16,0">
                             <TextBlock Text="Order Type:"
-                                       Foreground="#9CA3AF"
+                                       Foreground="#4B6358"
                                        VerticalAlignment="Center"
                                        Margin="0,0,10,0"/>
                             <RadioButton Content="Dine-In"
-                                         Foreground="#F3F4F6"
+                                         Foreground="#111827"
                                          Margin="0,0,10,0"
                                          GroupName="OrderType"
                                          IsChecked="{Binding SelectedOrderType, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=DineIn}"/>
                             <RadioButton Content="Take-Out"
-                                         Foreground="#F3F4F6"
+                                         Foreground="#111827"
                                          Margin="0,0,16,0"
                                          GroupName="OrderType"
                                          IsChecked="{Binding SelectedOrderType, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=TakeOut}"/>
@@ -611,7 +609,7 @@
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                     <TextBlock Text="Settle Payment"
                                                FontSize="13" FontWeight="SemiBold"
-                                               Foreground="#000000" VerticalAlignment="Center"/>
+                                               Foreground="#DDF2E8" VerticalAlignment="Center"/>
                                     <Border Background="#005533" CornerRadius="3"
                                             Padding="4,1" Margin="7,0,0,0" VerticalAlignment="Center">
                                         <TextBlock Text="F3"

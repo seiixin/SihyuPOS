@@ -439,6 +439,12 @@ namespace SihyuPOSPayroll.Views.Cashier.POS
                 return;
             }
 
+            // BUG 17 FIX: guard against EditingOrder being null before dereferencing.
+            if (Vm.EditingOrder == null)
+            {
+                Vm.BeginAdd();
+            }
+
             // Freeze the order type before opening the modal
             Vm.EditingOrder!.OrderType = Vm.SelectedOrderType;
             Vm.RecalcEditingTotal();

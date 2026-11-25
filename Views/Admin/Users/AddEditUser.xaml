@@ -1,4 +1,4 @@
-<UserControl
+﻿<UserControl
     x:Class="SihyuPOSPayroll.Views.Admin.Users.AddEditUser"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -7,14 +7,14 @@
     mc:Ignorable="d"
     d:DesignWidth="520" d:DesignHeight="520">
 
-    <Border Background="#090B17"
-            BorderBrush="#1A1D2E"
+    <Border Background="#F7FCFA"
+            BorderBrush="#A5D6BE"
             BorderThickness="1"
             CornerRadius="14"
             Width="460"
             Padding="32,28">
         <Border.Effect>
-            <DropShadowEffect BlurRadius="40" Color="#000000" ShadowDepth="0" Opacity="0.70"/>
+            <DropShadowEffect BlurRadius="40" Color="#DDF2E8" ShadowDepth="0" Opacity="0.70"/>
         </Border.Effect>
 
         <StackPanel>
@@ -25,10 +25,10 @@
                     <TextBlock x:Name="TitleText"
                                Text="Add New User"
                                FontSize="20" FontWeight="Bold"
-                               Foreground="#F3F4F6"/>
+                               Foreground="#111827"/>
                     <TextBlock x:Name="SubtitleText"
                                Text="Fill in the details below to create a new account."
-                               FontSize="12" Foreground="#6B7280"
+                               FontSize="12" Foreground="#4B6358"
                                Margin="0,4,0,0" TextWrapping="Wrap"/>
                 </StackPanel>
                 <!-- Close × button -->
@@ -39,7 +39,7 @@
                         VerticalAlignment="Top"
                         Width="32" Height="32"
                         Padding="0"
-                        Foreground="#6B7280"
+                        Foreground="#4B6358"
                         Background="Transparent"
                         BorderThickness="0"
                         Cursor="Hand"
@@ -58,7 +58,7 @@
                                         </Border>
                                         <ControlTemplate.Triggers>
                                             <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter TargetName="Bd" Property="Background" Value="#1A1D2E"/>
+                                                <Setter TargetName="Bd" Property="Background" Value="#A5D6BE"/>
                                             </Trigger>
                                         </ControlTemplate.Triggers>
                                     </ControlTemplate>
@@ -71,35 +71,35 @@
 
             <!-- ── Email ──────────────────────────────────────────────────── -->
             <TextBlock Text="Email" FontSize="12" FontWeight="SemiBold"
-                       Foreground="#9CA3AF" Margin="0,0,0,6"/>
+                       Foreground="#4B6358" Margin="0,0,0,6"/>
             <Border Background="#161929" CornerRadius="8"
-                    BorderBrush="#1A1D2E" BorderThickness="1"
+                    BorderBrush="#A5D6BE" BorderThickness="1"
                     Margin="0,0,0,16">
                 <Grid>
                     <TextBlock Text="&#xE715;" FontFamily="Segoe MDL2 Assets"
-                               FontSize="13" Foreground="#6B7280"
+                               FontSize="13" Foreground="#4B6358"
                                VerticalAlignment="Center" Margin="12,0,0,0"/>
                     <TextBox x:Name="EmailTextBox"
                              Background="Transparent" BorderThickness="0"
-                             Foreground="#FFFFFF" FontSize="13"
+                             Foreground="#F7FCFA" FontSize="13"
                              Padding="34,10,10,10"
-                             CaretBrush="#477C60" SelectionBrush="#128854"/>
+                             CaretBrush="#15803D" SelectionBrush="#15803D"/>
                 </Grid>
             </Border>
 
             <!-- ── Password ───────────────────────────────────────────────── -->
             <TextBlock Text="Password" FontSize="12" FontWeight="SemiBold"
-                       Foreground="#9CA3AF" Margin="0,0,0,6"/>
+                       Foreground="#4B6358" Margin="0,0,0,6"/>
             <Border Background="#161929" CornerRadius="8"
-                    BorderBrush="#1A1D2E" BorderThickness="1"
+                    BorderBrush="#A5D6BE" BorderThickness="1"
                     Margin="0,0,0,4">
                 <Grid>
                     <TextBlock Text="&#xE72E;" FontFamily="Segoe MDL2 Assets"
-                               FontSize="13" Foreground="#6B7280"
+                               FontSize="13" Foreground="#4B6358"
                                VerticalAlignment="Center" Margin="12,0,0,0"/>
                     <PasswordBox x:Name="PasswordBox"
                                  Background="Transparent" BorderThickness="0"
-                                 Foreground="#FFFFFF" FontSize="13"
+                                 Foreground="#F7FCFA" FontSize="13"
                                  Padding="34,10,10,10"/>
                 </Grid>
             </Border>
@@ -109,28 +109,28 @@
 
             <!-- ── Role ───────────────────────────────────────────────────── -->
             <TextBlock Text="Role" FontSize="12" FontWeight="SemiBold"
-                       Foreground="#9CA3AF" Margin="0,0,0,6"/>
+                       Foreground="#4B6358" Margin="0,0,0,6"/>
             <ComboBox x:Name="RoleComboBox"
                       Height="40" Margin="0,0,0,16"
-                      Background="#0D0F1A"
-                      Foreground="#F3F4F6"
-                      BorderBrush="#1A1D2E"
+                      Background="#EBF7F1"
+                      Foreground="#111827"
+                      BorderBrush="#A5D6BE"
                       FontSize="13"/>
 
             <!-- ── Linked Employee ─────────────────────────────────────────── -->
             <TextBlock Text="Linked Employee" FontSize="12" FontWeight="SemiBold"
-                       Foreground="#9CA3AF" Margin="0,0,0,6"/>
+                       Foreground="#4B6358" Margin="0,0,0,6"/>
             <TextBlock Text="Optional — connects this login to an employee record."
                        FontSize="11" Foreground="#4B5563" Margin="0,0,0,6"/>
             <ComboBox x:Name="EmployeeComboBox"
                       Height="40" Margin="0,0,0,28"
-                      Background="#0D0F1A"
-                      Foreground="#F3F4F6"
-                      BorderBrush="#1A1D2E"
+                      Background="#EBF7F1"
+                      Foreground="#111827"
+                      BorderBrush="#A5D6BE"
                       FontSize="13"/>
 
             <!-- ── Divider ─────────────────────────────────────────────────── -->
-            <Border Height="1" Background="#1A1D2E" Margin="0,0,0,20"/>
+            <Border Height="1" Background="#A5D6BE" Margin="0,0,0,20"/>
 
             <!-- ── Action buttons ─────────────────────────────────────────── -->
             <Grid>

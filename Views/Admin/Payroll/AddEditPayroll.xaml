@@ -24,7 +24,13 @@
                           Margin="0,0,0,16"
                           DisplayMemberPath="FullName"
                           SelectedValuePath="Id"
-                          ItemsSource="{Binding Employees}"/>
+                          ItemsSource="{Binding Employees}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding FullName}" Foreground="#111827" FontSize="13"/>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
 
                 <!-- Start Date -->
                 <TextBlock Text="Start Date:" FontWeight="Bold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>

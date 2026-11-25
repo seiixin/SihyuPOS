@@ -244,7 +244,19 @@ namespace SihyuPOSPayroll.Views.Admin.Employees
 
                 if (_employeeService.AddEmployee(employee))
                 {
-                    TrySetActiveStatus(employee.Id, isActiveSelected);
+                    // BUG 20 FIX: AddEmployee sets employee.Id via last_insert_rowid()
+                    // before returning true. Assert the ID was actually assigned so a
+                    // future change to AddEmployee can't silently call TrySetActiveStatus(0).
+                    if (employee.Id <= 0)
+                    {
+                        System.Diagnostics.Debug.WriteLine(
+                            "[AddEditEmployee] Warning: AddEmployee returned true but employee.Id is still 0. " +
+                            "Active status was not set.");
+                    }
+                    else
+                    {
+                        TrySetActiveStatus(employee.Id, isActiveSelected);
+                    }
                     Close(saved: true);
                     ToastService.Success($"'{employee.FullName}' added.");
                 }

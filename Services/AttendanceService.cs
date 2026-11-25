@@ -1,6 +1,7 @@
 #nullable enable
+using Microsoft.Data.Sqlite;
+using SihyuPOSPayroll.Data;
 using SihyuPOSPayroll.Models;
-using MySql.Data.MySqlClient;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -31,274 +32,198 @@ namespace SihyuPOSPayroll.Services
 
     public sealed class AttendanceService : IAttendanceService
     {
-        private readonly string _connectionString;
+        // Constructor kept for interface compatibility; connection is always
+        // obtained from SqliteConnectionFactory so the parameter is ignored.
+        public AttendanceService(string? connectionString = null) { }
 
-        public AttendanceService(string? connectionString = null)
-        {
-            _connectionString = string.IsNullOrWhiteSpace(connectionString)
-                ? "server=localhost;user=root;password=;database=sihyu_pos;"
-                : connectionString!;
-        }
+        // ── Base query fragment ───────────────────────────────────────────────
+        private const string SelectBase = @"
+            SELECT
+                a.id, a.employee_id, a.date, a.time_in, a.time_out,
+                a.status, a.created_at,
+                e.full_name AS employee_name,
+                u.id        AS user_id
+            FROM attendance a
+            LEFT JOIN employees e ON a.employee_id = e.id
+            LEFT JOIN users     u ON u.employee_id = e.id";
+
+        // ── Read helpers ──────────────────────────────────────────────────────
 
         public List<AttendanceModel> GetAllAttendances()
         {
-            var attendances = new List<AttendanceModel>();
+            var list = new List<AttendanceModel>();
             try
             {
-                using var connection = new MySqlConnection(_connectionString);
-                connection.Open();
-                const string sql = @"
-                    SELECT 
-                        a.*,
-                        e.full_name AS employee_name,
-                        u.id AS user_id
-                    FROM attendance a
-                    LEFT JOIN employees e ON a.employee_id = e.id
-                    LEFT JOIN users u ON u.employee_id = e.id
-                    ORDER BY a.date DESC;";
-                using var cmd = new MySqlCommand(sql, connection);
-                using var reader = cmd.ExecuteReader();
-                while (reader.Read())
-                {
-                    attendances.Add(MapAttendance(reader));
-                }
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = SelectBase + " ORDER BY a.date DESC;";
+                using var r = cmd.ExecuteReader();
+                while (r.Read()) list.Add(MapAttendance(r));
             }
             catch (Exception ex)
             {
                 Console.Error.WriteLine("Error loading all attendances: " + ex.Message);
             }
-            return attendances;
+            return list;
         }
 
-        public List<AttendanceModel> GetAttendances()
-        {
-            return GetAllAttendances();
-        }
+        public List<AttendanceModel> GetAttendances() => GetAllAttendances();
 
         public List<AttendanceModel> GetAttendances(DateTime? filterDate, int? employeeId)
         {
-            var attendances = new List<AttendanceModel>();
+            var list = new List<AttendanceModel>();
             try
             {
-                using var connection = new MySqlConnection(_connectionString);
-                connection.Open();
-                
-                var sql = @"
-                    SELECT 
-                        a.*,
-                        e.full_name AS employee_name,
-                        u.id AS user_id
-                    FROM attendance a
-                    LEFT JOIN employees e ON a.employee_id = e.id
-                    LEFT JOIN users u ON u.employee_id = e.id
-                    WHERE 1=1";
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
 
-                var parameters = new List<MySqlParameter>();
-
+                var sql = SelectBase + " WHERE 1=1";
                 if (filterDate.HasValue)
                 {
                     sql += " AND a.date = @FilterDate";
-                    parameters.Add(new MySqlParameter("@FilterDate", filterDate.Value.Date));
+                    cmd.Parameters.AddWithValue("@FilterDate", filterDate.Value.Date.ToString("yyyy-MM-dd"));
                 }
-
                 if (employeeId.HasValue)
                 {
                     sql += " AND a.employee_id = @EmployeeId";
-                    parameters.Add(new MySqlParameter("@EmployeeId", employeeId.Value));
+                    cmd.Parameters.AddWithValue("@EmployeeId", employeeId.Value);
                 }
-
                 sql += " ORDER BY a.date DESC;";
+                cmd.CommandText = sql;
 
-                using var cmd = new MySqlCommand(sql, connection);
-                cmd.Parameters.AddRange(parameters.ToArray());
-                using var reader = cmd.ExecuteReader();
-                while (reader.Read())
-                {
-                    attendances.Add(MapAttendance(reader));
-                }
+                using var r = cmd.ExecuteReader();
+                while (r.Read()) list.Add(MapAttendance(r));
             }
             catch (Exception ex)
             {
                 Console.Error.WriteLine("Error loading filtered attendances: " + ex.Message);
             }
-            return attendances;
+            return list;
         }
 
         public List<AttendanceModel> GetAttendancesForEmployee(int employeeId)
-        {
-            return GetAttendancesByEmployeeId(employeeId);
-        }
+            => GetAttendancesByEmployeeId(employeeId);
 
         public List<AttendanceModel> GetAttendancesForEmployee(int employeeId, DateTime from, DateTime to)
         {
-            var attendances = new List<AttendanceModel>();
+            var list = new List<AttendanceModel>();
             try
             {
-                using var connection = new MySqlConnection(_connectionString);
-                connection.Open();
-                const string sql = @"
-                    SELECT 
-                        a.*,
-                        e.full_name AS employee_name,
-                        u.id AS user_id
-                    FROM attendance a
-                    LEFT JOIN employees e ON a.employee_id = e.id
-                    LEFT JOIN users u ON u.employee_id = e.id
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = SelectBase + @"
                     WHERE a.employee_id = @EmployeeId
-                    AND a.date BETWEEN @From AND @To
+                      AND a.date BETWEEN @From AND @To
                     ORDER BY a.date DESC;";
-                using var cmd = new MySqlCommand(sql, connection);
                 cmd.Parameters.AddWithValue("@EmployeeId", employeeId);
-                cmd.Parameters.AddWithValue("@From", from.Date);
-                cmd.Parameters.AddWithValue("@To", to.Date);
-                using var reader = cmd.ExecuteReader();
-                while (reader.Read())
-                {
-                    attendances.Add(MapAttendance(reader));
-                }
+                cmd.Parameters.AddWithValue("@From",       from.Date.ToString("yyyy-MM-dd"));
+                cmd.Parameters.AddWithValue("@To",         to.Date.ToString("yyyy-MM-dd"));
+
+                using var r = cmd.ExecuteReader();
+                while (r.Read()) list.Add(MapAttendance(r));
             }
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"Error loading attendances for employee {employeeId} in date range: " + ex.Message);
             }
-            return attendances;
+            return list;
         }
+
+        // ── Clock helpers ─────────────────────────────────────────────────────
 
         public bool ClockIn(int employeeId)
-        {
-            return ClockIn(employeeId, DateTime.Today, DateTime.Now.TimeOfDay);
-        }
+            => ClockIn(employeeId, DateTime.Today, DateTime.Now.TimeOfDay);
 
         public bool ClockIn(int employeeId, DateTime dateTime)
-        {
-            return ClockIn(employeeId, dateTime.Date, dateTime.TimeOfDay);
-        }
+            => ClockIn(employeeId, dateTime.Date, dateTime.TimeOfDay);
 
         public bool ClockOut(int employeeId)
-        {
-            return ClockOut(employeeId, DateTime.Today, DateTime.Now.TimeOfDay);
-        }
+            => ClockOut(employeeId, DateTime.Today, DateTime.Now.TimeOfDay);
 
         public bool ClockOut(int employeeId, DateTime dateTime)
-        {
-            return ClockOut(employeeId, dateTime.Date, dateTime.TimeOfDay);
-        }
+            => ClockOut(employeeId, dateTime.Date, dateTime.TimeOfDay);
 
         public int GetWorkedDaysCount(int employeeId, DateTime startDate, DateTime endDate)
         {
             try
             {
-                using var connection = new MySqlConnection(_connectionString);
-                connection.Open();
-                const string sql = @"
-                    SELECT COUNT(*) 
-                    FROM attendance 
-                    WHERE employee_id = @EmployeeId 
-                    AND date BETWEEN @StartDate AND @EndDate 
-                    AND time_in IS NOT NULL 
-                    AND time_out IS NOT NULL;";
-                using var cmd = new MySqlCommand(sql, connection);
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = @"
+                    SELECT COUNT(*)
+                    FROM   attendance
+                    WHERE  employee_id = @EmployeeId
+                      AND  date BETWEEN @StartDate AND @EndDate
+                      AND  time_in  IS NOT NULL
+                      AND  time_out IS NOT NULL;";
                 cmd.Parameters.AddWithValue("@EmployeeId", employeeId);
-                cmd.Parameters.AddWithValue("@StartDate", startDate.Date);
-                cmd.Parameters.AddWithValue("@EndDate", endDate.Date);
-                var result = cmd.ExecuteScalar();
-                return Convert.ToInt32(result ?? 0);
+                cmd.Parameters.AddWithValue("@StartDate",  startDate.Date.ToString("yyyy-MM-dd"));
+                cmd.Parameters.AddWithValue("@EndDate",    endDate.Date.ToString("yyyy-MM-dd"));
+                return Convert.ToInt32(cmd.ExecuteScalar() ?? 0);
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"Error getting worked days count: " + ex.Message);
+                Console.Error.WriteLine("Error getting worked days count: " + ex.Message);
                 return 0;
             }
         }
 
         public List<AttendanceModel> GetAttendancesByEmployeeId(int employeeId)
         {
-            var attendances = new List<AttendanceModel>();
+            var list = new List<AttendanceModel>();
             try
             {
-                using var connection = new MySqlConnection(_connectionString);
-                connection.Open();
-                const string sql = @"
-                    SELECT 
-                        a.*,
-                        e.full_name AS employee_name,
-                        u.id AS user_id
-                    FROM attendance a
-                    LEFT JOIN employees e ON a.employee_id = e.id
-                    LEFT JOIN users u ON u.employee_id = e.id
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = SelectBase + @"
                     WHERE a.employee_id = @EmployeeId
                     ORDER BY a.date DESC;";
-                using var cmd = new MySqlCommand(sql, connection);
                 cmd.Parameters.AddWithValue("@EmployeeId", employeeId);
-                using var reader = cmd.ExecuteReader();
-                while (reader.Read())
-                {
-                    attendances.Add(MapAttendance(reader));
-                }
+
+                using var r = cmd.ExecuteReader();
+                while (r.Read()) list.Add(MapAttendance(r));
             }
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"Error loading attendances for employee {employeeId}: " + ex.Message);
             }
-            return attendances;
+            return list;
         }
 
         public List<AttendanceModel> GetAttendancesByDateRange(DateTime start, DateTime end)
         {
-            var attendances = new List<AttendanceModel>();
+            var list = new List<AttendanceModel>();
             try
             {
-                using var connection = new MySqlConnection(_connectionString);
-                connection.Open();
-                const string sql = @"
-                    SELECT 
-                        a.*,
-                        e.full_name AS employee_name,
-                        u.id AS user_id
-                    FROM attendance a
-                    LEFT JOIN employees e ON a.employee_id = e.id
-                    LEFT JOIN users u ON u.employee_id = e.id
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = SelectBase + @"
                     WHERE a.date BETWEEN @Start AND @End
                     ORDER BY a.date DESC;";
-                using var cmd = new MySqlCommand(sql, connection);
-                cmd.Parameters.AddWithValue("@Start", start.Date);
-                cmd.Parameters.AddWithValue("@End", end.Date);
-                using var reader = cmd.ExecuteReader();
-                while (reader.Read())
-                {
-                    attendances.Add(MapAttendance(reader));
-                }
+                cmd.Parameters.AddWithValue("@Start", start.Date.ToString("yyyy-MM-dd"));
+                cmd.Parameters.AddWithValue("@End",   end.Date.ToString("yyyy-MM-dd"));
+
+                using var r = cmd.ExecuteReader();
+                while (r.Read()) list.Add(MapAttendance(r));
             }
             catch (Exception ex)
             {
                 Console.Error.WriteLine("Error loading attendances by date range: " + ex.Message);
             }
-            return attendances;
+            return list;
         }
 
         public AttendanceModel? GetAttendanceById(int id)
         {
             try
             {
-                using var connection = new MySqlConnection(_connectionString);
-                connection.Open();
-                const string sql = @"
-                    SELECT 
-                        a.*,
-                        e.full_name AS employee_name,
-                        u.id AS user_id
-                    FROM attendance a
-                    LEFT JOIN employees e ON a.employee_id = e.id
-                    LEFT JOIN users u ON u.employee_id = e.id
-                    WHERE a.id = @Id
-                    LIMIT 1;";
-                using var cmd = new MySqlCommand(sql, connection);
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = SelectBase + " WHERE a.id = @Id LIMIT 1;";
                 cmd.Parameters.AddWithValue("@Id", id);
-                using var reader = cmd.ExecuteReader();
-                if (reader.Read())
-                {
-                    return MapAttendance(reader);
-                }
+
+                using var r = cmd.ExecuteReader();
+                if (r.Read()) return MapAttendance(r);
             }
             catch (Exception ex)
             {
@@ -311,23 +236,23 @@ namespace SihyuPOSPayroll.Services
         {
             try
             {
-                using var connection = new MySqlConnection(_connectionString);
-                connection.Open();
-                const string sql = @"
-                    INSERT INTO attendance 
-                    (employee_id, date, time_in, time_out, status, created_at)
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = @"
+                    INSERT INTO attendance
+                        (employee_id, date, time_in, time_out, status, created_at)
                     VALUES
-                    (@EmployeeId, @Date, @TimeIn, @TimeOut, @Status, @CreatedAt);
-                    SELECT LAST_INSERT_ID();";
-                using var cmd = new MySqlCommand(sql, connection);
+                        (@EmployeeId, @Date, @TimeIn, @TimeOut, @Status, @CreatedAt);
+                    SELECT last_insert_rowid();";
                 cmd.Parameters.AddWithValue("@EmployeeId", attendance.EmployeeId);
-                cmd.Parameters.AddWithValue("@Date", attendance.Date.Date);
-                cmd.Parameters.AddWithValue("@TimeIn", ParamOrDbNull(attendance.TimeIn));
-                cmd.Parameters.AddWithValue("@TimeOut", ParamOrDbNull(attendance.TimeOut));
-                cmd.Parameters.AddWithValue("@Status", ParamOrDbNull(attendance.Status));
-                cmd.Parameters.AddWithValue("@CreatedAt", attendance.CreatedAt == default ? DateTime.Now : attendance.CreatedAt);
-                var newIdObj = cmd.ExecuteScalar();
-                attendance.Id = Convert.ToInt32(newIdObj);
+                cmd.Parameters.AddWithValue("@Date",       attendance.Date.Date.ToString("yyyy-MM-dd"));
+                cmd.Parameters.AddWithValue("@TimeIn",     ParamOrDbNull(attendance.TimeIn?.ToString()));
+                cmd.Parameters.AddWithValue("@TimeOut",    ParamOrDbNull(attendance.TimeOut?.ToString()));
+                cmd.Parameters.AddWithValue("@Status",     ParamOrDbNull(attendance.Status));
+                cmd.Parameters.AddWithValue("@CreatedAt",  (attendance.CreatedAt == default ? DateTime.Now : attendance.CreatedAt ?? DateTime.Now).ToString("yyyy-MM-dd HH:mm:ss"));
+
+                var newId = cmd.ExecuteScalar();
+                attendance.Id = Convert.ToInt32(newId);
                 return true;
             }
             catch (Exception ex)
@@ -341,23 +266,22 @@ namespace SihyuPOSPayroll.Services
         {
             try
             {
-                using var connection = new MySqlConnection(_connectionString);
-                connection.Open();
-                const string sql = @"
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = @"
                     UPDATE attendance SET
                         employee_id = @EmployeeId,
-                        date = @Date,
-                        time_in = @TimeIn,
-                        time_out = @TimeOut,
-                        status = @Status
+                        date        = @Date,
+                        time_in     = @TimeIn,
+                        time_out    = @TimeOut,
+                        status      = @Status
                     WHERE id = @Id;";
-                using var cmd = new MySqlCommand(sql, connection);
                 cmd.Parameters.AddWithValue("@EmployeeId", attendance.EmployeeId);
-                cmd.Parameters.AddWithValue("@Date", attendance.Date.Date);
-                cmd.Parameters.AddWithValue("@TimeIn", ParamOrDbNull(attendance.TimeIn));
-                cmd.Parameters.AddWithValue("@TimeOut", ParamOrDbNull(attendance.TimeOut));
-                cmd.Parameters.AddWithValue("@Status", ParamOrDbNull(attendance.Status));
-                cmd.Parameters.AddWithValue("@Id", attendance.Id);
+                cmd.Parameters.AddWithValue("@Date",       attendance.Date.Date.ToString("yyyy-MM-dd"));
+                cmd.Parameters.AddWithValue("@TimeIn",     ParamOrDbNull(attendance.TimeIn?.ToString()));
+                cmd.Parameters.AddWithValue("@TimeOut",    ParamOrDbNull(attendance.TimeOut?.ToString()));
+                cmd.Parameters.AddWithValue("@Status",     ParamOrDbNull(attendance.Status));
+                cmd.Parameters.AddWithValue("@Id",         attendance.Id);
                 return cmd.ExecuteNonQuery() > 0;
             }
             catch (Exception ex)
@@ -371,10 +295,9 @@ namespace SihyuPOSPayroll.Services
         {
             try
             {
-                using var connection = new MySqlConnection(_connectionString);
-                connection.Open();
-                const string sql = "DELETE FROM attendance WHERE id = @Id;";
-                using var cmd = new MySqlCommand(sql, connection);
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = "DELETE FROM attendance WHERE id = @Id;";
                 cmd.Parameters.AddWithValue("@Id", id);
                 return cmd.ExecuteNonQuery() > 0;
             }
@@ -385,20 +308,22 @@ namespace SihyuPOSPayroll.Services
             }
         }
 
+        // BUG FIX: allow multiple clock-in entries per day (no upsert, plain INSERT).
         public bool ClockIn(int employeeId, DateTime date, TimeSpan timeIn)
         {
             try
             {
-                using var connection = new MySqlConnection(_connectionString);
-                connection.Open();
-                const string sql = @"
-                    INSERT INTO attendance (employee_id, date, time_in, status, created_at)
-                    VALUES (@EmployeeId, @Date, @TimeIn, 'Clocked In', NOW())
-                    ON DUPLICATE KEY UPDATE time_in = @TimeIn, status = 'Clocked In';";
-                using var cmd = new MySqlCommand(sql, connection);
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = @"
+                    INSERT INTO attendance
+                        (employee_id, date, time_in, status, created_at)
+                    VALUES
+                        (@EmployeeId, @Date, @TimeIn, 'Clocked In', @Now);";
                 cmd.Parameters.AddWithValue("@EmployeeId", employeeId);
-                cmd.Parameters.AddWithValue("@Date", date.Date);
-                cmd.Parameters.AddWithValue("@TimeIn", timeIn);
+                cmd.Parameters.AddWithValue("@Date",       date.Date.ToString("yyyy-MM-dd"));
+                cmd.Parameters.AddWithValue("@TimeIn",     timeIn.ToString());
+                cmd.Parameters.AddWithValue("@Now",        DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
                 return cmd.ExecuteNonQuery() > 0;
             }
             catch (Exception ex)
@@ -412,16 +337,24 @@ namespace SihyuPOSPayroll.Services
         {
             try
             {
-                using var connection = new MySqlConnection(_connectionString);
-                connection.Open();
-                const string sql = @"
-                    UPDATE attendance 
-                    SET time_out = @TimeOut, status = 'Present'
-                    WHERE employee_id = @EmployeeId AND date = @Date;";
-                using var cmd = new MySqlCommand(sql, connection);
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                // Update the most recent 'Clocked In' row for this employee/date that has no time_out yet.
+                cmd.CommandText = @"
+                    UPDATE attendance
+                    SET    time_out = @TimeOut,
+                           status   = 'Present'
+                    WHERE  id = (
+                        SELECT id FROM attendance
+                        WHERE  employee_id = @EmployeeId
+                          AND  date        = @Date
+                          AND  time_out    IS NULL
+                        ORDER  BY created_at DESC
+                        LIMIT  1
+                    );";
                 cmd.Parameters.AddWithValue("@EmployeeId", employeeId);
-                cmd.Parameters.AddWithValue("@Date", date.Date);
-                cmd.Parameters.AddWithValue("@TimeOut", timeOut);
+                cmd.Parameters.AddWithValue("@Date",       date.Date.ToString("yyyy-MM-dd"));
+                cmd.Parameters.AddWithValue("@TimeOut",    timeOut.ToString());
                 return cmd.ExecuteNonQuery() > 0;
             }
             catch (Exception ex)
@@ -431,31 +364,34 @@ namespace SihyuPOSPayroll.Services
             }
         }
 
-        private static AttendanceModel MapAttendance(MySqlDataReader r)
+        // ── Mapper ────────────────────────────────────────────────────────────
+
+        private static AttendanceModel MapAttendance(SqliteDataReader r)
         {
-            var model = new AttendanceModel
+            return new AttendanceModel
             {
-                Id = r.GetInt32("id"),
-                EmployeeId = r.GetInt32("employee_id"),
-                Date = r.GetDateTime("date"),
-                TimeIn = HasColumn(r, "time_in") && !r.IsDBNull(r.GetOrdinal("time_in")) 
-                    ? r.GetTimeSpan("time_in") 
-                    : (TimeSpan?)null,
-                TimeOut = HasColumn(r, "time_out") && !r.IsDBNull(r.GetOrdinal("time_out")) 
-                    ? r.GetTimeSpan("time_out") 
-                    : (TimeSpan?)null,
-                Status = r["status"]?.ToString(),
-                CreatedAt = HasColumn(r, "created_at") && !r.IsDBNull(r.GetOrdinal("created_at")) 
-                    ? r.GetDateTime("created_at") 
-                    : (DateTime?)null,
-                EmployeeName = HasColumn(r, "employee_name") && !r.IsDBNull(r.GetOrdinal("employee_name")) 
-                    ? r["employee_name"]?.ToString() 
-                    : null,
-                UserId = HasColumn(r, "user_id") && !r.IsDBNull(r.GetOrdinal("user_id")) 
-                    ? r.GetInt32("user_id") 
-                    : (int?)null
+                Id         = r.GetInt32(r.GetOrdinal("id")),
+                EmployeeId = r.GetInt32(r.GetOrdinal("employee_id")),
+                Date       = DateTime.Parse(r.GetString(r.GetOrdinal("date"))),
+                TimeIn     = HasColumn(r, "time_in") && !r.IsDBNull(r.GetOrdinal("time_in"))
+                                 ? TimeSpan.TryParse(r.GetString(r.GetOrdinal("time_in")), out var ti) ? ti : (TimeSpan?)null
+                                 : (TimeSpan?)null,
+                TimeOut    = HasColumn(r, "time_out") && !r.IsDBNull(r.GetOrdinal("time_out"))
+                                 ? TimeSpan.TryParse(r.GetString(r.GetOrdinal("time_out")), out var tout) ? tout : (TimeSpan?)null
+                                 : (TimeSpan?)null,
+                Status     = HasColumn(r, "status") && !r.IsDBNull(r.GetOrdinal("status"))
+                                 ? r.GetString(r.GetOrdinal("status"))
+                                 : null,
+                CreatedAt  = HasColumn(r, "created_at") && !r.IsDBNull(r.GetOrdinal("created_at"))
+                                 ? DateTime.TryParse(r.GetString(r.GetOrdinal("created_at")), out var ca) ? ca : (DateTime?)null
+                                 : (DateTime?)null,
+                EmployeeName = HasColumn(r, "employee_name") && !r.IsDBNull(r.GetOrdinal("employee_name"))
+                                 ? r.GetString(r.GetOrdinal("employee_name"))
+                                 : null,
+                UserId     = HasColumn(r, "user_id") && !r.IsDBNull(r.GetOrdinal("user_id"))
+                                 ? r.GetInt32(r.GetOrdinal("user_id"))
+                                 : (int?)null
             };
-            return model;
         }
 
         private static object ParamOrDbNull(object? value) => value ?? DBNull.Value;

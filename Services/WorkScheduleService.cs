@@ -1,158 +1,110 @@
 #nullable enable
+using Microsoft.Data.Sqlite;
+using SihyuPOSPayroll.Data;
+using SihyuPOSPayroll.Models;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using SihyuPOSPayroll.Models;
-using MySql.Data.MySqlClient;
 
 namespace SihyuPOSPayroll.Services
 {
     public class WorkScheduleService
     {
-        private readonly string _cs;
+        // Constructor kept for interface compatibility — connection string ignored,
+        // all data comes from SQLite via SqliteConnectionFactory.
+        public WorkScheduleService(string? connectionString = null) { }
+
         public string? LastError { get; private set; }
 
-        public WorkScheduleService(string? connectionString = null)
-        {
-            _cs = string.IsNullOrWhiteSpace(connectionString)
-                ? "server=localhost;user=root;password=;database=sihyu_pos;"
-                : connectionString!;
-        }
-
-        // =====================================================================
-        // SCHEMA
-        // =====================================================================
+        // ── Schema ────────────────────────────────────────────────────────────
+        // The work_schedule table is created by AuthSchemaInitializer (EmployeeTables).
 
         public bool TryEnsureSchema()
         {
             LastError = null;
             try
             {
-                using var conn = new MySqlConnection(_cs);
-                conn.Open();
-
-                const string ddl = @"
-                    CREATE TABLE IF NOT EXISTS `work_schedule` (
-                        `id`         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-                        `label`      VARCHAR(100)     NOT NULL,
-                        `days_mask`  TINYINT UNSIGNED NOT NULL DEFAULT 0, -- bit0=Mon ... bit6=Sun
-                        `is_active`  TINYINT(1)       NOT NULL DEFAULT 1,
-                        `updated_at` TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP
-                                                       ON UPDATE CURRENT_TIMESTAMP,
-                        PRIMARY KEY (`id`),
-                        UNIQUE KEY `uq_label` (`label`)
-                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
-                using var cmd = new MySqlCommand(ddl, conn);
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = @"
+                    CREATE TABLE IF NOT EXISTS work_schedule (
+                        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                        label      TEXT    NOT NULL UNIQUE,
+                        days_mask  INTEGER NOT NULL DEFAULT 0,
+                        is_active  INTEGER NOT NULL DEFAULT 1,
+                        updated_at TEXT    NOT NULL DEFAULT (datetime('now'))
+                    );";
                 cmd.ExecuteNonQuery();
                 return true;
             }
-            catch (Exception ex)
-            {
-                LastError = ex.Message;
-                return false;
-            }
+            catch (Exception ex) { LastError = ex.Message; return false; }
         }
 
         public bool IsDbReady()
         {
             try
             {
-                using var conn = new MySqlConnection(_cs);
-                conn.Open();
-                using var cmd = new MySqlCommand("SELECT COUNT(*) FROM `work_schedule`;", conn);
-                _ = cmd.ExecuteScalar();
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = "SELECT COUNT(*) FROM work_schedule;";
+                cmd.ExecuteScalar();
                 return true;
             }
-            catch (Exception ex)
-            {
-                LastError = ex.Message;
-                return false;
-            }
+            catch (Exception ex) { LastError = ex.Message; return false; }
         }
 
-        /// <summary>Optional: seed common presets if table is empty.</summary>
         public bool EnsureSeedDefaults()
         {
             try
             {
-                using var conn = new MySqlConnection(_cs);
-                conn.Open();
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
 
-                var count = 0;
-                using (var c = new MySqlCommand("SELECT COUNT(*) FROM work_schedule;", conn))
-                    count = Convert.ToInt32(c.ExecuteScalar());
+                using (var c = conn.CreateCommand())
+                {
+                    c.CommandText = "SELECT COUNT(*) FROM work_schedule;";
+                    if (Convert.ToInt32(c.ExecuteScalar()) > 0) return true;
+                }
 
-                if (count > 0) return true;
+                var presets = new[]
+                {
+                    ("Mon-Fri", (byte)((1<<0)|(1<<1)|(1<<2)|(1<<3)|(1<<4))),
+                    ("MWF",     (byte)((1<<0)|(1<<2)|(1<<4))),
+                    ("TTh",     (byte)((1<<1)|(1<<3))),
+                };
 
-                var now = DateTime.Now;
-
-                // Mon�Fri : 1111100 (bits 0..6 = Mon..Sun)
-                InsertRaw(conn, "Mon�Fri", mask: (byte)((1 << 0) | (1 << 1) | (1 << 2) | (1 << 3) | (1 << 4)), isActive: true, now);
-                // MWF     : 1010100
-                InsertRaw(conn, "MWF", mask: (byte)((1 << 0) | (1 << 2) | (1 << 4)), isActive: true, now);
-                // TTh     : 0101000
-                InsertRaw(conn, "TTh", mask: (byte)((1 << 1) | (1 << 3)), isActive: true, now);
-
+                foreach (var (label, mask) in presets)
+                {
+                    using var cmd = conn.CreateCommand();
+                    cmd.CommandText = @"
+                        INSERT OR IGNORE INTO work_schedule (label, days_mask, is_active, updated_at)
+                        VALUES (@l, @m, 1, datetime('now'));";
+                    cmd.Parameters.AddWithValue("@l", label);
+                    cmd.Parameters.AddWithValue("@m", mask);
+                    cmd.ExecuteNonQuery();
+                }
                 return true;
             }
-            catch (Exception ex)
-            {
-                LastError = ex.Message;
-                return false;
-            }
-
-            static void InsertRaw(MySqlConnection conn, string label, byte mask, bool isActive, DateTime updatedAt)
-            {
-                const string sql = @"INSERT INTO work_schedule (label, days_mask, is_active, updated_at)
-                                     VALUES (@l, @m, @a, @u)
-                                     ON DUPLICATE KEY UPDATE days_mask=VALUES(days_mask), is_active=VALUES(is_active), updated_at=VALUES(updated_at);";
-                using var cmd = new MySqlCommand(sql, conn);
-                cmd.Parameters.AddWithValue("@l", label);
-                cmd.Parameters.AddWithValue("@m", mask);
-                cmd.Parameters.AddWithValue("@a", isActive ? 1 : 0);
-                cmd.Parameters.AddWithValue("@u", updatedAt);
-                cmd.ExecuteNonQuery();
-            }
+            catch (Exception ex) { LastError = ex.Message; return false; }
         }
 
-        // =====================================================================
-        // LOADERS
-        // =====================================================================
+        // ── Read ──────────────────────────────────────────────────────────────
 
         public ObservableCollection<WorkScheduleModel> Load()
         {
             var list = new ObservableCollection<WorkScheduleModel>();
             LastError = null;
-
             try
             {
-                using var conn = new MySqlConnection(_cs);
-                conn.Open();
-                const string sql = @"
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = @"
                     SELECT id, label, days_mask, is_active, updated_at
-                    FROM work_schedule
-                    ORDER BY label ASC;";
-                using var cmd = new MySqlCommand(sql, conn);
+                    FROM   work_schedule ORDER BY label ASC;";
                 using var r = cmd.ExecuteReader();
-                while (r.Read())
-                {
-                    var m = new WorkScheduleModel
-                    {
-                        Id = Convert.ToInt32(r["id"]),
-                        Label = r["label"]?.ToString() ?? string.Empty,
-                        IsActive = Convert.ToInt32(r["is_active"]) != 0,
-                        UpdatedAt = r.GetDateTime("updated_at")
-                    };
-                    m.FromDaysMask(Convert.ToByte(r["days_mask"]));
-                    list.Add(m);
-                }
+                while (r.Read()) list.Add(Map(r));
             }
-            catch (Exception ex)
-            {
-                LastError = ex.Message;
-            }
-
+            catch (Exception ex) { LastError = ex.Message; }
             return list;
         }
 
@@ -160,37 +112,17 @@ namespace SihyuPOSPayroll.Services
         {
             var list = new List<WorkScheduleModel>();
             LastError = null;
-
             try
             {
-                using var conn = new MySqlConnection(_cs);
-                conn.Open();
-
-                var sql = @"SELECT id, label, days_mask, is_active, updated_at
-                            FROM work_schedule";
-                if (onlyActive) sql += " WHERE is_active = 1";
-                sql += " ORDER BY label ASC;";
-
-                using var cmd = new MySqlCommand(sql, conn);
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = "SELECT id, label, days_mask, is_active, updated_at FROM work_schedule"
+                                + (onlyActive ? " WHERE is_active = 1" : "")
+                                + " ORDER BY label ASC;";
                 using var r = cmd.ExecuteReader();
-                while (r.Read())
-                {
-                    var m = new WorkScheduleModel
-                    {
-                        Id = Convert.ToInt32(r["id"]),
-                        Label = r["label"]?.ToString() ?? string.Empty,
-                        IsActive = Convert.ToInt32(r["is_active"]) != 0,
-                        UpdatedAt = r.GetDateTime("updated_at")
-                    };
-                    m.FromDaysMask(Convert.ToByte(r["days_mask"]));
-                    list.Add(m);
-                }
+                while (r.Read()) list.Add(Map(r));
             }
-            catch (Exception ex)
-            {
-                LastError = ex.Message;
-            }
-
+            catch (Exception ex) { LastError = ex.Message; }
             return list;
         }
 
@@ -199,22 +131,15 @@ namespace SihyuPOSPayroll.Services
             var labels = new List<string>();
             try
             {
-                using var conn = new MySqlConnection(_cs);
-                conn.Open();
-
-                var sql = "SELECT label FROM work_schedule";
-                if (onlyActive) sql += " WHERE is_active = 1";
-                sql += " ORDER BY label ASC";
-
-                using var cmd = new MySqlCommand(sql, conn);
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = "SELECT label FROM work_schedule"
+                                + (onlyActive ? " WHERE is_active = 1" : "")
+                                + " ORDER BY label ASC;";
                 using var r = cmd.ExecuteReader();
-                while (r.Read())
-                    labels.Add(r["label"]?.ToString() ?? string.Empty);
+                while (r.Read()) labels.Add(r.GetString(0));
             }
-            catch (Exception ex)
-            {
-                LastError = ex.Message;
-            }
+            catch (Exception ex) { LastError = ex.Message; }
             return labels;
         }
 
@@ -222,68 +147,36 @@ namespace SihyuPOSPayroll.Services
         {
             try
             {
-                using var conn = new MySqlConnection(_cs);
-                conn.Open();
-                const string sql = @"SELECT id, label, days_mask, is_active, updated_at
-                                     FROM work_schedule WHERE id=@id LIMIT 1;";
-                using var cmd = new MySqlCommand(sql, conn);
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = @"
+                    SELECT id, label, days_mask, is_active, updated_at
+                    FROM   work_schedule WHERE id = @id LIMIT 1;";
                 cmd.Parameters.AddWithValue("@id", id);
                 using var r = cmd.ExecuteReader();
-                if (!r.Read()) return null;
-
-                var m = new WorkScheduleModel
-                {
-                    Id = Convert.ToInt32(r["id"]),
-                    Label = r["label"]?.ToString() ?? string.Empty,
-                    IsActive = Convert.ToInt32(r["is_active"]) != 0,
-                    UpdatedAt = r.GetDateTime("updated_at")
-                };
-                m.FromDaysMask(Convert.ToByte(r["days_mask"]));
-                return m;
+                return r.Read() ? Map(r) : null;
             }
-            catch (Exception ex)
-            {
-                LastError = ex.Message;
-                return null;
-            }
+            catch (Exception ex) { LastError = ex.Message; return null; }
         }
 
         public bool TryGetByLabel(string label, out WorkScheduleModel? model)
         {
             model = null;
             if (string.IsNullOrWhiteSpace(label)) return false;
-
             try
             {
-                using var conn = new MySqlConnection(_cs);
-                conn.Open();
-
-                // Case-insensitive match (uses default collation, typically case-insensitive)
-                const string sql = @"SELECT id, label, days_mask, is_active, updated_at
-                                     FROM work_schedule
-                                     WHERE label = @l
-                                     LIMIT 1;";
-                using var cmd = new MySqlCommand(sql, conn);
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = @"
+                    SELECT id, label, days_mask, is_active, updated_at
+                    FROM   work_schedule WHERE label = @l COLLATE NOCASE LIMIT 1;";
                 cmd.Parameters.AddWithValue("@l", label.Trim());
                 using var r = cmd.ExecuteReader();
                 if (!r.Read()) return false;
-
-                var m = new WorkScheduleModel
-                {
-                    Id = Convert.ToInt32(r["id"]),
-                    Label = r["label"]?.ToString() ?? string.Empty,
-                    IsActive = Convert.ToInt32(r["is_active"]) != 0,
-                    UpdatedAt = r.GetDateTime("updated_at")
-                };
-                m.FromDaysMask(Convert.ToByte(r["days_mask"]));
-                model = m;
+                model = Map(r);
                 return true;
             }
-            catch (Exception ex)
-            {
-                LastError = ex.Message;
-                return false;
-            }
+            catch (Exception ex) { LastError = ex.Message; return false; }
         }
 
         public int? GetIdByLabel(string label)
@@ -291,107 +184,86 @@ namespace SihyuPOSPayroll.Services
             if (string.IsNullOrWhiteSpace(label)) return null;
             try
             {
-                using var conn = new MySqlConnection(_cs);
-                conn.Open();
-                const string sql = @"SELECT id FROM work_schedule WHERE label = @l LIMIT 1;";
-                using var cmd = new MySqlCommand(sql, conn);
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = "SELECT id FROM work_schedule WHERE label = @l COLLATE NOCASE LIMIT 1;";
                 cmd.Parameters.AddWithValue("@l", label.Trim());
                 var obj = cmd.ExecuteScalar();
-                if (obj == null || obj == DBNull.Value) return null;
-                return Convert.ToInt32(obj);
+                return (obj == null || obj == DBNull.Value) ? null : Convert.ToInt32(obj);
             }
-            catch (Exception ex)
-            {
-                LastError = ex.Message;
-                return null;
-            }
+            catch (Exception ex) { LastError = ex.Message; return null; }
         }
 
-        // =====================================================================
-        // SAVE / UPSERT
-        // =====================================================================
+        // ── Write ─────────────────────────────────────────────────────────────
 
         /// <summary>
-        /// Saves the list transactionally:
-        /// 1) Upsert all items by label
-        /// 2) Delete any rows not in provided labels (case-insensitive)
+        /// Upserts all items by label and deletes any rows not in the provided list.
         /// </summary>
         public void Save(IEnumerable<WorkScheduleModel> items)
         {
             if (items is null) throw new ArgumentNullException(nameof(items));
 
-            using var conn = new MySqlConnection(_cs);
-            conn.Open();
-            using var tx = conn.BeginTransaction();
+            var normalized = items
+                .Where(x => !string.IsNullOrWhiteSpace(x.Label))
+                .Select(x =>
+                {
+                    var lbl = x.Label.Trim();
+                    if (lbl.Length > 100) lbl = lbl[..100];
+                    return new WorkScheduleModel
+                    {
+                        Label     = lbl,
+                        UpdatedAt = x.UpdatedAt == default ? DateTime.Now : x.UpdatedAt,
+                        IsActive  = x.IsActive,
+                        Mon = x.Mon, Tue = x.Tue, Wed = x.Wed,
+                        Thu = x.Thu, Fri = x.Fri, Sat = x.Sat, Sun = x.Sun
+                    };
+                })
+                .GroupBy(x => x.Label, StringComparer.OrdinalIgnoreCase)
+                .Select(g => g.OrderByDescending(i => i.UpdatedAt).First())
+                .ToList();
 
-            const string upsert = @"
-                INSERT INTO work_schedule (label, days_mask, is_active, updated_at)
-                VALUES (@label, @mask, @active, @updated)
-                ON DUPLICATE KEY UPDATE
-                    days_mask = VALUES(days_mask),
-                    is_active = VALUES(is_active),
-                    updated_at = VALUES(updated_at);";
-
-            using var upCmd = new MySqlCommand(upsert, conn, tx);
-            upCmd.Parameters.Add("@label", MySqlDbType.VarChar, 100);
-            upCmd.Parameters.Add("@mask", MySqlDbType.UByte);
-            upCmd.Parameters.Add("@active", MySqlDbType.Byte);
-            upCmd.Parameters.Add("@updated", MySqlDbType.DateTime);
-
+            using var conn = SqliteConnectionFactory.CreateOpenConnection();
+            using var tx   = conn.BeginTransaction();
             try
             {
-                var normalized = items
-                    .Where(x => !string.IsNullOrWhiteSpace(x.Label))
-                    .Select(x =>
-                    {
-                        var label = x.Label.Trim();
-                        if (label.Length > 100) label = label[..100];
-                        return new WorkScheduleModel
-                        {
-                            Label = label,
-                            UpdatedAt = x.UpdatedAt == default ? DateTime.Now : x.UpdatedAt,
-                            IsActive = x.IsActive,
-                            Mon = x.Mon,
-                            Tue = x.Tue,
-                            Wed = x.Wed,
-                            Thu = x.Thu,
-                            Fri = x.Fri,
-                            Sat = x.Sat,
-                            Sun = x.Sun
-                        };
-                    })
-                    .GroupBy(x => x.Label, StringComparer.OrdinalIgnoreCase)
-                    .Select(g => g.OrderByDescending(i => i.UpdatedAt).First())
-                    .ToList();
-
+                // Upsert each item
                 foreach (var it in normalized)
                 {
-                    upCmd.Parameters["@label"].Value = it.Label;
-                    upCmd.Parameters["@mask"].Value = it.ToDaysMask();
-                    upCmd.Parameters["@active"].Value = (byte)(it.IsActive ? 1 : 0);
-                    upCmd.Parameters["@updated"].Value = it.UpdatedAt == default ? DateTime.Now : it.UpdatedAt;
-                    upCmd.ExecuteNonQuery();
+                    using var cmd = conn.CreateCommand();
+                    cmd.Transaction = tx;
+                    // INSERT OR REPLACE keeps the UNIQUE(label) constraint satisfied
+                    cmd.CommandText = @"
+                        INSERT INTO work_schedule (label, days_mask, is_active, updated_at)
+                        VALUES (@l, @m, @a, @u)
+                        ON CONFLICT(label) DO UPDATE SET
+                            days_mask  = excluded.days_mask,
+                            is_active  = excluded.is_active,
+                            updated_at = excluded.updated_at;";
+                    cmd.Parameters.AddWithValue("@l", it.Label);
+                    cmd.Parameters.AddWithValue("@m", it.ToDaysMask());
+                    cmd.Parameters.AddWithValue("@a", it.IsActive ? 1 : 0);
+                    cmd.Parameters.AddWithValue("@u", (it.UpdatedAt == default ? DateTime.Now : it.UpdatedAt).ToString("yyyy-MM-dd HH:mm:ss"));
+                    cmd.ExecuteNonQuery();
                 }
 
-                // delete rows not present
+                // Delete rows whose labels are no longer in the list
                 var keep = new HashSet<string>(normalized.Select(n => n.Label), StringComparer.OrdinalIgnoreCase);
                 var existing = new List<string>();
-                using (var sel = new MySqlCommand("SELECT label FROM work_schedule;", conn, tx))
-                using (var rr = sel.ExecuteReader())
+                using (var sel = conn.CreateCommand())
                 {
-                    while (rr.Read()) existing.Add(rr["label"]?.ToString() ?? "");
+                    sel.Transaction  = tx;
+                    sel.CommandText  = "SELECT label FROM work_schedule;";
+                    using var rr = sel.ExecuteReader();
+                    while (rr.Read()) existing.Add(rr.GetString(0));
                 }
 
-                var toDelete = existing.Where(x => !string.IsNullOrWhiteSpace(x) && !keep.Contains(x)).ToList();
-                if (toDelete.Count > 0)
+                foreach (var lbl in existing.Where(x => !string.IsNullOrWhiteSpace(x) && !keep.Contains(x)))
                 {
-                    using var del = new MySqlCommand("DELETE FROM work_schedule WHERE label=@l;", conn, tx);
-                    del.Parameters.Add("@l", MySqlDbType.VarChar, 100);
-                    foreach (var l in toDelete)
-                    {
-                        del.Parameters["@l"].Value = l;
-                        del.ExecuteNonQuery();
-                    }
+                    using var del = conn.CreateCommand();
+                    del.Transaction  = tx;
+                    del.CommandText  = "DELETE FROM work_schedule WHERE label = @l;";
+                    del.Parameters.AddWithValue("@l", lbl);
+                    del.ExecuteNonQuery();
                 }
 
                 tx.Commit();
@@ -403,40 +275,40 @@ namespace SihyuPOSPayroll.Services
             }
         }
 
-        /// <summary>
-        /// Upserts a single schedule by <see cref="WorkScheduleModel.Label"/> and returns its Id.
-        /// </summary>
+        /// <summary>Upserts a single schedule by label and returns its Id.</summary>
         public int UpsertByLabel(WorkScheduleModel item)
         {
             if (item is null) throw new ArgumentNullException(nameof(item));
             var label = (item.Label ?? string.Empty).Trim();
             if (label.Length == 0) throw new ArgumentException("Label is required.", nameof(item));
-
             if (label.Length > 100) label = label[..100];
 
-            using var conn = new MySqlConnection(_cs);
-            conn.Open();
-            using var tx = conn.BeginTransaction();
-
+            using var conn = SqliteConnectionFactory.CreateOpenConnection();
+            using var tx   = conn.BeginTransaction();
             try
             {
-                const string up = @"
-                    INSERT INTO work_schedule (label, days_mask, is_active, updated_at)
-                    VALUES (@l, @m, @a, @u)
-                    ON DUPLICATE KEY UPDATE days_mask=VALUES(days_mask), is_active=VALUES(is_active), updated_at=VALUES(updated_at);";
-                using (var cmd = new MySqlCommand(up, conn, tx))
+                using (var cmd = conn.CreateCommand())
                 {
+                    cmd.Transaction  = tx;
+                    cmd.CommandText  = @"
+                        INSERT INTO work_schedule (label, days_mask, is_active, updated_at)
+                        VALUES (@l, @m, @a, @u)
+                        ON CONFLICT(label) DO UPDATE SET
+                            days_mask  = excluded.days_mask,
+                            is_active  = excluded.is_active,
+                            updated_at = excluded.updated_at;";
                     cmd.Parameters.AddWithValue("@l", label);
                     cmd.Parameters.AddWithValue("@m", item.ToDaysMask());
                     cmd.Parameters.AddWithValue("@a", item.IsActive ? 1 : 0);
-                    cmd.Parameters.AddWithValue("@u", item.UpdatedAt == default ? DateTime.Now : item.UpdatedAt);
+                    cmd.Parameters.AddWithValue("@u", (item.UpdatedAt == default ? DateTime.Now : item.UpdatedAt).ToString("yyyy-MM-dd HH:mm:ss"));
                     cmd.ExecuteNonQuery();
                 }
 
-                // fetch id
                 int id;
-                using (var idCmd = new MySqlCommand("SELECT id FROM work_schedule WHERE label=@l LIMIT 1;", conn, tx))
+                using (var idCmd = conn.CreateCommand())
                 {
+                    idCmd.Transaction  = tx;
+                    idCmd.CommandText  = "SELECT id FROM work_schedule WHERE label = @l LIMIT 1;";
                     idCmd.Parameters.AddWithValue("@l", label);
                     id = Convert.ToInt32(idCmd.ExecuteScalar());
                 }
@@ -449,6 +321,23 @@ namespace SihyuPOSPayroll.Services
                 try { tx.Rollback(); } catch { }
                 throw;
             }
+        }
+
+        // ── Mapper ────────────────────────────────────────────────────────────
+
+        private static WorkScheduleModel Map(SqliteDataReader r)
+        {
+            var m = new WorkScheduleModel
+            {
+                Id        = r.GetInt32(r.GetOrdinal("id")),
+                Label     = r.IsDBNull(r.GetOrdinal("label")) ? string.Empty : r.GetString(r.GetOrdinal("label")),
+                IsActive  = r.GetInt32(r.GetOrdinal("is_active")) != 0,
+                UpdatedAt = r.IsDBNull(r.GetOrdinal("updated_at"))
+                                ? DateTime.Now
+                                : DateTime.TryParse(r.GetString(r.GetOrdinal("updated_at")), out var d) ? d : DateTime.Now,
+            };
+            m.FromDaysMask(Convert.ToByte(r.GetInt32(r.GetOrdinal("days_mask"))));
+            return m;
         }
     }
 }

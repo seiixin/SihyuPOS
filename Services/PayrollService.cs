@@ -1,34 +1,31 @@
 // Services/PayrollService.cs
 // - Uses AttendanceService.GetWorkedDaysCount(...) as the single source of truth
 // - GenerateForPeriod(...) relies on BOTH time_in AND time_out to count a worked day
-// - GrossSalary = ratePerDay * TotalDaysWorked (optional behavior kept)
+// - GrossSalary = ratePerDay * TotalDaysWorked
 
+#nullable enable
+using Microsoft.Data.Sqlite;
+using SihyuPOSPayroll.Data;
+using SihyuPOSPayroll.Models;
 using System;
 using System.Collections.Generic;
-using MySql.Data.MySqlClient;
-using SihyuPOSPayroll.Models;
 
 namespace SihyuPOSPayroll.Services
 {
     public class PayrollService
     {
-        private readonly string _connectionString;
         private readonly AttendanceService _attendanceService;
         public string? LastError { get; private set; }
 
+        // Constructor kept for interface compatibility; connection string is ignored —
+        // all data now comes from SQLite via SqliteConnectionFactory.
         public PayrollService(string? connectionString = null)
         {
-            _connectionString = string.IsNullOrWhiteSpace(connectionString)
-                ? "server=localhost;user=root;password=;database=sihyu_pos;"
-                : connectionString!;
-            _attendanceService = new AttendanceService(_connectionString);
+            _attendanceService = new AttendanceService();
         }
 
-        // ---------- Public helper (delegates to AttendanceService) ----------
-        /// <summary>
-        /// Counts DISTINCT dates with BOTH time_in AND time_out present within [start, end].
-        /// Delegates to AttendanceService.GetWorkedDaysCount(...).
-        /// </summary>
+        // ── Period helpers ────────────────────────────────────────────────────
+
         public int CountWorkedDays(int employeeId, DateTime start, DateTime end)
         {
             try
@@ -43,16 +40,16 @@ namespace SihyuPOSPayroll.Services
             }
         }
 
-        // ---------- Period helpers ----------
         public (DateTime start, DateTime end) GetFirstHalfRange(int year, int month)
-            => (new DateTime(year, month, 1, 0, 0, 0),
+            => (new DateTime(year, month, 1,  0,  0,  0),
                 new DateTime(year, month, 15, 23, 59, 59));
 
         public (DateTime start, DateTime end) GetSecondHalfRange(int year, int month)
-            => (new DateTime(year, month, 16, 0, 0, 0),
+            => (new DateTime(year, month, 16, 0,  0,  0),
                 new DateTime(year, month, DateTime.DaysInMonth(year, month), 23, 59, 59));
 
-        // ---------- Generation ----------
+        // ── Generation ────────────────────────────────────────────────────────
+
         public List<PayrollModel> GenerateForPeriod(DateTime periodStart, DateTime periodEnd)
         {
             LastError = null;
@@ -60,26 +57,24 @@ namespace SihyuPOSPayroll.Services
 
             try
             {
-                using var conn = new MySqlConnection(_connectionString);
-                conn.Open();
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
 
                 // Pull employees (include position and salary_per_day if present)
-                const string getEmployeesSql = @"
-                    SELECT e.id, e.full_name, e.position, e.salary_per_day
-                    FROM employees e;";
-
                 var employees = new List<(int Id, string Name, string? Position, decimal? SalaryPerDay)>();
-                using (var empCmd = new MySqlCommand(getEmployeesSql, conn))
-                using (var r = empCmd.ExecuteReader())
+                using (var empCmd = conn.CreateCommand())
                 {
+                    empCmd.CommandText = @"
+                        SELECT id, full_name, position, salary_per_day
+                        FROM   employees;";
+                    using var r = empCmd.ExecuteReader();
                     while (r.Read())
                     {
-                        int id = r.GetInt32("id");
-                        string name = r["full_name"]?.ToString() ?? "";
-                        string? pos = r["position"]?.ToString();
-                        decimal? sal = null;
-                        if (!r.IsDBNull(r.GetOrdinal("salary_per_day")))
-                            sal = Convert.ToDecimal(r["salary_per_day"]);
+                        int     id   = r.GetInt32(r.GetOrdinal("id"));
+                        string  name = r.IsDBNull(r.GetOrdinal("full_name"))  ? "" : r.GetString(r.GetOrdinal("full_name"));
+                        string? pos  = r.IsDBNull(r.GetOrdinal("position"))   ? null : r.GetString(r.GetOrdinal("position"));
+                        decimal? sal = r.IsDBNull(r.GetOrdinal("salary_per_day"))
+                                           ? (decimal?)null
+                                           : Convert.ToDecimal(r.GetValue(r.GetOrdinal("salary_per_day")));
                         employees.Add((id, name, pos, sal));
                     }
                 }
@@ -88,53 +83,48 @@ namespace SihyuPOSPayroll.Services
 
                 foreach (var emp in employees)
                 {
-                    // SINGLE SOURCE OF TRUTH: AttendanceService enforces both-in/out
                     int daysWorked = _attendanceService.GetWorkedDaysCount(emp.Id, periodStart, periodEnd);
 
-                    // Determine ratePerDay:
                     decimal ratePerDay = 0m;
-
-                    // 1) position_salary (active, newest)
                     if (!string.IsNullOrWhiteSpace(emp.Position) &&
                         posService.TryGetRate(emp.Position, out var rateFromPosition) &&
                         rateFromPosition > 0)
                     {
                         ratePerDay = rateFromPosition;
                     }
-                    // 2) employees.salary_per_day
                     else if (emp.SalaryPerDay.HasValue && emp.SalaryPerDay.Value > 0)
                     {
                         ratePerDay = Math.Round(emp.SalaryPerDay.Value, 2, MidpointRounding.AwayFromZero);
                     }
-                    // 3) last payroll fallback
                     else
                     {
                         ratePerDay = GetLastPerDayRate(conn, emp.Id);
                     }
 
-                    // (Optional) Gross = ratePerDay * TotalDaysWorked
-                    decimal gross = Math.Round(ratePerDay * daysWorked, 2);
-
-                    // Statutory placeholders (adjust with real rules later)
-                    decimal sss = 0m, philhealth = 0m, pagibig = 0m, bonus = 0m, otherDeductions = 0m;
-                    decimal net = Math.Max(0m, gross - (sss + philhealth + pagibig + otherDeductions) + bonus);
+                    decimal gross          = Math.Round(ratePerDay * daysWorked, 2);
+                    decimal sss            = 0m;
+                    decimal philhealth     = 0m;
+                    decimal pagibig        = 0m;
+                    decimal bonus          = 0m;
+                    decimal otherDeductions = 0m;
+                    decimal net            = Math.Max(0m, gross - (sss + philhealth + pagibig + otherDeductions) + bonus);
 
                     results.Add(new PayrollModel
                     {
-                        EmployeeId = emp.Id,
-                        EmployeeFullName = emp.Name,
-                        StartDate = periodStart.Date,
-                        EndDate = periodEnd.Date,
-                        TotalDaysWorked = daysWorked,
-                        GrossSalary = gross,
-                        SssDeduction = Math.Round(sss, 2),
-                        PhilhealthDeduction = Math.Round(philhealth, 2),
-                        PagibigDeduction = Math.Round(pagibig, 2),
-                        OtherDeductions = Math.Round(otherDeductions, 2),
-                        Bonus = Math.Round(bonus, 2),
-                        NetSalary = Math.Round(net, 2),
-                        BranchName = string.Empty,
-                        ShiftType = string.Empty
+                        EmployeeId          = emp.Id,
+                        EmployeeFullName    = emp.Name,
+                        StartDate           = periodStart.Date,
+                        EndDate             = periodEnd.Date,
+                        TotalDaysWorked     = daysWorked,
+                        GrossSalary         = gross,
+                        SssDeduction        = Math.Round(sss,            2),
+                        PhilhealthDeduction = Math.Round(philhealth,     2),
+                        PagibigDeduction    = Math.Round(pagibig,        2),
+                        OtherDeductions     = Math.Round(otherDeductions, 2),
+                        Bonus               = Math.Round(bonus,          2),
+                        NetSalary           = Math.Round(net,            2),
+                        BranchName          = string.Empty,
+                        ShiftType           = string.Empty
                     });
                 }
             }
@@ -147,7 +137,8 @@ namespace SihyuPOSPayroll.Services
             return results;
         }
 
-        // ---------- Batch save ----------
+        // ── Batch save ────────────────────────────────────────────────────────
+
         public bool SaveGeneratedPayrolls(IEnumerable<PayrollModel> payrolls)
         {
             LastError = null;
@@ -155,52 +146,52 @@ namespace SihyuPOSPayroll.Services
 
             try
             {
-                using var conn = new MySqlConnection(_connectionString);
-                conn.Open();
-                using var tx = conn.BeginTransaction();
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var tx   = conn.BeginTransaction();
 
-                const string insertSql = @"
+                using var cmd = conn.CreateCommand();
+                cmd.Transaction = tx;
+                cmd.CommandText = @"
                     INSERT INTO payroll (
                         employee_id, start_date, end_date, total_days_worked, gross_salary,
                         sss_deduction, philhealth_deduction, pagibig_deduction, other_deductions, bonus,
                         net_salary, branch_name, shift_type
-                    )
-                    VALUES (
+                    ) VALUES (
                         @EmployeeId, @StartDate, @EndDate, @TotalDaysWorked, @GrossSalary,
                         @SssDeduction, @PhilhealthDeduction, @PagibigDeduction, @OtherDeductions, @Bonus,
                         @NetSalary, @BranchName, @ShiftType
                     );";
 
-                using var cmd = new MySqlCommand(insertSql, conn, tx);
-                cmd.Parameters.Add("@EmployeeId", MySqlDbType.Int32);
-                cmd.Parameters.Add("@StartDate", MySqlDbType.DateTime);
-                cmd.Parameters.Add("@EndDate", MySqlDbType.DateTime);
-                cmd.Parameters.Add("@TotalDaysWorked", MySqlDbType.Int32);
-                cmd.Parameters.Add("@GrossSalary", MySqlDbType.Decimal);
-                cmd.Parameters.Add("@SssDeduction", MySqlDbType.Decimal);
-                cmd.Parameters.Add("@PhilhealthDeduction", MySqlDbType.Decimal);
-                cmd.Parameters.Add("@PagibigDeduction", MySqlDbType.Decimal);
-                cmd.Parameters.Add("@OtherDeductions", MySqlDbType.Decimal);
-                cmd.Parameters.Add("@Bonus", MySqlDbType.Decimal);
-                cmd.Parameters.Add("@NetSalary", MySqlDbType.Decimal);
-                cmd.Parameters.Add("@BranchName", MySqlDbType.VarChar);
-                cmd.Parameters.Add("@ShiftType", MySqlDbType.VarChar);
+                // Pre-create parameters once, reuse per row
+                var pEmployeeId          = cmd.Parameters.Add("@EmployeeId",          SqliteType.Integer);
+                var pStartDate           = cmd.Parameters.Add("@StartDate",           SqliteType.Text);
+                var pEndDate             = cmd.Parameters.Add("@EndDate",             SqliteType.Text);
+                var pTotalDaysWorked     = cmd.Parameters.Add("@TotalDaysWorked",     SqliteType.Integer);
+                var pGrossSalary         = cmd.Parameters.Add("@GrossSalary",         SqliteType.Real);
+                var pSssDeduction        = cmd.Parameters.Add("@SssDeduction",        SqliteType.Real);
+                var pPhilhealthDeduction = cmd.Parameters.Add("@PhilhealthDeduction", SqliteType.Real);
+                var pPagibigDeduction    = cmd.Parameters.Add("@PagibigDeduction",    SqliteType.Real);
+                var pOtherDeductions     = cmd.Parameters.Add("@OtherDeductions",     SqliteType.Real);
+                var pBonus               = cmd.Parameters.Add("@Bonus",               SqliteType.Real);
+                var pNetSalary           = cmd.Parameters.Add("@NetSalary",           SqliteType.Real);
+                var pBranchName          = cmd.Parameters.Add("@BranchName",          SqliteType.Text);
+                var pShiftType           = cmd.Parameters.Add("@ShiftType",           SqliteType.Text);
 
                 foreach (var p in payrolls)
                 {
-                    cmd.Parameters["@EmployeeId"].Value = p.EmployeeId;
-                    cmd.Parameters["@StartDate"].Value = p.StartDate;
-                    cmd.Parameters["@EndDate"].Value = p.EndDate;
-                    cmd.Parameters["@TotalDaysWorked"].Value = p.TotalDaysWorked;
-                    cmd.Parameters["@GrossSalary"].Value = p.GrossSalary;
-                    cmd.Parameters["@SssDeduction"].Value = p.SssDeduction;
-                    cmd.Parameters["@PhilhealthDeduction"].Value = p.PhilhealthDeduction;
-                    cmd.Parameters["@PagibigDeduction"].Value = p.PagibigDeduction;
-                    cmd.Parameters["@OtherDeductions"].Value = p.OtherDeductions;
-                    cmd.Parameters["@Bonus"].Value = p.Bonus;
-                    cmd.Parameters["@NetSalary"].Value = p.NetSalary;
-                    cmd.Parameters["@BranchName"].Value = string.IsNullOrWhiteSpace(p.BranchName) ? (object)DBNull.Value : p.BranchName!;
-                    cmd.Parameters["@ShiftType"].Value = string.IsNullOrWhiteSpace(p.ShiftType) ? (object)DBNull.Value : p.ShiftType!;
+                    pEmployeeId.Value          = p.EmployeeId;
+                    pStartDate.Value           = p.StartDate.ToString("yyyy-MM-dd HH:mm:ss");
+                    pEndDate.Value             = p.EndDate.ToString("yyyy-MM-dd HH:mm:ss");
+                    pTotalDaysWorked.Value     = p.TotalDaysWorked;
+                    pGrossSalary.Value         = (double)p.GrossSalary;
+                    pSssDeduction.Value        = (double)p.SssDeduction;
+                    pPhilhealthDeduction.Value = (double)p.PhilhealthDeduction;
+                    pPagibigDeduction.Value    = (double)p.PagibigDeduction;
+                    pOtherDeductions.Value     = (double)p.OtherDeductions;
+                    pBonus.Value               = (double)p.Bonus;
+                    pNetSalary.Value           = (double)p.NetSalary;
+                    pBranchName.Value          = string.IsNullOrWhiteSpace(p.BranchName) ? (object)DBNull.Value : p.BranchName!;
+                    pShiftType.Value           = string.IsNullOrWhiteSpace(p.ShiftType)  ? (object)DBNull.Value : p.ShiftType!;
                     cmd.ExecuteNonQuery();
                 }
 
@@ -215,44 +206,45 @@ namespace SihyuPOSPayroll.Services
             }
         }
 
-        // ---------- Existing CRUD ----------
+        // ── CRUD ──────────────────────────────────────────────────────────────
+
         public List<PayrollModel> GetAllPayrolls()
         {
             LastError = null;
             var list = new List<PayrollModel>();
             try
             {
-                using var conn = new MySqlConnection(_connectionString);
-                conn.Open();
-                const string sql = @"
-                    SELECT p.id, p.employee_id, p.start_date, p.end_date, p.total_days_worked, p.gross_salary,
-                           p.sss_deduction, p.philhealth_deduction, p.pagibig_deduction, p.other_deductions, p.bonus,
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = @"
+                    SELECT p.id, p.employee_id, p.start_date, p.end_date, p.total_days_worked,
+                           p.gross_salary, p.sss_deduction, p.philhealth_deduction,
+                           p.pagibig_deduction, p.other_deductions, p.bonus,
                            p.net_salary, p.branch_name, p.shift_type,
                            e.full_name
-                    FROM payroll p
+                    FROM   payroll p
                     LEFT JOIN employees e ON p.employee_id = e.id
-                    ORDER BY p.id DESC;";
-                using var cmd = new MySqlCommand(sql, conn);
+                    ORDER  BY p.id DESC;";
                 using var r = cmd.ExecuteReader();
                 while (r.Read())
                 {
                     list.Add(new PayrollModel
                     {
-                        Id = r.GetInt32("id"),
-                        EmployeeId = r.GetInt32("employee_id"),
-                        StartDate = r.GetDateTime("start_date"),
-                        EndDate = r.GetDateTime("end_date"),
-                        TotalDaysWorked = r.GetInt32("total_days_worked"),
-                        GrossSalary = r.GetDecimal("gross_salary"),
-                        SssDeduction = r.GetDecimal("sss_deduction"),
-                        PhilhealthDeduction = r.GetDecimal("philhealth_deduction"),
-                        PagibigDeduction = r.GetDecimal("pagibig_deduction"),
-                        OtherDeductions = r.GetDecimal("other_deductions"),
-                        Bonus = r.GetDecimal("bonus"),
-                        NetSalary = r.GetDecimal("net_salary"),
-                        BranchName = r["branch_name"]?.ToString() ?? string.Empty,
-                        ShiftType = r["shift_type"]?.ToString() ?? string.Empty,
-                        EmployeeFullName = r["full_name"]?.ToString() ?? ""
+                        Id                  = r.GetInt32(r.GetOrdinal("id")),
+                        EmployeeId          = r.GetInt32(r.GetOrdinal("employee_id")),
+                        StartDate           = DateTime.Parse(r.GetString(r.GetOrdinal("start_date"))),
+                        EndDate             = DateTime.Parse(r.GetString(r.GetOrdinal("end_date"))),
+                        TotalDaysWorked     = r.GetInt32(r.GetOrdinal("total_days_worked")),
+                        GrossSalary         = Convert.ToDecimal(r.GetValue(r.GetOrdinal("gross_salary"))),
+                        SssDeduction        = Convert.ToDecimal(r.GetValue(r.GetOrdinal("sss_deduction"))),
+                        PhilhealthDeduction = Convert.ToDecimal(r.GetValue(r.GetOrdinal("philhealth_deduction"))),
+                        PagibigDeduction    = Convert.ToDecimal(r.GetValue(r.GetOrdinal("pagibig_deduction"))),
+                        OtherDeductions     = Convert.ToDecimal(r.GetValue(r.GetOrdinal("other_deductions"))),
+                        Bonus               = Convert.ToDecimal(r.GetValue(r.GetOrdinal("bonus"))),
+                        NetSalary           = Convert.ToDecimal(r.GetValue(r.GetOrdinal("net_salary"))),
+                        BranchName          = r.IsDBNull(r.GetOrdinal("branch_name")) ? string.Empty : r.GetString(r.GetOrdinal("branch_name")),
+                        ShiftType           = r.IsDBNull(r.GetOrdinal("shift_type"))  ? string.Empty : r.GetString(r.GetOrdinal("shift_type")),
+                        EmployeeFullName    = r.IsDBNull(r.GetOrdinal("full_name"))   ? ""            : r.GetString(r.GetOrdinal("full_name"))
                     });
                 }
             }
@@ -269,9 +261,9 @@ namespace SihyuPOSPayroll.Services
             LastError = null;
             try
             {
-                using var conn = new MySqlConnection(_connectionString);
-                conn.Open();
-                using var cmd = new MySqlCommand("DELETE FROM payroll WHERE id=@Id;", conn);
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = "DELETE FROM payroll WHERE id = @Id;";
                 cmd.Parameters.AddWithValue("@Id", id);
                 return cmd.ExecuteNonQuery() > 0;
             }
@@ -290,31 +282,38 @@ namespace SihyuPOSPayroll.Services
             LastError = null;
             try
             {
-                using var conn = new MySqlConnection(_connectionString);
-                conn.Open();
-                const string sql = @"
+                using var conn = SqliteConnectionFactory.CreateOpenConnection();
+                using var cmd  = conn.CreateCommand();
+                cmd.CommandText = @"
                     UPDATE payroll SET
-                        employee_id=@EmployeeId, start_date=@StartDate, end_date=@EndDate,
-                        total_days_worked=@TotalDaysWorked, gross_salary=@GrossSalary,
-                        sss_deduction=@SssDeduction, philhealth_deduction=@PhilhealthDeduction,
-                        pagibig_deduction=@PagibigDeduction, other_deductions=@OtherDeductions, bonus=@Bonus,
-                        net_salary=@NetSalary, branch_name=@BranchName, shift_type=@ShiftType
-                    WHERE id=@Id;";
-                using var cmd = new MySqlCommand(sql, conn);
-                cmd.Parameters.AddWithValue("@Id", p.Id);
-                cmd.Parameters.AddWithValue("@EmployeeId", p.EmployeeId);
-                cmd.Parameters.AddWithValue("@StartDate", p.StartDate);
-                cmd.Parameters.AddWithValue("@EndDate", p.EndDate);
-                cmd.Parameters.AddWithValue("@TotalDaysWorked", p.TotalDaysWorked);
-                cmd.Parameters.AddWithValue("@GrossSalary", p.GrossSalary);
-                cmd.Parameters.AddWithValue("@SssDeduction", p.SssDeduction);
-                cmd.Parameters.AddWithValue("@PhilhealthDeduction", p.PhilhealthDeduction);
-                cmd.Parameters.AddWithValue("@PagibigDeduction", p.PagibigDeduction);
-                cmd.Parameters.AddWithValue("@OtherDeductions", p.OtherDeductions);
-                cmd.Parameters.AddWithValue("@Bonus", p.Bonus);
-                cmd.Parameters.AddWithValue("@NetSalary", p.NetSalary);
-                cmd.Parameters.AddWithValue("@BranchName", string.IsNullOrWhiteSpace(p.BranchName) ? (object)DBNull.Value : p.BranchName!);
-                cmd.Parameters.AddWithValue("@ShiftType", string.IsNullOrWhiteSpace(p.ShiftType) ? (object)DBNull.Value : p.ShiftType!);
+                        employee_id          = @EmployeeId,
+                        start_date           = @StartDate,
+                        end_date             = @EndDate,
+                        total_days_worked    = @TotalDaysWorked,
+                        gross_salary         = @GrossSalary,
+                        sss_deduction        = @SssDeduction,
+                        philhealth_deduction = @PhilhealthDeduction,
+                        pagibig_deduction    = @PagibigDeduction,
+                        other_deductions     = @OtherDeductions,
+                        bonus                = @Bonus,
+                        net_salary           = @NetSalary,
+                        branch_name          = @BranchName,
+                        shift_type           = @ShiftType
+                    WHERE id = @Id;";
+                cmd.Parameters.AddWithValue("@Id",                  p.Id);
+                cmd.Parameters.AddWithValue("@EmployeeId",          p.EmployeeId);
+                cmd.Parameters.AddWithValue("@StartDate",           p.StartDate.ToString("yyyy-MM-dd HH:mm:ss"));
+                cmd.Parameters.AddWithValue("@EndDate",             p.EndDate.ToString("yyyy-MM-dd HH:mm:ss"));
+                cmd.Parameters.AddWithValue("@TotalDaysWorked",     p.TotalDaysWorked);
+                cmd.Parameters.AddWithValue("@GrossSalary",         (double)p.GrossSalary);
+                cmd.Parameters.AddWithValue("@SssDeduction",        (double)p.SssDeduction);
+                cmd.Parameters.AddWithValue("@PhilhealthDeduction", (double)p.PhilhealthDeduction);
+                cmd.Parameters.AddWithValue("@PagibigDeduction",    (double)p.PagibigDeduction);
+                cmd.Parameters.AddWithValue("@OtherDeductions",     (double)p.OtherDeductions);
+                cmd.Parameters.AddWithValue("@Bonus",               (double)p.Bonus);
+                cmd.Parameters.AddWithValue("@NetSalary",           (double)p.NetSalary);
+                cmd.Parameters.AddWithValue("@BranchName",          string.IsNullOrWhiteSpace(p.BranchName) ? (object)DBNull.Value : p.BranchName!);
+                cmd.Parameters.AddWithValue("@ShiftType",           string.IsNullOrWhiteSpace(p.ShiftType)  ? (object)DBNull.Value : p.ShiftType!);
                 return cmd.ExecuteNonQuery() > 0;
             }
             catch (Exception ex)
@@ -325,16 +324,22 @@ namespace SihyuPOSPayroll.Services
             }
         }
 
-        // ---------- helpers ----------
-        private static decimal GetLastPerDayRate(MySqlConnection conn, int empId)
+        // ── Private helpers ───────────────────────────────────────────────────
+
+        // BUG FIX: replaced MySQL-specific IFNULL/NULLIF with SQLite-compatible COALESCE/CASE
+        private static decimal GetLastPerDayRate(SqliteConnection conn, int empId)
         {
-            const string sql = @"
-                SELECT ROUND(IFNULL(gross_salary / NULLIF(total_days_worked,0), 0), 2) AS rate
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = @"
+                SELECT ROUND(
+                    COALESCE(
+                        gross_salary / CASE WHEN total_days_worked = 0 THEN NULL ELSE total_days_worked END,
+                        0
+                    ), 2) AS rate
                 FROM payroll
                 WHERE employee_id = @empId
                 ORDER BY end_date DESC, id DESC
                 LIMIT 1;";
-            using var cmd = new MySqlCommand(sql, conn);
             cmd.Parameters.AddWithValue("@empId", empId);
             var obj = cmd.ExecuteScalar();
             return (obj == null || obj == DBNull.Value) ? 0m : Convert.ToDecimal(obj);

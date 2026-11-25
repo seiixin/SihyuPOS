@@ -1,5 +1,6 @@
 #nullable enable
-using MySql.Data.MySqlClient;
+using Microsoft.Data.Sqlite;
+using SihyuPOSPayroll.Data;
 using SihyuPOSPayroll.Models;
 using System;
 using System.Collections.Generic;
@@ -24,15 +25,15 @@ namespace SihyuPOSPayroll.Services
         /// surfaced by invoking <paramref name="onLowStock"/>.
         /// </summary>
         void Apply(
-            MySqlConnection conn,
-            MySqlTransaction tx,
+            SqliteConnection conn,
+            SqliteTransaction tx,
             IEnumerable<OrderItemModel> items,
             OrderType orderType,
             Action<LowStockAlert> onLowStock);
     }
 
     // =========================================================================
-    // StoreDeductionStrategy  (Task 9.2)
+    // StoreDeductionStrategy
     // =========================================================================
 
     /// <summary>
@@ -45,25 +46,29 @@ namespace SihyuPOSPayroll.Services
         private const int LowStockThreshold = 10;
 
         public void Apply(
-            MySqlConnection conn,
-            MySqlTransaction tx,
+            SqliteConnection conn,
+            SqliteTransaction tx,
             IEnumerable<OrderItemModel> items,
             OrderType orderType,
             Action<LowStockAlert> onLowStock)
         {
             foreach (var item in items)
             {
-                int productId = item.ProductId;
+                int productId  = item.ProductId;
                 int orderedQty = item.Quantity;
 
                 // ── Deduct ──────────────────────────────────────────────────
+                // BUG 25 FIX: add AND Quantity >= @orderedQty so stock cannot go
+                // negative. rowsAffected == 0 means either no such product OR
+                // insufficient stock — both are treated as a low-stock skip.
                 int rowsAffected;
-                using (var updateCmd = new MySqlCommand(
-                    "UPDATE inventory_items SET Quantity = Quantity - @orderedQty WHERE Id = @productId;",
-                    conn, tx))
+                using (var updateCmd = conn.CreateCommand())
                 {
+                    updateCmd.Transaction = tx;
+                    updateCmd.CommandText =
+                        "UPDATE inventory_items SET Quantity = Quantity - @orderedQty WHERE Id = @productId AND Quantity >= @orderedQty;";
                     updateCmd.Parameters.AddWithValue("@orderedQty", orderedQty);
-                    updateCmd.Parameters.AddWithValue("@productId", productId);
+                    updateCmd.Parameters.AddWithValue("@productId",  productId);
                     rowsAffected = updateCmd.ExecuteNonQuery();
                 }
 
@@ -74,16 +79,20 @@ namespace SihyuPOSPayroll.Services
                 }
 
                 // ── Low-stock check ─────────────────────────────────────────
-                using var selectCmd = new MySqlCommand(
-                    "SELECT Id, Name, Quantity FROM inventory_items WHERE Id = @productId LIMIT 1;",
-                    conn, tx);
+                // BUG 3 FIX: column is 'ProductName', not 'Name'
+                using var selectCmd = conn.CreateCommand();
+                selectCmd.Transaction = tx;
+                selectCmd.CommandText =
+                    "SELECT Id, ProductName, Quantity FROM inventory_items WHERE Id = @productId LIMIT 1;";
                 selectCmd.Parameters.AddWithValue("@productId", productId);
 
                 using var rdr = selectCmd.ExecuteReader();
                 if (rdr.Read())
                 {
-                    int remaining = rdr.GetInt32("Quantity");
-                    string name = rdr.IsDBNull(rdr.GetOrdinal("Name")) ? $"Product {productId}" : rdr.GetString("Name");
+                    int    remaining = rdr.GetInt32(rdr.GetOrdinal("Quantity"));
+                    string name      = rdr.IsDBNull(rdr.GetOrdinal("ProductName"))
+                                           ? $"Product {productId}"
+                                           : rdr.GetString(rdr.GetOrdinal("ProductName"));
 
                     if (remaining < LowStockThreshold)
                         onLowStock(new LowStockAlert(productId, name, remaining));
@@ -93,7 +102,7 @@ namespace SihyuPOSPayroll.Services
     }
 
     // =========================================================================
-    // RestaurantDeductionStrategy  (Tasks 10.1 + 10.4)
+    // RestaurantDeductionStrategy
     // =========================================================================
 
     /// <summary>
@@ -107,32 +116,34 @@ namespace SihyuPOSPayroll.Services
         private const int LowStockThreshold = 10;
 
         public void Apply(
-            MySqlConnection conn,
-            MySqlTransaction tx,
+            SqliteConnection conn,
+            SqliteTransaction tx,
             IEnumerable<OrderItemModel> items,
             OrderType orderType,
             Action<LowStockAlert> onLowStock)
         {
             foreach (var item in items)
             {
-                int menuItemId = item.ProductId;   // ProductId maps to menu item id
+                int menuItemId = item.ProductId;
                 int orderedQty = item.Quantity;
 
                 // ── 1. Fetch recipe ingredients for this menu item ──────────
                 var recipes = new List<(int IngredientId, decimal QuantityPerServing)>();
 
-                using (var recipeCmd = new MySqlCommand(
-                    @"SELECT ir.IngredientId, ir.QuantityPerServing
-                      FROM IngredientRecipes ir
-                      WHERE ir.MenuItemId = @menuItemId;",
-                    conn, tx))
+                using (var recipeCmd = conn.CreateCommand())
                 {
+                    recipeCmd.Transaction = tx;
+                    recipeCmd.CommandText = @"
+                        SELECT ir.IngredientId, ir.QuantityPerServing
+                        FROM   IngredientRecipes ir
+                        WHERE  ir.MenuItemId = @menuItemId;";
                     recipeCmd.Parameters.AddWithValue("@menuItemId", menuItemId);
+
                     using var recipeRdr = recipeCmd.ExecuteReader();
                     while (recipeRdr.Read())
                     {
-                        int ingId = recipeRdr.GetInt32("IngredientId");
-                        decimal qps = recipeRdr.GetDecimal("QuantityPerServing");
+                        int     ingId = recipeRdr.GetInt32(recipeRdr.GetOrdinal("IngredientId"));
+                        decimal qps   = recipeRdr.GetDecimal(recipeRdr.GetOrdinal("QuantityPerServing"));
                         recipes.Add((ingId, qps));
                     }
                 }
@@ -140,7 +151,6 @@ namespace SihyuPOSPayroll.Services
                 if (recipes.Count == 0)
                 {
                     Debug.WriteLine($"[RestaurantDeduction] Missing recipe for menuItem {menuItemId}");
-                    // Raise sentinel alert so callers know recipe data is missing
                     onLowStock(new LowStockAlert(menuItemId, $"MenuItem {menuItemId}", -1));
                     // Still attempt packaging deduction for Take-Out below
                 }
@@ -153,18 +163,22 @@ namespace SihyuPOSPayroll.Services
 
                         // Fetch FIFO-ordered batches
                         var batches = new List<(int BatchId, decimal YieldPerBatch)>();
-                        using (var batchCmd = new MySqlCommand(
-                            @"SELECT Id, YieldPerBatch
-                              FROM IngredientBatches
-                              WHERE IngredientId = @ingredientId
-                              ORDER BY CreatedAt ASC;",
-                            conn, tx))
+                        using (var batchCmd = conn.CreateCommand())
                         {
+                            batchCmd.Transaction = tx;
+                            batchCmd.CommandText = @"
+                                SELECT Id, YieldPerBatch
+                                FROM   IngredientBatches
+                                WHERE  IngredientId = @ingredientId
+                                ORDER  BY CreatedAt ASC;";
                             batchCmd.Parameters.AddWithValue("@ingredientId", ingredientId);
+
                             using var batchRdr = batchCmd.ExecuteReader();
                             while (batchRdr.Read())
                             {
-                                batches.Add((batchRdr.GetInt32("Id"), batchRdr.GetDecimal("YieldPerBatch")));
+                                batches.Add((
+                                    batchRdr.GetInt32(batchRdr.GetOrdinal("Id")),
+                                    batchRdr.GetDecimal(batchRdr.GetOrdinal("YieldPerBatch"))));
                             }
                         }
 
@@ -179,20 +193,24 @@ namespace SihyuPOSPayroll.Services
                                 // Exhaust entire batch → delete it
                                 remaining -= yield;
 
-                                using var deleteCmd = new MySqlCommand(
-                                    "DELETE FROM IngredientBatches WHERE Id = @batchId;",
-                                    conn, tx);
+                                using var deleteCmd = conn.CreateCommand();
+                                deleteCmd.Transaction = tx;
+                                deleteCmd.CommandText =
+                                    "DELETE FROM IngredientBatches WHERE Id = @batchId;";
                                 deleteCmd.Parameters.AddWithValue("@batchId", batchId);
                                 deleteCmd.ExecuteNonQuery();
                             }
                             else
                             {
                                 // Partial deduction
-                                using var updateBatchCmd = new MySqlCommand(
-                                    "UPDATE IngredientBatches SET YieldPerBatch = YieldPerBatch - @consumed WHERE Id = @batchId;",
-                                    conn, tx);
+                                using var updateBatchCmd = conn.CreateCommand();
+                                updateBatchCmd.Transaction = tx;
+                                updateBatchCmd.CommandText = @"
+                                    UPDATE IngredientBatches
+                                    SET    YieldPerBatch = YieldPerBatch - @consumed
+                                    WHERE  Id = @batchId;";
                                 updateBatchCmd.Parameters.AddWithValue("@consumed", remaining);
-                                updateBatchCmd.Parameters.AddWithValue("@batchId", batchId);
+                                updateBatchCmd.Parameters.AddWithValue("@batchId",  batchId);
                                 updateBatchCmd.ExecuteNonQuery();
                                 remaining = 0m;
                             }
@@ -200,24 +218,26 @@ namespace SihyuPOSPayroll.Services
 
                         // ── 3. Low-stock check: sum remaining yield for this ingredient ──
                         decimal totalRemainingYield;
-                        using (var sumCmd = new MySqlCommand(
-                            @"SELECT COALESCE(SUM(YieldPerBatch), 0)
-                              FROM IngredientBatches
-                              WHERE IngredientId = @ingredientId;",
-                            conn, tx))
+                        using (var sumCmd = conn.CreateCommand())
                         {
+                            sumCmd.Transaction = tx;
+                            sumCmd.CommandText = @"
+                                SELECT COALESCE(SUM(YieldPerBatch), 0)
+                                FROM   IngredientBatches
+                                WHERE  IngredientId = @ingredientId;";
                             sumCmd.Parameters.AddWithValue("@ingredientId", ingredientId);
                             totalRemainingYield = Convert.ToDecimal(sumCmd.ExecuteScalar());
                         }
 
                         if (totalRemainingYield < LowStockThreshold)
                         {
-                            // Fetch ingredient name from inventory_items
+                            // BUG 3 FIX: column is 'ProductName', not 'Name'
                             string ingName = $"Ingredient {ingredientId}";
-                            using (var nameCmd = new MySqlCommand(
-                                "SELECT Name FROM inventory_items WHERE Id = @id LIMIT 1;",
-                                conn, tx))
+                            using (var nameCmd = conn.CreateCommand())
                             {
+                                nameCmd.Transaction = tx;
+                                nameCmd.CommandText =
+                                    "SELECT ProductName FROM inventory_items WHERE Id = @id LIMIT 1;";
                                 nameCmd.Parameters.AddWithValue("@id", ingredientId);
                                 var nameVal = nameCmd.ExecuteScalar();
                                 if (nameVal != null && nameVal != DBNull.Value)
@@ -234,31 +254,36 @@ namespace SihyuPOSPayroll.Services
                 {
                     var packagingMaterials = new List<(int InventoryItemId, int QuantityPerOrder)>();
 
-                    using (var pkgCmd = new MySqlCommand(
-                        @"SELECT InventoryItemId, QuantityPerOrder
-                          FROM PackagingMaterials
-                          WHERE MenuItemId = @menuItemId;",
-                        conn, tx))
+                    using (var pkgCmd = conn.CreateCommand())
                     {
+                        pkgCmd.Transaction = tx;
+                        pkgCmd.CommandText = @"
+                            SELECT InventoryItemId, QuantityPerOrder
+                            FROM   PackagingMaterials
+                            WHERE  MenuItemId = @menuItemId;";
                         pkgCmd.Parameters.AddWithValue("@menuItemId", menuItemId);
+
                         using var pkgRdr = pkgCmd.ExecuteReader();
                         while (pkgRdr.Read())
                         {
                             packagingMaterials.Add((
-                                pkgRdr.GetInt32("InventoryItemId"),
-                                pkgRdr.GetInt32("QuantityPerOrder")));
+                                pkgRdr.GetInt32(pkgRdr.GetOrdinal("InventoryItemId")),
+                                pkgRdr.GetInt32(pkgRdr.GetOrdinal("QuantityPerOrder"))));
                         }
                     }
 
                     foreach (var (inventoryItemId, quantityPerOrder) in packagingMaterials)
                     {
                         int rowsAffected;
-                        using (var pkgUpdateCmd = new MySqlCommand(
-                            "UPDATE inventory_items SET Quantity = Quantity - @quantityPerOrder WHERE Id = @inventoryItemId;",
-                            conn, tx))
+                        using (var pkgUpdateCmd = conn.CreateCommand())
                         {
+                            pkgUpdateCmd.Transaction = tx;
+                            pkgUpdateCmd.CommandText = @"
+                                UPDATE inventory_items
+                                SET    Quantity = Quantity - @quantityPerOrder
+                                WHERE  Id = @inventoryItemId;";
                             pkgUpdateCmd.Parameters.AddWithValue("@quantityPerOrder", quantityPerOrder);
-                            pkgUpdateCmd.Parameters.AddWithValue("@inventoryItemId", inventoryItemId);
+                            pkgUpdateCmd.Parameters.AddWithValue("@inventoryItemId",  inventoryItemId);
                             rowsAffected = pkgUpdateCmd.ExecuteNonQuery();
                         }
 
@@ -268,19 +293,20 @@ namespace SihyuPOSPayroll.Services
                             continue;
                         }
 
-                        // Low-stock check for packaging material
-                        using var pkgSelectCmd = new MySqlCommand(
-                            "SELECT Id, Name, Quantity FROM inventory_items WHERE Id = @inventoryItemId LIMIT 1;",
-                            conn, tx);
+                        // BUG 3 FIX: column is 'ProductName', not 'Name'
+                        using var pkgSelectCmd = conn.CreateCommand();
+                        pkgSelectCmd.Transaction = tx;
+                        pkgSelectCmd.CommandText =
+                            "SELECT Id, ProductName, Quantity FROM inventory_items WHERE Id = @inventoryItemId LIMIT 1;";
                         pkgSelectCmd.Parameters.AddWithValue("@inventoryItemId", inventoryItemId);
 
                         using var pkgQtyRdr = pkgSelectCmd.ExecuteReader();
                         if (pkgQtyRdr.Read())
                         {
-                            int remaining = pkgQtyRdr.GetInt32("Quantity");
-                            string pkgName = pkgQtyRdr.IsDBNull(pkgQtyRdr.GetOrdinal("Name"))
-                                ? $"PackagingItem {inventoryItemId}"
-                                : pkgQtyRdr.GetString("Name");
+                            int    remaining = pkgQtyRdr.GetInt32(pkgQtyRdr.GetOrdinal("Quantity"));
+                            string pkgName   = pkgQtyRdr.IsDBNull(pkgQtyRdr.GetOrdinal("ProductName"))
+                                                   ? $"PackagingItem {inventoryItemId}"
+                                                   : pkgQtyRdr.GetString(pkgQtyRdr.GetOrdinal("ProductName"));
 
                             if (remaining < LowStockThreshold)
                                 onLowStock(new LowStockAlert(inventoryItemId, pkgName, remaining));
@@ -292,21 +318,18 @@ namespace SihyuPOSPayroll.Services
     }
 
     // =========================================================================
-    // DeductionEngine  (Task 9.1)
+    // DeductionEngine
     // =========================================================================
 
     /// <summary>
     /// Orchestrates inventory deduction when an order is confirmed as paid.
     /// Selects the appropriate <see cref="IDeductionStrategy"/> based on the
     /// current <see cref="SettingsService.CurrentMode"/>, runs it inside a
-    /// single database transaction, and raises <see cref="LowStockDetected"/>
+    /// single SQLite transaction, and raises <see cref="LowStockDetected"/>
     /// for every low-stock alert produced during the deduction.
     /// </summary>
     public class DeductionEngine
     {
-        private const string DefaultCs =
-            "server=localhost;user=root;password=;database=sihyu_pos;";
-
         /// <summary>
         /// Raised after a successful deduction commit for each item whose
         /// remaining quantity (or batch yield in RestaurantMode) has fallen
@@ -315,7 +338,7 @@ namespace SihyuPOSPayroll.Services
         public event Action<LowStockAlert>? LowStockDetected;
 
         /// <summary>
-        /// Opens a connection, selects the strategy for the current
+        /// Opens a SQLite connection, selects the strategy for the current
         /// <see cref="SystemMode"/>, runs it in a transaction, commits, then
         /// raises <see cref="LowStockDetected"/> for each collected alert.
         /// </summary>
@@ -326,23 +349,20 @@ namespace SihyuPOSPayroll.Services
         /// <see cref="SystemMode"/> is <see cref="SystemMode.RestaurantMode"/>;
         /// defaults to <see cref="OrderType.NotApplicable"/> for StoreMode.
         /// </param>
-        /// <param name="cs">Optional override for the MySQL connection string.</param>
         public void Apply(
             int orderId,
             IEnumerable<OrderItemModel> items,
-            OrderType orderType = OrderType.NotApplicable,
-            string cs = DefaultCs)
+            OrderType orderType = OrderType.NotApplicable)
         {
             IDeductionStrategy strategy =
                 SettingsService.Instance.CurrentMode == SystemMode.StoreMode
                     ? new StoreDeductionStrategy()
-                    : new RestaurantDeductionStrategy();
+                    : (IDeductionStrategy)new RestaurantDeductionStrategy();
 
             var alerts = new List<LowStockAlert>();
 
-            using var conn = new MySqlConnection(cs);
-            conn.Open();
-            using var tx = conn.BeginTransaction();
+            using var conn = SqliteConnectionFactory.CreateOpenConnection();
+            using var tx   = conn.BeginTransaction();
 
             try
             {

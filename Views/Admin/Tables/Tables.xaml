@@ -1,8 +1,8 @@
-<UserControl x:Class="SihyuPOSPayroll.Views.Admin.Tables.Tables"
+﻿<UserControl x:Class="SihyuPOSPayroll.Views.Admin.Tables.Tables"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="clr-namespace:SihyuPOSPayroll.ViewModels"
-             Background="#000000">
+             >
 
     <UserControl.DataContext>
         <vm:TableViewModel/>
@@ -16,11 +16,11 @@
         </Grid.RowDefinitions>
 
         <!-- Page Header -->
-        <Border BorderBrush="#072219" BorderThickness="0,0,0,1" Margin="0,0,0,20" Padding="0,0,0,14">
+        <Border BorderBrush="#D1FAE5" BorderThickness="0,0,0,1" Margin="0,0,0,20" Padding="0,0,0,14">
             <TextBlock Text="Tables Management"
                        FontSize="26"
                        FontWeight="Bold"
-                       Foreground="#477C60"/>
+                       Foreground="#15803D"/>
         </Border>
 
         <!-- Toolbar: Add + Refresh -->
@@ -32,10 +32,10 @@
 
             <!-- Status legend -->
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <Border Width="10" Height="10" CornerRadius="5" Background="#128854" Margin="0,0,6,0"/>
-                <TextBlock Text="Available" Foreground="#9CA3AF" FontSize="13" Margin="0,0,16,0"/>
+                <Border Width="10" Height="10" CornerRadius="5" Background="#15803D" Margin="0,0,6,0"/>
+                <TextBlock Text="Available" Foreground="#4B6358" FontSize="13" Margin="0,0,16,0"/>
                 <Border Width="10" Height="10" CornerRadius="5" Background="#EF4444" Margin="0,0,6,0"/>
-                <TextBlock Text="Occupied"  Foreground="#9CA3AF" FontSize="13"/>
+                <TextBlock Text="Occupied"  Foreground="#4B6358" FontSize="13"/>
             </StackPanel>
 
             <!-- Action buttons -->
@@ -51,7 +51,7 @@
         </Grid>
 
         <!-- Tables DataGrid -->
-        <Border Grid.Row="2" Background="#090B17" CornerRadius="10" Padding="0">
+        <Border Grid.Row="2" Background="#F7FCFA" CornerRadius="10" Padding="0">
             <DataGrid x:Name="TablesGrid"
                       ItemsSource="{Binding Tables}"
                       SelectedItem="{Binding Selected, Mode=TwoWay}"
@@ -59,7 +59,7 @@
                       CanUserAddRows="False"
                       IsReadOnly="True"
                       BorderThickness="0"
-                      Background="#090B17"
+                      Background="#F7FCFA"
                       ColumnHeaderHeight="44"
                       RowHeight="48"
                       SelectionMode="Single"
@@ -78,7 +78,7 @@
                                         HorizontalAlignment="Left" Margin="8,0">
                                     <Border.Style>
                                         <Style TargetType="Border">
-                                            <Setter Property="Background" Value="#128854"/>
+                                            <Setter Property="Background" Value="#15803D"/>
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding Status}" Value="Occupied">
                                                     <Setter Property="Background" Value="#EF4444"/>
@@ -118,8 +118,8 @@
               Visibility="Collapsed"
               Background="#AA000000"
               Grid.RowSpan="3">
-            <Border Background="#090B17"
-                    BorderBrush="#072219"
+            <Border Background="#F7FCFA"
+                    BorderBrush="#D1FAE5"
                     BorderThickness="1"
                     CornerRadius="12"
                     Padding="28"
@@ -131,10 +131,10 @@
                                Text="Add Table"
                                FontSize="20"
                                FontWeight="Bold"
-                               Foreground="#477C60"
+                               Foreground="#15803D"
                                Margin="0,0,0,20"/>
 
-                    <TextBlock Text="Table Number" Foreground="#9CA3AF" FontSize="13" Margin="0,0,0,6"/>
+                    <TextBlock Text="Table Number" Foreground="#4B6358" FontSize="13" Margin="0,0,0,6"/>
                     <TextBox x:Name="TableNumberBox" Margin="0,0,0,20"/>
 
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">

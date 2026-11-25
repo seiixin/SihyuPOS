@@ -203,8 +203,15 @@ namespace SihyuPOSPayroll.ViewModels
                 CreatedAt = source.CreatedAt,
                 CashRegisterId = source.CashRegisterId,
                 OrderStatus = source.OrderStatus,
-                OrderedByUserId = source.OrderedByUserId
+                OrderedByUserId = source.OrderedByUserId,
+                // BUG 9 & 15 FIX: copy OrderType so editing an existing order
+                // preserves the original type and doesn't silently reset it.
+                OrderType = source.OrderType
             };
+
+            // Sync the SelectedOrderType proxy so the UI ComboBox reflects the value.
+            _selectedOrderType = source.OrderType;
+            OnPropertyChanged(nameof(SelectedOrderType));
 
             EditingItems = new ObservableCollection<OrderItemModel>(
                 (items ?? new List<OrderItemModel>()).Select(it => new OrderItemModel
@@ -281,6 +288,10 @@ namespace SihyuPOSPayroll.ViewModels
             {
                 EditingOrder.PaymentStatus = _editingPaymentStatus;
                 EditingOrder.OrderStatus   = _editingOrderStatus;
+                // BUG 9 FIX: propagate the SelectedOrderType to the model before saving.
+                // SaveEditor_Click in POSView does this too, but the admin Orders view
+                // calls SaveEditingAndGetId() directly without setting it first.
+                EditingOrder.OrderType = _selectedOrderType;
                 EditingOrder.Items = new List<OrderItemModel>(EditingItems);
                 EditingOrder.RecalculateTotal();
 

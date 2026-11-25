@@ -86,7 +86,7 @@ namespace SihyuPOSPayroll.ViewModels
             }
         }
 
-        // Uses Windows' “Microsoft Print to PDF” printer.
+        // Uses Windows' ï¿½Microsoft Print to PDFï¿½ printer.
         private void ExportPdf()
         {
             try
@@ -98,7 +98,7 @@ namespace SihyuPOSPayroll.ViewModels
                     FontSize = 12
                 };
 
-                doc.Blocks.Add(new Paragraph(new Run($"Sales Report — {SelectedPeriod}"))
+                doc.Blocks.Add(new Paragraph(new Run($"Sales Report ï¿½ {SelectedPeriod}"))
                 {
                     FontSize = 18,
                     FontWeight = FontWeights.Bold
@@ -142,8 +142,16 @@ namespace SihyuPOSPayroll.ViewModels
                 var dlg = new PrintDialog();
                 if (dlg.ShowDialog() == true)
                 {
-                    // User can pick "Microsoft Print to PDF" to save as a PDF file
-                    dlg.PrintDocument(((IDocumentPaginatorSource)doc).DocumentPaginator, "Sales Report");
+                    // BUG 28 FIX: A bare FlowDocument's DocumentPaginator produces
+                    // zero-size pages unless PageWidth and PageHeight are set to the
+                    // printer's printable area first. Without this, the paginator
+                    // throws or prints blank pages.
+                    doc.PageWidth  = dlg.PrintableAreaWidth;
+                    doc.PageHeight = dlg.PrintableAreaHeight;
+
+                    // User can pick "Microsoft Print to PDF" to save as a PDF file.
+                    IDocumentPaginatorSource source = doc;
+                    dlg.PrintDocument(source.DocumentPaginator, "Sales Report");
                 }
             }
             catch (Exception ex)

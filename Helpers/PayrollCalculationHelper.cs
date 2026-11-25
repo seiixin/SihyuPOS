@@ -9,8 +9,14 @@ namespace SihyuPOSPayroll.Helpers
     {
         public static int CalculateDaysWorked(DateTime startDate, DateTime endDate, List<AttendanceModel> attendanceRecords)
         {
+            // BUG 5 FIX: only count days where BOTH time_in AND time_out are recorded.
+            // "Clocked In" means the employee clocked in but never clocked out — an
+            // incomplete shift. Counting it overpays the employee.
             return attendanceRecords
-                .Where(a => a.Date >= startDate && a.Date <= endDate && a.Status == "Present")
+                .Where(a => a.Date >= startDate
+                         && a.Date <= endDate
+                         && a.TimeIn.HasValue
+                         && a.TimeOut.HasValue)
                 .Count();
         }
 

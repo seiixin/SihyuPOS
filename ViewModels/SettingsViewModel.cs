@@ -48,6 +48,12 @@ namespace SihyuPOSPayroll.ViewModels
             {
                 try
                 {
+                    // BUG 13 FIX: enforce locked flags on save so a stale IsEnabled=false
+                    // on a locked module cannot slip through to SettingsService.Save().
+                    // Locked modules are always forced to IsEnabled=true before persisting.
+                    foreach (var module in ModuleConfigs.Where(m => m.IsLocked))
+                        module.IsEnabled = true;
+
                     SettingsService.Instance.Save(SelectedMode, ModuleConfigs);
                     SaveResultMessage = "Settings saved successfully.";
                 }

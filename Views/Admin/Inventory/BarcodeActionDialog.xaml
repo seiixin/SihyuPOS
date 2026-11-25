@@ -1,4 +1,4 @@
-<UserControl x:Class="SihyuPOSPayroll.Views.Admin.Inventory.BarcodeActionDialog"
+﻿<UserControl x:Class="SihyuPOSPayroll.Views.Admin.Inventory.BarcodeActionDialog"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -9,16 +9,16 @@
     <!-- Dim overlay -->
     <Grid Background="#99000000">
         <!-- Dialog card — centred -->
-        <Border Background="#111827"
+        <Border Background="#F7FCFA"
                 CornerRadius="14"
-                BorderBrush="#1F2937"
+                BorderBrush="#A5D6BE"
                 BorderThickness="1"
                 Padding="28,24"
                 Width="420"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center">
             <Border.Effect>
-                <DropShadowEffect BlurRadius="40" Color="#000000" ShadowDepth="0" Opacity="0.7"/>
+                <DropShadowEffect BlurRadius="40" Color="#DDF2E8" ShadowDepth="0" Opacity="0.7"/>
             </Border.Effect>
 
             <StackPanel>
@@ -27,13 +27,13 @@
                     <TextBlock Text="&#xE943;"
                                FontFamily="Segoe MDL2 Assets"
                                FontSize="18"
-                               Foreground="#477C60"
+                               Foreground="#15803D"
                                VerticalAlignment="Center"
                                Margin="0,0,10,0"/>
                     <TextBlock Text="Item Found"
                                FontSize="18"
                                FontWeight="SemiBold"
-                               Foreground="#F3F4F6"
+                               Foreground="#111827"
                                VerticalAlignment="Center"/>
                 </StackPanel>
 
@@ -42,7 +42,7 @@
                            Text=""
                            FontSize="22"
                            FontWeight="Bold"
-                           Foreground="#34D399"
+                           Foreground="#4B6358"
                            TextWrapping="Wrap"
                            Margin="0,0,0,4"/>
 
@@ -51,33 +51,33 @@
                     <TextBlock x:Name="CategoryText"
                                Text=""
                                FontSize="13"
-                               Foreground="#6B7280"/>
+                               Foreground="#4B6358"/>
                     <TextBlock Text=" · "
                                FontSize="13"
-                               Foreground="#374151"/>
+                               Foreground="#4B6358"/>
                     <TextBlock Text="Stock: "
                                FontSize="13"
-                               Foreground="#6B7280"/>
+                               Foreground="#4B6358"/>
                     <TextBlock x:Name="StockText"
                                Text=""
                                FontSize="13"
                                FontWeight="SemiBold"
-                               Foreground="#9CA3AF"/>
+                               Foreground="#4B6358"/>
                     <TextBlock Text=" · "
                                FontSize="13"
-                               Foreground="#374151"/>
+                               Foreground="#4B6358"/>
                     <TextBlock Text="Price: ₱"
                                FontSize="13"
-                               Foreground="#6B7280"/>
+                               Foreground="#4B6358"/>
                     <TextBlock x:Name="PriceText"
                                Text=""
                                FontSize="13"
                                FontWeight="SemiBold"
-                               Foreground="#9CA3AF"/>
+                               Foreground="#4B6358"/>
                 </StackPanel>
 
                 <!-- Divider -->
-                <Border BorderBrush="#1F2937" BorderThickness="0,1,0,0" Margin="0,0,0,20"/>
+                <Border BorderBrush="#A5D6BE" BorderThickness="0,1,0,0" Margin="0,0,0,20"/>
 
                 <!-- Quick-action buttons -->
                 <Grid Margin="0,0,0,14">
@@ -99,9 +99,9 @@
                                     <Setter.Value>
                                         <ControlTemplate TargetType="Button">
                                             <Border x:Name="Bd"
-                                                    Background="#0D2818"
+                                                    Background="#D1FAE5"
                                                     CornerRadius="10"
-                                                    BorderBrush="#166534"
+                                                    BorderBrush="#A5D6BE"
                                                     BorderThickness="1">
                                                 <ContentPresenter HorizontalAlignment="Center"
                                                                   VerticalAlignment="Center"/>
@@ -127,17 +127,17 @@
                             <TextBlock Text="&#xE710;"
                                        FontFamily="Segoe MDL2 Assets"
                                        FontSize="14"
-                                       Foreground="#4ADE80"
+                                       Foreground="#15803D"
                                        VerticalAlignment="Center"
                                        Margin="0,0,8,0"/>
                             <StackPanel VerticalAlignment="Center">
                                 <TextBlock Text="Add Stock"
                                            FontSize="13"
                                            FontWeight="SemiBold"
-                                           Foreground="#4ADE80"/>
+                                           Foreground="#15803D"/>
                                 <TextBlock Text="+1 Quantity"
                                            FontSize="11"
-                                           Foreground="#16A34A"/>
+                                           Foreground="#15803D"/>
                             </StackPanel>
                         </StackPanel>
                     </Button>
@@ -154,9 +154,9 @@
                                     <Setter.Value>
                                         <ControlTemplate TargetType="Button">
                                             <Border x:Name="Bd"
-                                                    Background="#0F172A"
+                                                    Background="#F0FAF5"
                                                     CornerRadius="10"
-                                                    BorderBrush="#1E3A5F"
+                                                    BorderBrush="#A5D6BE"
                                                     BorderThickness="1">
                                                 <ContentPresenter HorizontalAlignment="Center"
                                                                   VerticalAlignment="Center"/>
@@ -203,7 +203,7 @@
                         Click="Cancel_Click"
                         Background="Transparent"
                         BorderThickness="0"
-                        Foreground="#6B7280"
+                        Foreground="#4B6358"
                         FontSize="13"
                         HorizontalAlignment="Center"
                         Cursor="Hand"

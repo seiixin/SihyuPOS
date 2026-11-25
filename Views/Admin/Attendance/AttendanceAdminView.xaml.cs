@@ -1,5 +1,6 @@
 #nullable enable
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
@@ -42,6 +43,13 @@ namespace SihyuPOSPayroll.Views.Admin.Attendance
         {
             if (DataContext is not AttendanceAdminViewModel vm) return;
 
+            // Hide the Work Schedules button for non-admin users — it's an admin-only tool.
+            foreach (var btn in FindVisualChildren<Button>(this)
+                         .Where(b => b.Tag?.ToString() == "AdminOnly"))
+            {
+                btn.Visibility = Helpers.Session.IsAdmin ? Visibility.Visible : Visibility.Collapsed;
+            }
+
             try
             {
                 if (vm.FilterCommand?.CanExecute(null) == true)
@@ -53,7 +61,7 @@ namespace SihyuPOSPayroll.Views.Admin.Attendance
             catch (Exception ex)
             {
                 MessageBox.Show("Failed to load attendance/leave data.\n\n" + ex.Message,
-                    "Attendance Admin", MessageBoxButton.OK, MessageBoxImage.Error);
+                    "Attendance", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -63,7 +71,7 @@ namespace SihyuPOSPayroll.Views.Admin.Attendance
             Unloaded -= OnUnloaded;
         }
 
-        // Keep VM.SelectedLeave in sync with the grid�s selection
+        // Keep VM.SelectedLeave in sync with the grid�s selection
         private void LeaveGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (_savingRow) return;
@@ -164,7 +172,21 @@ namespace SihyuPOSPayroll.Views.Admin.Attendance
             catch (Exception ex)
             {
                 MessageBox.Show("Failed to open Work Schedules.\n\n" + ex.Message,
-                    "Attendance Admin", MessageBoxButton.OK, MessageBoxImage.Error);
+                    "Attendance", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        // ── Helpers ───────────────────────────────────────────────────────────
+
+        private static IEnumerable<T> FindVisualChildren<T>(DependencyObject parent) where T : DependencyObject
+        {
+            if (parent == null) yield break;
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                if (child is T t) yield return t;
+                foreach (var grandchild in FindVisualChildren<T>(child))
+                    yield return grandchild;
             }
         }
     }

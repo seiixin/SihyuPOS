@@ -54,7 +54,7 @@ namespace SihyuPOSPayroll.ViewModels
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    public class SidebarViewModel : INotifyPropertyChanged
+    public class SidebarViewModel : INotifyPropertyChanged, IDisposable
     {
         // -----------------------------
         // Dependencies / identity
@@ -269,15 +269,21 @@ namespace SihyuPOSPayroll.ViewModels
             ("Inventory",        "\uE8B4", "INFRASTRUCTURE", "Inventory"),
             ("Categories",       "\uE8FD", "INFRASTRUCTURE", "Categories"),
 
-            // ADMIN TOOLS
+            // ADMIN TOOLS — admin-only management items
             ("Users",            "\uE716", "ADMIN TOOLS",    "Users"),
             ("Employees",        "\uE716", "ADMIN TOOLS",    "Employees"),
             ("Positions",        "\uE821", "ADMIN TOOLS",    "Positions"),
+            ("Payroll",          "\uE8C7", "ADMIN TOOLS",    "Payroll"),
+
+            // MY TOOLS — self-service items visible to all roles (including Employee)
+            ("Attendance",       "\uE7EF", "MY TOOLS",       "Attendance"),
+            ("PayslipRequests",  "\uE8A5", "MY TOOLS",       "PayslipRequests"),
 
             // FINANCIALS
             ("POS",              "\uE8C9", "FINANCIALS",     "POS"),
             ("Orders",           "\uE8A5", "FINANCIALS",     "Orders"),
             ("Receipts",         "\uE9F9", "FINANCIALS",     "Receipts"),
+            ("Sales",            "\uE8D6", "FINANCIALS",     "Sales"),
         };
 
         private void InitializeMenuItems()
@@ -325,12 +331,11 @@ namespace SihyuPOSPayroll.ViewModels
             }
 
             // Insert groups in canonical order
-            foreach (var header in new[] { "INFRASTRUCTURE", "ADMIN TOOLS", "FINANCIALS" })
+            foreach (var header in new[] { "INFRASTRUCTURE", "ADMIN TOOLS", "MY TOOLS", "FINANCIALS" })
             {
                 if (groupMap.TryGetValue(header, out var g) && g.Items.Count > 0)
                     MenuGroups.Add(g);
             }
-
             // Admin gets the Permissions item in ADMIN TOOLS
             if (IsAdmin)
             {
@@ -504,6 +509,41 @@ namespace SihyuPOSPayroll.ViewModels
                     CurrentView = new Views.Cashier.POS.POSView();
                     break;
 
+                // BUG 12 FIX: previously missing navigation cases
+                case "payroll":
+                    CurrentView = new Payroll();
+                    break;
+
+                case "menu":
+                    CurrentView = new MenuView();
+                    break;
+
+                case "attendance":
+                    // Employees get their own self-service clock-in view.
+                    // Admins get the full attendance management view.
+                    CurrentView = Helpers.Session.IsAdmin
+                        ? (UserControl)new AttendanceAdminView()
+                        : new Views.Employee.Attendance.AttendanceView();
+                    break;
+
+                case "payslip requests":
+                case "payslip_requests":
+                case "paysliprequests":
+                    CurrentView = new Payslip();
+                    break;
+
+                case "tables":
+                    CurrentView = new Tables();
+                    break;
+
+                case "sales":
+                    CurrentView = new Sales();
+                    break;
+
+                case "settings":
+                    CurrentView = new SettingsView();
+                    break;
+
                 case "logout":
                     LogoutToMainWindow();
                     break;
@@ -534,17 +574,35 @@ namespace SihyuPOSPayroll.ViewModels
 
         private static void LogoutToMainWindow()
         {
+            // BUG 7 FIX 1: Clear session so CurrentUser / CurrentUserId / token are reset.
+            Helpers.Session.Clear();
+
             var mainWindow = new MainWindow();
             mainWindow.Show();
 
+            // BUG 7 FIX 2: Close ALL non-main windows, not just the first one.
+            // Collect to a list first to avoid modifying the collection while iterating.
+            var toClose = new List<Window>();
             foreach (Window window in Application.Current.Windows)
             {
                 if (window != mainWindow)
-                {
-                    window.Close();
-                    break;
-                }
+                    toClose.Add(window);
             }
+            foreach (var window in toClose)
+                window.Close();
+        }
+
+        // -----------------------------
+        // IDisposable
+        // -----------------------------
+        /// <summary>
+        /// BUG 18 FIX: Unsubscribe from the static SettingsService.SettingsChanged event
+        /// so stale SidebarViewModel instances (created on each login) are not held alive
+        /// by the singleton and don't fire InitializeMenuItems on closed windows.
+        /// </summary>
+        public void Dispose()
+        {
+            SettingsService.Instance.SettingsChanged -= InitializeMenuItems;
         }
 
         // -----------------------------

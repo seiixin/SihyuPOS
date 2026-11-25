@@ -1,4 +1,4 @@
-<UserControl x:Class="SihyuPOSPayroll.Views.Components.Sidebar"
+﻿<UserControl x:Class="SihyuPOSPayroll.Views.Components.Sidebar"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -8,173 +8,219 @@
              d:DesignHeight="700" d:DesignWidth="260"
              x:Name="SidebarControl">
 
-    <!-- ── Root: pitch-black sidebar ── -->
-    <Border Background="#000000">
-        <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>   <!-- Row 0: brand header -->
-                <RowDefinition Height="*"/>      <!-- Row 1: scrollable menu -->
-                <RowDefinition Height="Auto"/>   <!-- Row 2: profile widget -->
-            </Grid.RowDefinitions>
+    <!-- Outer white background so the rounded-right corners show cleanly -->
+    <Border Background="#F5F4FA">
 
-            <!-- ── Row 0: Brand header ── -->
-            <Border Grid.Row="0"
-                    Padding="20,18,20,14"
-                    Background="#000000"
-                    BorderBrush="#0D1117"
-                    BorderThickness="0,0,0,1">
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <!-- Logo image instead of letter -->
-                    <Border Width="32" Height="32"
-                            CornerRadius="6"
-                            Margin="0,0,10,0"
-                            ClipToBounds="True">
-                        <Image Source="pack://application:,,,/assets/SihyuPOS-Logo.jpg"
-                               Stretch="UniformToFill"
-                               RenderOptions.BitmapScalingMode="HighQuality"/>
-                    </Border>
-                    <TextBlock Text="SihyuPOS"
-                               FontSize="17"
-                               FontWeight="Bold"
-                               Foreground="#F3F4F6"
-                               VerticalAlignment="Center"/>
-                </StackPanel>
-            </Border>
+        <!-- Inner gradient panel — rounded on right side only -->
+        <Border CornerRadius="0,20,20,0">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                    <GradientStop Color="#044E2B" Offset="0.0"/>
+                    <GradientStop Color="#06683A" Offset="0.35"/>
+                    <GradientStop Color="#008A4A" Offset="0.65"/>
+                    <GradientStop Color="#00A859" Offset="1.0"/>
+                </LinearGradientBrush>
+            </Border.Background>
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="28" Color="#000000"
+                                  ShadowDepth="4" Opacity="0.18" Direction="0"/>
+            </Border.Effect>
 
-            <!-- ── Row 1: Scrollable menu grouped by section ── -->
-            <ScrollViewer Grid.Row="1"
-                          x:Name="SidebarScroll"
-                          VerticalScrollBarVisibility="Hidden"
-                          HorizontalScrollBarVisibility="Disabled"
-                          CanContentScroll="False"
-                          PanningMode="VerticalOnly"
-                          PreviewMouseWheel="SidebarScroll_PreviewMouseWheel"
-                          Background="#000000">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>  <!-- Brand -->
+                    <RowDefinition Height="*"/>     <!-- Nav -->
+                    <RowDefinition Height="Auto"/>  <!-- Bottom items -->
+                    <RowDefinition Height="Auto"/>  <!-- Profile -->
+                </Grid.RowDefinitions>
 
-                <!-- ItemsControl over MenuGroups -->
-                <ItemsControl ItemsSource="{Binding MenuGroups}"
-                              Margin="0,6,0,8">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate DataType="{x:Type vm:SidebarMenuGroup}">
-                            <StackPanel>
-                                <!-- Section header label — bold green, uppercase -->
-                                <TextBlock Text="{Binding Header}"
-                                           FontSize="10"
-                                           FontWeight="Bold"
-                                           Foreground="#477C60"
-                                           Margin="20,14,0,4"
-                                           IsHitTestVisible="False"
-                                           Focusable="False"/>
+                <!-- ═══════════════════════════════════════
+                     BRAND HEADER
+                ═══════════════════════════════════════ -->
+                <Border Grid.Row="0" Padding="20,28,20,24">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
 
-                                <!-- Menu items ListBox -->
-                                <ListBox ItemsSource="{Binding Items}"
-                                         Background="Transparent"
-                                         BorderThickness="0"
-                                         Padding="10,0">
-                                    <ListBox.ItemContainerStyle>
-                                        <Style TargetType="ListBoxItem">
-                                            <Setter Property="Background" Value="Transparent"/>
-                                            <Setter Property="Foreground" Value="#9CA3AF"/>
-                                            <Setter Property="Padding" Value="10,9"/>
-                                            <Setter Property="Margin" Value="0,1"/>
-                                            <Setter Property="Cursor" Value="Hand"/>
-                                            <Setter Property="BorderThickness" Value="0"/>
-                                            <Setter Property="Template">
-                                                <Setter.Value>
-                                                    <ControlTemplate TargetType="ListBoxItem">
-                                                        <Border x:Name="ItemBorder"
-                                                                Background="{TemplateBinding Background}"
-                                                                CornerRadius="7"
-                                                                Padding="{TemplateBinding Padding}"
-                                                                BorderThickness="2,0,0,0"
-                                                                BorderBrush="Transparent">
-                                                            <ContentPresenter/>
-                                                        </Border>
-                                                        <ControlTemplate.Triggers>
-                                                            <Trigger Property="IsSelected" Value="True">
-                                                                <Setter TargetName="ItemBorder" Property="Background" Value="#072219"/>
-                                                                <Setter TargetName="ItemBorder" Property="BorderBrush" Value="#128854"/>
-                                                                <Setter Property="Foreground" Value="#F3F4F6"/>
-                                                            </Trigger>
-                                                            <Trigger Property="IsMouseOver" Value="True">
-                                                                <Setter TargetName="ItemBorder" Property="Background" Value="#0D1117"/>
-                                                            </Trigger>
-                                                        </ControlTemplate.Triggers>
-                                                    </ControlTemplate>
-                                                </Setter.Value>
-                                            </Setter>
-                                            <EventSetter Event="MouseLeftButtonUp"
-                                                         Handler="MenuItem_Clicked"/>
-                                        </Style>
-                                    </ListBox.ItemContainerStyle>
-                                    <ListBox.ItemTemplate>
-                                        <DataTemplate DataType="{x:Type vm:SidebarMenuItem}">
-                                            <StackPanel Orientation="Horizontal">
-                                                <!-- Icon glyph -->
-                                                <TextBlock Text="{Binding Icon}"
-                                                           FontFamily="Segoe MDL2 Assets"
-                                                           FontSize="15"
-                                                           Width="22"
-                                                           VerticalAlignment="Center"
-                                                           Margin="0,0,10,0"
-                                                           Foreground="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=Foreground}"/>
-                                                <!-- Label -->
-                                                <TextBlock Text="{Binding Label}"
-                                                           FontSize="13"
-                                                           VerticalAlignment="Center"
-                                                           Foreground="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=Foreground}"/>
-                                            </StackPanel>
-                                        </DataTemplate>
-                                    </ListBox.ItemTemplate>
-                                </ListBox>
-                            </StackPanel>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </ScrollViewer>
-
-            <!-- ── Row 2: Profile widget (bottom-anchored) ── -->
-            <Border Grid.Row="2"
-                    Background="#090B17"
-                    Padding="14,12"
-                    BorderBrush="#0D1117"
-                    BorderThickness="0,1,0,0">
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-
-                    <!-- Circular avatar with emerald ring -->
-                    <Border Width="38" Height="38"
-                            CornerRadius="19"
-                            BorderBrush="#128854"
-                            BorderThickness="2">
-                        <Border.Background>
-                            <ImageBrush ImageSource="{Binding UserAvatarImage}"
-                                        Stretch="UniformToFill"/>
-                        </Border.Background>
-                        <Border CornerRadius="17"
-                                Background="#072219">
-                            <TextBlock Text="{Binding UserInitials, FallbackValue='A'}"
-                                       FontSize="14"
-                                       FontWeight="Bold"
-                                       Foreground="#128854"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center"/>
+                        <!-- Bright lime ring logo -->
+                        <Border Width="38" Height="38" CornerRadius="19"
+                                BorderBrush="#A3FF6B" BorderThickness="2.5"
+                                Margin="0,0,12,0" Background="Transparent">
+                            <Border CornerRadius="17" ClipToBounds="True">
+                                <Image Source="pack://application:,,,/assets/SihyuPOS-Logo.jpg"
+                                       Stretch="UniformToFill"
+                                       RenderOptions.BitmapScalingMode="HighQuality"/>
+                            </Border>
                         </Border>
-                    </Border>
 
-                    <!-- Name + role -->
-                    <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
-                        <TextBlock Text="{Binding UserName, FallbackValue='Admin'}"
-                                   FontSize="13"
-                                   FontWeight="SemiBold"
-                                   Foreground="#F3F4F6"/>
-                        <TextBlock Text="{Binding UserRole, FallbackValue='Administrator'}"
-                                   FontSize="11"
-                                   Foreground="#477C60"
-                                   Margin="0,2,0,0"/>
+                        <TextBlock Text="SihyuPOS"
+                                   FontSize="19" FontWeight="Bold"
+                                   Foreground="#FFFFFF"
+                                   VerticalAlignment="Center"/>
                     </StackPanel>
-                </StackPanel>
-            </Border>
+                </Border>
 
-        </Grid>
+                <!-- ═══════════════════════════════════════
+                     MAIN NAV (scrollable)
+                ═══════════════════════════════════════ -->
+                <ScrollViewer Grid.Row="1"
+                              x:Name="SidebarScroll"
+                              VerticalScrollBarVisibility="Hidden"
+                              HorizontalScrollBarVisibility="Disabled"
+                              CanContentScroll="False"
+                              PanningMode="VerticalOnly"
+                              PreviewMouseWheel="SidebarScroll_PreviewMouseWheel"
+                              Background="Transparent">
+
+                    <ItemsControl ItemsSource="{Binding MenuGroups}" Margin="0,0,0,0">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:SidebarMenuGroup}">
+                                <StackPanel>
+                                    <!-- Section header label — only shown for non-MY-TOOLS groups -->
+                                    <TextBlock Text="{Binding Header}"
+                                               FontSize="9" FontWeight="Bold"
+                                               Foreground="#A7F3CA"
+                                               Opacity="0.6"
+                                               Margin="28,16,0,4"
+                                               IsHitTestVisible="False" Focusable="False"/>
+
+                                    <ListBox ItemsSource="{Binding Items}"
+                                             Background="Transparent"
+                                             BorderThickness="0"
+                                             Padding="0,0,16,0">
+                                        <ListBox.ItemContainerStyle>
+                                            <Style TargetType="ListBoxItem">
+                                                <Setter Property="Background"       Value="Transparent"/>
+                                                <Setter Property="Foreground"       Value="#A7F3CA"/>
+                                                <Setter Property="Padding"          Value="16,11,16,11"/>
+                                                <Setter Property="Margin"           Value="0,1"/>
+                                                <Setter Property="Cursor"           Value="Hand"/>
+                                                <Setter Property="BorderThickness"  Value="0"/>
+                                                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                                                <Setter Property="Template">
+                                                    <Setter.Value>
+                                                        <ControlTemplate TargetType="ListBoxItem">
+                                                            <Grid>
+                                                                <Grid.ColumnDefinitions>
+                                                                    <!-- Active pill indicator column -->
+                                                                    <ColumnDefinition Width="4"/>
+                                                                    <!-- Item content -->
+                                                                    <ColumnDefinition Width="*"/>
+                                                                </Grid.ColumnDefinitions>
+
+                                                                <!-- Left pill indicator (only visible when selected) -->
+                                                                <Border x:Name="Pill"
+                                                                        Grid.Column="0"
+                                                                        Width="4" CornerRadius="0,3,3,0"
+                                                                        Background="Transparent"
+                                                                        VerticalAlignment="Stretch"/>
+
+                                                                <!-- Item background + content -->
+                                                                <Border x:Name="ItemBg"
+                                                                        Grid.Column="1"
+                                                                        Background="Transparent"
+                                                                        CornerRadius="10"
+                                                                        Margin="4,0,0,0"
+                                                                        Padding="{TemplateBinding Padding}">
+                                                                    <ContentPresenter/>
+                                                                </Border>
+                                                            </Grid>
+
+                                                            <ControlTemplate.Triggers>
+                                                                <!-- SELECTED / ACTIVE -->
+                                                                <Trigger Property="IsSelected" Value="True">
+                                                                    <Setter TargetName="Pill"   Property="Background" Value="#A3FF6B"/>
+                                                                    <Setter TargetName="ItemBg" Property="Background">
+                                                                        <Setter.Value>
+                                                                            <SolidColorBrush Color="#FFFFFF" Opacity="0.10"/>
+                                                                        </Setter.Value>
+                                                                    </Setter>
+                                                                    <Setter Property="Foreground" Value="#A3FF6B"/>
+                                                                </Trigger>
+                                                                <!-- HOVER (not selected) -->
+                                                                <MultiTrigger>
+                                                                    <MultiTrigger.Conditions>
+                                                                        <Condition Property="IsMouseOver" Value="True"/>
+                                                                        <Condition Property="IsSelected"  Value="False"/>
+                                                                    </MultiTrigger.Conditions>
+                                                                    <Setter TargetName="ItemBg" Property="Background">
+                                                                        <Setter.Value>
+                                                                            <SolidColorBrush Color="#FFFFFF" Opacity="0.07"/>
+                                                                        </Setter.Value>
+                                                                    </Setter>
+                                                                    <Setter Property="Foreground" Value="#D1FAE5"/>
+                                                                </MultiTrigger>
+                                                            </ControlTemplate.Triggers>
+                                                        </ControlTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                                <EventSetter Event="MouseLeftButtonUp" Handler="MenuItem_Clicked"/>
+                                            </Style>
+                                        </ListBox.ItemContainerStyle>
+
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate DataType="{x:Type vm:SidebarMenuItem}">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="{Binding Icon}"
+                                                               FontFamily="Segoe MDL2 Assets"
+                                                               FontSize="15"
+                                                               Width="22"
+                                                               VerticalAlignment="Center"
+                                                               Margin="0,0,12,0"
+                                                               Foreground="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=Foreground}"/>
+                                                    <TextBlock Text="{Binding Label}"
+                                                               FontSize="13"
+                                                               FontWeight="Medium"
+                                                               VerticalAlignment="Center"
+                                                               Foreground="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=Foreground}"/>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+
+                <!-- ═══════════════════════════════════════
+                     PROFILE WIDGET (bottom)
+                ═══════════════════════════════════════ -->
+                <Border Grid.Row="3" Padding="16,12,16,20"
+                        Margin="0,0,16,0">
+                    <Border.BorderBrush>
+                        <SolidColorBrush Color="#FFFFFF" Opacity="0.10"/>
+                    </Border.BorderBrush>
+                    <Border.BorderThickness>0,1,0,0</Border.BorderThickness>
+
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <!-- Avatar ring -->
+                        <Border Width="38" Height="38" CornerRadius="19"
+                                BorderBrush="#A3FF6B" BorderThickness="2">
+                            <Border.Background>
+                                <ImageBrush ImageSource="{Binding UserAvatarImage}" Stretch="UniformToFill"/>
+                            </Border.Background>
+                            <Border CornerRadius="17" Background="#044E2B">
+                                <TextBlock Text="{Binding UserInitials, FallbackValue='A'}"
+                                           FontSize="14" FontWeight="Bold"
+                                           Foreground="#A3FF6B"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"/>
+                            </Border>
+                        </Border>
+
+                        <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding UserName, FallbackValue='Admin'}"
+                                       FontSize="13" FontWeight="SemiBold"
+                                       Foreground="#FFFFFF"/>
+                            <TextBlock Text="{Binding UserRole, FallbackValue='ADMIN'}"
+                                       FontSize="10" FontWeight="Bold"
+                                       Foreground="#A7F3CA"
+                                       Opacity="0.75"
+                                       Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+            </Grid>
+        </Border>
     </Border>
 </UserControl>

@@ -1,4 +1,4 @@
-<UserControl
+﻿<UserControl
     x:Class="SihyuPOSPayroll.Views.Cashier.Orders.OrdersView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -124,7 +124,7 @@
               Visibility="Collapsed"
               Background="#AA000000"
               Grid.RowSpan="3">
-            <Border Background="#FFFFFF" CornerRadius="12" Padding="16" MaxWidth="900" MaxHeight="620"
+            <Border Background="#F7FCFA" CornerRadius="12" Padding="16" MaxWidth="900" MaxHeight="620"
                     HorizontalAlignment="Center" VerticalAlignment="Center">
                 <Grid>
                     <Grid.RowDefinitions>
@@ -183,7 +183,7 @@
               Visibility="Collapsed"
               Background="#AA000000"
               Grid.RowSpan="3">
-            <Border Background="#FFFFFF" CornerRadius="12" Padding="16" MaxWidth="900" MaxHeight="620"
+            <Border Background="#F7FCFA" CornerRadius="12" Padding="16" MaxWidth="900" MaxHeight="620"
                     HorizontalAlignment="Center" VerticalAlignment="Center">
                 <Grid>
                     <Grid.RowDefinitions>

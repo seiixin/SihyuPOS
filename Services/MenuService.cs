@@ -34,14 +34,17 @@ namespace SihyuPOSPayroll.Services
             }
             catch (Exception ex)
             {
-                throw new Exception("Error retrieving menu items.", ex);
+                // BUG 19 FIX: log and return empty list instead of throwing.
+                // Callers (POS picker, OrderService) do not catch exceptions from
+                // this method; a throw here crashes the product list load entirely.
+                Console.Error.WriteLine($"[MenuService] GetAllMenuItems: {ex.Message}");
             }
             return items;
         }
 
         // ── Create ─────────────────────────────────────────────────────────────
 
-        public void AddMenuItem(MenuModel item)
+        public bool AddMenuItem(MenuModel item)
         {
             if (item == null) throw new ArgumentNullException(nameof(item));
             try
@@ -54,19 +57,22 @@ namespace SihyuPOSPayroll.Services
 
                 BindMenuParams(cmd, item);
                 cmd.ExecuteNonQuery();
+                return true;
             }
             catch (Exception ex)
             {
-                throw new Exception("Error adding menu item.", ex);
+                // BUG 19 FIX: log and return false instead of throwing.
+                Console.Error.WriteLine($"[MenuService] AddMenuItem: {ex.Message}");
+                return false;
             }
         }
 
         // Legacy alias
-        public void InsertMenuItem(MenuModel item) => AddMenuItem(item);
+        public bool InsertMenuItem(MenuModel item) => AddMenuItem(item);
 
         // ── Update ─────────────────────────────────────────────────────────────
 
-        public void UpdateMenuItem(MenuModel item)
+        public bool UpdateMenuItem(MenuModel item)
         {
             if (item == null) throw new ArgumentNullException(nameof(item));
             try
@@ -84,17 +90,19 @@ namespace SihyuPOSPayroll.Services
 
                 BindMenuParams(cmd, item);
                 cmd.Parameters.AddWithValue("@id", item.Id);
-                cmd.ExecuteNonQuery();
+                return cmd.ExecuteNonQuery() > 0;
             }
             catch (Exception ex)
             {
-                throw new Exception("Error updating menu item.", ex);
+                // BUG 19 FIX: log and return false instead of throwing.
+                Console.Error.WriteLine($"[MenuService] UpdateMenuItem: {ex.Message}");
+                return false;
             }
         }
 
         // ── Delete ─────────────────────────────────────────────────────────────
 
-        public void DeleteMenuItem(int menuItemId)
+        public bool DeleteMenuItem(int menuItemId)
         {
             try
             {
@@ -102,11 +110,13 @@ namespace SihyuPOSPayroll.Services
                 using var cmd  = conn.CreateCommand();
                 cmd.CommandText = "DELETE FROM menu WHERE Id = @id;";
                 cmd.Parameters.AddWithValue("@id", menuItemId);
-                cmd.ExecuteNonQuery();
+                return cmd.ExecuteNonQuery() > 0;
             }
             catch (Exception ex)
             {
-                throw new Exception("Error deleting menu item.", ex);
+                // BUG 19 FIX: log and return false instead of throwing.
+                Console.Error.WriteLine($"[MenuService] DeleteMenuItem: {ex.Message}");
+                return false;
             }
         }
 

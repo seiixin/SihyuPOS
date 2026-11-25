@@ -62,7 +62,11 @@ namespace SihyuPOSPayroll.Services
                                          ? null
                                          : reader.GetInt32(reader.GetOrdinal("employee_id")),
                         IsActive   = reader.GetInt32(reader.GetOrdinal("is_active")) == 1,
-                        CreatedAt  = DateTime.Parse(reader.GetString(reader.GetOrdinal("created_at"))),
+                        // BUG 27 FIX: DateTime.Parse throws on malformed dates. Use
+                        // TryParse with a safe fallback instead.
+                        CreatedAt  = DateTime.TryParse(
+                                         reader.GetString(reader.GetOrdinal("created_at")),
+                                         out var caAll) ? caAll : DateTime.MinValue,
                         Employee   = new EmployeeModel
                         {
                             FullName = reader.IsDBNull(reader.GetOrdinal("full_name"))
@@ -112,7 +116,10 @@ namespace SihyuPOSPayroll.Services
                                      ? null
                                      : reader.GetInt32(reader.GetOrdinal("employee_id")),
                     IsActive   = reader.GetInt32(reader.GetOrdinal("is_active")) == 1,
-                    CreatedAt  = DateTime.Parse(reader.GetString(reader.GetOrdinal("created_at"))),
+                    // BUG 27 FIX: DateTime.Parse throws on malformed dates.
+                    CreatedAt  = DateTime.TryParse(
+                                     reader.GetString(reader.GetOrdinal("created_at")),
+                                     out var caOne) ? caOne : DateTime.MinValue,
                     Employee   = new EmployeeModel
                     {
                         FullName = reader.IsDBNull(reader.GetOrdinal("full_name"))

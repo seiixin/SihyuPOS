@@ -121,8 +121,8 @@ namespace SihyuPOSPayroll.ViewModels
             set { if (_manualTimeText != value) { _manualTimeText = value; OnPropertyChanged(); CommandManager.InvalidateRequerySuggested(); } }
         }
 
-        // PER-DAY rows for UI (includes DisplayStatus + EmployeeDisplay)
-        public ObservableCollection<AttendanceDayRow> Attendances { get; } = new();
+        // PER-ROW raw attendance logs for UI
+        public ObservableCollection<AttendanceModel> Attendances { get; } = new();
 
         private DateTime? _filterFromDate = DateTime.Today.AddDays(-30);
         public DateTime? FilterFromDate
@@ -220,7 +220,7 @@ namespace SihyuPOSPayroll.ViewModels
             {
                 if (LeaveHalfDay) return "0.5 day";
                 var days = (LeaveDateTo.Date - LeaveDateFrom.Date).TotalDays + 1;
-                if (days < 0) return "�";
+                if (days < 0) return "�";
                 return $"{days:0} day(s)";
             }
         }
@@ -399,82 +399,32 @@ namespace SihyuPOSPayroll.ViewModels
                 if (CurrentEmployeeId is null)
                 {
                     Attendances.Clear();
-                    LastMessage = "?? No linked employee profile.";
+                    LastMessage = "⚠ No linked employee profile.";
                     return;
                 }
 
                 var empId = CurrentEmployeeId.Value;
-
-                // Get raw logs in range
-                var from = (FilterFromDate ?? DateTime.Today.AddDays(-30)).Date;
-                var to = (FilterToDate ?? DateTime.Today).Date;
+                var from  = (FilterFromDate ?? DateTime.Today.AddDays(-30)).Date;
+                var to    = (FilterToDate   ?? DateTime.Today).Date;
                 if (to < from) (from, to) = (to, from);
 
                 var rawLogs = await Task.Run(() =>
                     _attendanceService.GetAttendancesForEmployee(empId, from, to));
 
-                // Group logs per day
-                var byDate = rawLogs
-                    .GroupBy(a => a.Date.Date)
-                    .ToDictionary(g => g.Key, g => g.ToList());
-
-                // Obtain work schedule days_mask via EmployeeService (nullable => assume all days workdays)
-                int? daysMask = null;
-                try { daysMask = _employeeService.GetWorkScheduleDaysMask(empId); } catch { /* optional */ }
-
-                // Build calendar rows day-by-day
                 Attendances.Clear();
+                // Show newest first
+                foreach (var log in rawLogs.OrderByDescending(a => a.Date).ThenByDescending(a => a.TimeIn))
+                    Attendances.Add(log);
 
-                for (var d = from; d <= to; d = d.AddDays(1))
-                {
-                    var isWorkday = IsScheduledWorkday(daysMask, d);
-                    var hasLogs = byDate.TryGetValue(d, out var logsForDay);
+                // Count days with at least one complete pair
+                var workedDays = await Task.Run(() =>
+                    _attendanceService.GetWorkedDaysCount(empId, from, to));
 
-                    TimeSpan? timeIn = null;
-                    TimeSpan? timeOut = null;
-                    string displayStatus;
-
-                    if (hasLogs && logsForDay != null)
-                    {
-                        // Consider ONLY complete pairs (both in & out) for "Present"
-                        var complete = logsForDay
-                            .Where(x => x.TimeIn.HasValue && x.TimeOut.HasValue)
-                            .ToList();
-
-                        if (complete.Any())
-                        {
-                            timeIn = complete.Min(x => x.TimeIn!.Value);
-                            timeOut = complete.Max(x => x.TimeOut!.Value);
-                            displayStatus = "Present";
-                        }
-                        else
-                        {
-                            // Incomplete / no valid pair -> treat as missing record on a workday
-                            displayStatus = isWorkday ? "No Record" : "Day Off";
-                        }
-                    }
-                    else
-                    {
-                        displayStatus = isWorkday ? "No Record" : "Day Off";
-                    }
-
-                    Attendances.Add(new AttendanceDayRow
-                    {
-                        EmployeeDisplay = EmployeeDisplay,
-                        Date = d,
-                        TimeIn = timeIn,
-                        TimeOut = timeOut,
-                        DisplayStatus = displayStatus
-                    });
-                }
-
-                // Payroll-friendly worked days (complete pairs only)
-                var workedDays = await Task.Run(() => _attendanceService.GetWorkedDaysCount(empId, from, to));
-                LastMessage = $"?? Loaded {Attendances.Count} day(s). ? Worked days (complete pairs only): {workedDays}.";
+                LastMessage = $"Showing {rawLogs.Count} log(s)  •  {workedDays} worked day(s)";
             }
             catch (Exception ex)
             {
-                LastMessage = $"? Failed to load attendance: {ex.Message}";
+                LastMessage = $"✗ Failed to load attendance: {ex.Message}";
             }
             finally { IsBusyAttendance = false; }
         }

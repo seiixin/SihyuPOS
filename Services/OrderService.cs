@@ -82,7 +82,7 @@ namespace SihyuPOSPayroll.Services
                 cmd.CommandText = @"
                     SELECT id, customer_id, table_number, total_amount,
                            payment_status, order_status, cash_register_id,
-                           ordered_by_user_id, created_at
+                           ordered_by_user_id, created_at, order_type
                     FROM   orders
                     ORDER  BY created_at DESC;";
 
@@ -174,10 +174,12 @@ namespace SihyuPOSPayroll.Services
                     cmd.CommandText = @"
                         INSERT INTO orders
                             (customer_id, table_number, total_amount, payment_status,
-                             order_status, cash_register_id, ordered_by_user_id, created_at)
+                             order_status, cash_register_id, ordered_by_user_id, created_at,
+                             order_type)
                         VALUES
                             (@customerId, @tableNumber, @totalAmount, @paymentStatus,
-                             @orderStatus, @cashRegisterId, @orderedByUserId, @createdAt);
+                             @orderStatus, @cashRegisterId, @orderedByUserId, @createdAt,
+                             @orderType);
                         SELECT last_insert_rowid();";
 
                     BindOrderParams(cmd, order);
@@ -237,7 +239,8 @@ namespace SihyuPOSPayroll.Services
                             payment_status     = @paymentStatus,
                             order_status       = @orderStatus,
                             cash_register_id   = @cashRegisterId,
-                            ordered_by_user_id = @orderedByUserId
+                            ordered_by_user_id = @orderedByUserId,
+                            order_type         = @orderType
                         WHERE id = @id;";
 
                     BindOrderParams(cmd, order);
@@ -367,6 +370,12 @@ namespace SihyuPOSPayroll.Services
                 ? DateTime.Now
                 : DateTime.TryParse(r.GetString(r.GetOrdinal("created_at")), out var d) ? d : DateTime.Now;
 
+            // BUG 10 FIX: read order_type back from DB
+            OrderType orderType = OrderType.NotApplicable;
+            int otOrd = r.GetOrdinal("order_type");
+            if (!r.IsDBNull(otOrd))
+                Enum.TryParse(r.GetString(otOrd), true, out orderType);
+
             return new OrderModel
             {
                 Id              = r.GetInt32(r.GetOrdinal("id")),
@@ -378,6 +387,7 @@ namespace SihyuPOSPayroll.Services
                 CashRegisterId  = r.IsDBNull(r.GetOrdinal("cash_register_id"))    ? null : r.GetInt32(r.GetOrdinal("cash_register_id")),
                 OrderedByUserId = r.IsDBNull(r.GetOrdinal("ordered_by_user_id")) ? null : r.GetInt32(r.GetOrdinal("ordered_by_user_id")),
                 CreatedAt       = createdRaw,
+                OrderType       = orderType,
                 Items           = new List<OrderItemModel>(),
             };
         }
@@ -403,6 +413,8 @@ namespace SihyuPOSPayroll.Services
             cmd.Parameters.AddWithValue("@cashRegisterId",   (object?)order.CashRegisterId  ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@orderedByUserId",  (object?)order.OrderedByUserId ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@createdAt",        order.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss"));
+            // BUG 10 FIX: include order_type so it is actually persisted.
+            cmd.Parameters.AddWithValue("@orderType",        order.OrderType.ToString());
         }
 
         private static void InsertOrderItem(SqliteConnection conn, SqliteTransaction tx, int orderId, OrderItemModel item)

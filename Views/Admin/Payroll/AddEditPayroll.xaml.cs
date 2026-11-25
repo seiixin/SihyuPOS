@@ -177,6 +177,9 @@ namespace SihyuPOSPayroll.Views.Admin.Payrolls
             }
 
             // IMPORTANT: always compute from AttendanceService (ignore any stale UI value)
+            // BUG 6 FIX: AttendanceService is now SQLite-backed and won't block.
+            // If the query fails (edge case), fall back to whatever days the user
+            // manually entered rather than blocking the entire save.
             int totalDaysWorked;
             try
             {
@@ -185,9 +188,9 @@ namespace SihyuPOSPayroll.Views.Admin.Payrolls
             catch (Exception ex)
             {
                 Console.Error.WriteLine("Failed to compute Total Days Worked on save: " + ex.Message);
-                MessageBox.Show("Unable to compute Total Days Worked from attendance.", "Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
+                // Fall back to whatever the user typed in the DaysWorked field.
+                if (!int.TryParse(DaysWorkedTextBox.Text, out totalDaysWorked))
+                    totalDaysWorked = 0;
             }
 
             // Push the computed value to UI (for user feedback) before saving

@@ -37,9 +37,16 @@ namespace SihyuPOSPayroll
             SettingsService.EnsureSchemaAtStartup();
             SettingsService.Instance.Load();
 
-            // ── PayslipService schema (MySQL — catches its own errors) ─────────
+            // ── PayslipService schema (MySQL — optional feature) ──────────────
+            // BUG 26 FIX: replaced bare catch{} with one that logs the failure.
+            // A bare catch{} hides partial-migration failures and makes later
+            // payslip errors impossible to diagnose.
             try { PayslipService.EnsureSchemaAtStartup(); }
-            catch { /* MySQL not running — payslip features unavailable */ }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine(
+                    $"[App] PayslipService schema init skipped: {ex.Message}");
+            }
         }
     }
 }

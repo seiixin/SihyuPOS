@@ -410,17 +410,19 @@ namespace SihyuPOSPayroll.Services
         {
             ReceiptId   = r.GetInt32(r.GetOrdinal("ReceiptId")),
             OrderId     = r.GetInt32(r.GetOrdinal("OrderId")),
-            TableNumber = ReadTableNumberAsInt(r, "TableNumber"),
+            // BUG 14 FIX: preserve the raw table number string — non-numeric values
+            // like "A1" or "VIP-1" are now stored correctly instead of becoming 0.
+            TableNumber = ReadTableNumber(r, "TableNumber"),
             Date        = r.IsDBNull(r.GetOrdinal("Date")) ? string.Empty : r.GetString(r.GetOrdinal("Date")),
             Amount      = r.IsDBNull(r.GetOrdinal("Amount")) ? 0m : Convert.ToDecimal(r.GetValue(r.GetOrdinal("Amount"))),
         };
 
-        private static int ReadTableNumberAsInt(IDataRecord r, string col)
+        private static string? ReadTableNumber(IDataRecord r, string col)
         {
             int ord = r.GetOrdinal(col);
-            if (r.IsDBNull(ord)) return 0;
+            if (r.IsDBNull(ord)) return null;
             var s = r.GetString(ord);
-            return int.TryParse(s, out var n) ? n : 0;
+            return string.IsNullOrWhiteSpace(s) ? null : s;
         }
     }
 }
