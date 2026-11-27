@@ -124,12 +124,12 @@ namespace SihyuPOSPayroll.ViewModels
             };
 
             // Load the app logo for the window icon
-            var logoUri   = new Uri("pack://application:,,,/assets/SihyuPOS-Logo.jpg", UriKind.Absolute);
+            var logoUri   = new Uri("pack://application:,,,/assets/SihyuPOS-Logo.png", UriKind.Absolute);
             var logoImage = new System.Windows.Media.Imaging.BitmapImage(logoUri);
 
             var window = new Window
             {
-                Title                  = $"Dashboard - SihyuPOS  [{user.Role}]",
+                Title                  = $"Dashboard - SariQuick  [{user.Role}]",
                 Content                = mainLayout,
                 Width                  = 1024,
                 Height                 = 768,

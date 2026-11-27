@@ -46,16 +46,22 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <!-- Sidebar toggle -->
-                    <Button Grid.Column="0"
-                            Content="&#xE700;"
+                    <!-- Sidebar toggle: shows ← when open, → when closed -->
+                    <Button x:Name="SidebarToggleBtn"
                             Style="{StaticResource SecondaryButton}"
-                            Width="44" Height="44"
-                            Margin="6,0,0,0"
+                            Width="36" Height="36"
+                            Margin="8,0,0,0"
                             Click="ToggleSidebar_Click"
-                            FontFamily="Segoe MDL2 Assets"
-                            FontSize="16"
-                            VerticalAlignment="Center"/>
+                            ToolTip="Collapse sidebar"
+                            VerticalAlignment="Center">
+                        <TextBlock x:Name="ToggleIcon"
+                                   Text="&#xE76B;"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   FontSize="14"
+                                   Foreground="#374151"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Center"/>
+                    </Button>
 
                     <!-- Notification bell -->
                     <Button Grid.Column="2"

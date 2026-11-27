@@ -7,196 +7,284 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
     Loaded="UserControl_Loaded"
-    Background="#2A2B40">
-
-    <UserControl.Resources>
-        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
-        <Style TargetType="DataGridColumnHeader">
-            <Setter Property="Background" Value="#6378FF"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="HorizontalContentAlignment" Value="Center"/>
-            <Setter Property="Height" Value="40"/>
-        </Style>
-    </UserControl.Resources>
+    Background="Transparent">
 
     <UserControl.DataContext>
         <vm:EmployeePayslipViewModel />
     </UserControl.DataContext>
 
-    <Grid x:Name="Root"
-          Margin="20">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+
+        <!-- Label style -->
+        <Style x:Key="FieldLabel" TargetType="TextBlock">
+            <Setter Property="FontSize"    Value="11"/>
+            <Setter Property="FontWeight"  Value="SemiBold"/>
+            <Setter Property="Foreground"  Value="#4B6358"/>
+            <Setter Property="Margin"      Value="0,0,0,5"/>
+        </Style>
+
+        <!-- Card -->
+        <Style x:Key="Card" TargetType="Border">
+            <Setter Property="Background"      Value="#F7FCFA"/>
+            <Setter Property="BorderBrush"     Value="#A5D6BE"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius"    Value="12"/>
+            <Setter Property="Padding"         Value="20,16"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="28,24,28,24">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <!-- title + toolbar -->
-            <RowDefinition Height="Auto"/>
-            <!-- search + request form -->
-            <RowDefinition Height="*"/>
-            <!-- lists -->
+            <RowDefinition Height="Auto"/>  <!-- header -->
+            <RowDefinition Height="Auto"/>  <!-- request card -->
+            <RowDefinition Height="16"/>
+            <RowDefinition Height="*"/>     <!-- history table -->
         </Grid.RowDefinitions>
 
-        <!-- Title + toolbar -->
-        <DockPanel Grid.Row="0" LastChildFill="False" Margin="0,0,0,16">
-            <TextBlock Text="?? My Payslips"
-                       FontSize="28"
-                       FontWeight="Bold"
-                       Foreground="White"
-                       DockPanel.Dock="Left"/>
-
-            <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" Margin="8,0,0,0">
-                <Button Content="Refresh"
-                        Padding="12,6"
-                        Margin="8,0,0,0"
-                        Command="{Binding RefreshCommand}"/>
-            </StackPanel>
-        </DockPanel>
-
-        <!-- Search + Request form -->
-        <Grid Grid.Row="1" Margin="0,0,0,12">
+        <!-- ── Page header ── -->
+        <Grid Grid.Row="0" Margin="0,0,0,20">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="2*"/>
-                <ColumnDefinition Width="3*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-
-            <!-- Search -->
-            <StackPanel Grid.Column="0">
-                <TextBlock Text="Search payslips"
-                           Foreground="White"
-                           Margin="0,0,0,6"/>
-                <TextBox x:Name="SearchBox"
-                         Padding="8"
-                         FontSize="14"
-                         VerticalContentAlignment="Center"
-                         TextChanged="SearchBox_TextChanged"
-                         Background="White"
-                         Foreground="Black"
-                         BorderThickness="1"
-                         BorderBrush="#CCCCCC"/>
+            <StackPanel>
+                <TextBlock Text="My Payslip Requests"
+                           FontSize="26" FontWeight="Bold" Foreground="#111827"/>
                 <TextBlock Text="{Binding StatusMessage}"
-                           Foreground="LightGray"
-                           Margin="0,6,0,0"/>
+                           FontSize="12" Foreground="#4B6358" Margin="0,4,0,0"/>
             </StackPanel>
+            <Button Grid.Column="1" Content="Refresh"
+                    Style="{StaticResource SecondaryButton}"
+                    Command="{Binding RefreshCommand}"
+                    VerticalAlignment="Center"/>
+        </Grid>
 
-            <!-- Request form -->
-            <Border Grid.Column="1" Padding="12" CornerRadius="6" Background="#373955">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
+        <!-- ── Request a payslip card ── -->
+        <Border Grid.Row="1" Style="{StaticResource Card}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="20"/>
+                    <ColumnDefinition Width="220"/>
+                </Grid.ColumnDefinitions>
 
+                <!-- Left: form fields -->
+                <StackPanel Grid.Column="0">
                     <TextBlock Text="Request a Payslip"
-                               FontSize="16"
-                               FontWeight="SemiBold"
-                               Foreground="White"
-                               Margin="0,0,0,8"/>
+                               FontSize="15" FontWeight="SemiBold"
+                               Foreground="#111827" Margin="0,0,0,14"/>
 
-                    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,4,0,0">
-                        <TextBlock Text="Payroll ID (optional):"
-                                   Width="160"
-                                   VerticalAlignment="Center"
-                                   Foreground="White"/>
-                        <TextBox Width="120"
-                                 Text="{Binding SelectedPayrollId, UpdateSourceTrigger=PropertyChanged}"
-                                 ToolTip="If you know the payroll row id, enter it; otherwise leave blank or 0."/>
-                    </StackPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="16"/>
+                            <ColumnDefinition Width="160"/>
+                        </Grid.ColumnDefinitions>
 
-                    <StackPanel Grid.Row="2" Margin="0,8,0,0">
-                        <TextBlock Text="Reason (optional)"
-                                   Foreground="White"/>
-                        <TextBox Height="60"
-                                 TextWrapping="Wrap"
-                                 AcceptsReturn="True"
-                                 Text="{Binding RequestReason, UpdateSourceTrigger=PropertyChanged}"/>
-                    </StackPanel>
+                        <!-- Reason -->
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="REASON (optional)" Style="{StaticResource FieldLabel}"/>
+                            <TextBox Text="{Binding RequestReason, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     Height="72" TextWrapping="Wrap" AcceptsReturn="True"
+                                     Background="#FFFFFF" Foreground="#111827"
+                                     BorderBrush="#A5D6BE" Padding="10,8"
+                                     FontSize="13" VerticalScrollBarVisibility="Auto"/>
+                        </StackPanel>
 
-                    <Button Grid.Row="3"
-                            Content="Request Payslip"
-                            Margin="0,10,0,0"
-                            Padding="12,6"
+                        <!-- Payroll ID -->
+                        <StackPanel Grid.Column="2" VerticalAlignment="Top">
+                            <TextBlock Text="PAYROLL ID (optional)" Style="{StaticResource FieldLabel}"/>
+                            <TextBox Text="{Binding SelectedPayrollId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     Height="36" Background="#FFFFFF" Foreground="#111827"
+                                     BorderBrush="#A5D6BE" Padding="10,0"
+                                     FontSize="13" VerticalContentAlignment="Center"
+                                     ToolTip="Leave as 0 if unknown"/>
+                            <TextBlock Text="Leave 0 if unknown"
+                                       FontSize="10" Foreground="#4B6358" Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+
+                <!-- Divider -->
+                <Border Grid.Column="1" Background="#A5D6BE" Width="1" Margin="0,0,0,0"/>
+
+                <!-- Right: submit area -->
+                <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                    <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="#4B6358"
+                               Margin="0,0,0,16" TextAlignment="Center">
+                        Submit a request to your admin to receive your payslip for a given payroll period.
+                    </TextBlock>
+                    <Button Content="Submit Request"
+                            Style="{StaticResource PrimaryButton}"
+                            Height="42"
                             Command="{Binding SubmitRequestCommand}"/>
-                </Grid>
-            </Border>
-        </Grid>
+                </StackPanel>
+            </Grid>
+        </Border>
 
-        <!-- Lists: Payslips (left) + My Requests (right) -->
-        <Grid Grid.Row="2">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="3*"/>
-                <ColumnDefinition Width="2*"/>
-            </Grid.ColumnDefinitions>
+        <!-- ── History table ── -->
+        <Border Grid.Row="3" Style="{StaticResource Card}" Padding="0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
 
-            <!-- Payslips -->
-            <DataGrid Grid.Column="0"
-                      ItemsSource="{Binding Payslips}"
-                      AutoGenerateColumns="False"
-                      CanUserAddRows="False"
-                      IsReadOnly="True"
-                      Background="#2A2B40"
-                      Foreground="Black"
-                      RowBackground="#D9D9D9"
-                      AlternatingRowBackground="#D9D9D9"
-                      BorderThickness="0"
-                      GridLinesVisibility="None"
-                      RowHeight="40"
-                      ColumnHeaderHeight="40">
-                <DataGrid.Columns>
-                    <DataGridTextColumn Header="Pay Date" Binding="{Binding PayDate, StringFormat=d}" Width="*" />
-                    <DataGridTextColumn Header="Hours Worked" Binding="{Binding HoursWorked}" Width="*" />
-                    <DataGridTextColumn Header="Rate / Hour" Binding="{Binding RatePerHour, StringFormat=?{0:N2}}" Width="*" />
-                    <DataGridTextColumn Header="Deductions" Binding="{Binding Deductions, StringFormat=?{0:N2}}" Width="*" />
-                    <DataGridTextColumn Header="Net Salary" Binding="{Binding NetSalary, StringFormat=?{0:N2}}" Width="*" />
-                </DataGrid.Columns>
-            </DataGrid>
+                <!-- Table header -->
+                <Border Grid.Row="0" Padding="20,14" BorderBrush="#A5D6BE" BorderThickness="0,0,0,1">
+                    <TextBlock Text="Request History"
+                               FontSize="14" FontWeight="SemiBold" Foreground="#111827"/>
+                </Border>
 
-            <!-- My Requests -->
-            <Border Grid.Column="1" Margin="12,0,0,0" Background="#373955" CornerRadius="6" Padding="8">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
+                <!-- DataGrid -->
+                <DataGrid Grid.Row="1"
+                          ItemsSource="{Binding MyRequests}"
+                          AutoGenerateColumns="False"
+                          CanUserAddRows="False"
+                          IsReadOnly="True"
+                          Background="#F7FCFA"
+                          BorderThickness="0"
+                          GridLinesVisibility="Horizontal"
+                          HorizontalGridLinesBrush="#D1EAE0"
+                          RowHeight="46"
+                          ColumnHeaderHeight="42">
 
-                    <TextBlock Text="My Payslip Requests"
-                               Foreground="White"
-                               FontWeight="SemiBold"
-                               Margin="4,0,0,6"/>
+                    <DataGrid.ColumnHeaderStyle>
+                        <Style TargetType="DataGridColumnHeader">
+                            <Setter Property="Background"      Value="#EBF7F1"/>
+                            <Setter Property="Foreground"      Value="#4B6358"/>
+                            <Setter Property="FontSize"        Value="11"/>
+                            <Setter Property="FontWeight"      Value="SemiBold"/>
+                            <Setter Property="Padding"         Value="16,0"/>
+                            <Setter Property="BorderBrush"     Value="#A5D6BE"/>
+                            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                        </Style>
+                    </DataGrid.ColumnHeaderStyle>
 
-                    <DataGrid Grid.Row="1"
-                              ItemsSource="{Binding MyRequests}"
-                              AutoGenerateColumns="False"
-                              CanUserAddRows="False"
-                              IsReadOnly="True"
-                              Background="#373955"
-                              Foreground="Black"
-                              RowBackground="#D9D9D9"
-                              AlternatingRowBackground="#D9D9D9"
-                              BorderThickness="0"
-                              GridLinesVisibility="None"
-                              RowHeight="36"
-                              ColumnHeaderHeight="36">
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Header="Date" Binding="{Binding RequestDate, StringFormat=g}" Width="1.2*" />
-                            <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="*" />
-                            <DataGridTextColumn Header="PayrollId" Binding="{Binding PayrollId}" Width="*" />
-                            <DataGridTextColumn Header="Reason" Binding="{Binding Reason}" Width="2*" />
-                        </DataGrid.Columns>
-                    </DataGrid>
-                </Grid>
-            </Border>
-        </Grid>
+                    <DataGrid.RowStyle>
+                        <Style TargetType="DataGridRow">
+                            <Setter Property="Background"      Value="Transparent"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#D4EDDF"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGrid.RowStyle>
+
+                    <DataGrid.CellStyle>
+                        <Style TargetType="DataGridCell">
+                            <Setter Property="Foreground"      Value="#374151"/>
+                            <Setter Property="FontSize"        Value="13"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Setter Property="Padding"         Value="16,0"/>
+                        </Style>
+                    </DataGrid.CellStyle>
+
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="REQUEST DATE"
+                                            Binding="{Binding RequestDate, StringFormat={}{0:MMM dd, yyyy HH:mm}}"
+                                            Width="1.6*"/>
+
+                        <DataGridTemplateColumn Header="STATUS" Width="*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Border CornerRadius="4" Padding="8,3"
+                                            HorizontalAlignment="Left" VerticalAlignment="Center">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Background" Value="#EBF7F1"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Status}" Value="Approved">
+                                                        <Setter Property="Background" Value="#D1FAE5"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Status}" Value="Completed">
+                                                        <Setter Property="Background" Value="#D1FAE5"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Status}" Value="Rejected">
+                                                        <Setter Property="Background" Value="#FEE2E2"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Status}" Value="Pending">
+                                                        <Setter Property="Background" Value="#FEF9C3"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <TextBlock Text="{Binding Status}" FontSize="12" FontWeight="SemiBold">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground" Value="#4B6358"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Status}" Value="Approved">
+                                                            <Setter Property="Foreground" Value="#15803D"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Status}" Value="Completed">
+                                                            <Setter Property="Foreground" Value="#15803D"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Status}" Value="Rejected">
+                                                            <Setter Property="Foreground" Value="#DC2626"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Status}" Value="Pending">
+                                                            <Setter Property="Foreground" Value="#D97706"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </Border>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <DataGridTextColumn Header="PAYROLL ID"
+                                            Binding="{Binding PayrollId}"
+                                            Width="*"/>
+                        <DataGridTextColumn Header="REASON"
+                                            Binding="{Binding Reason}"
+                                            Width="2*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+
+                <!-- Empty state -->
+                <StackPanel Grid.Row="1"
+                            HorizontalAlignment="Center" VerticalAlignment="Center"
+                            Margin="0,40">
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding MyRequests.Count}" Value="0">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
+                    <TextBlock Text="&#xE9F9;" FontFamily="Segoe MDL2 Assets"
+                               FontSize="40" Foreground="#A5D6BE"
+                               HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                    <TextBlock Text="No requests yet"
+                               FontSize="15" FontWeight="SemiBold"
+                               Foreground="#4B6358" HorizontalAlignment="Center"/>
+                    <TextBlock Text="Submit your first payslip request above."
+                               FontSize="12" Foreground="#4B6358"
+                               HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                </StackPanel>
+            </Grid>
+        </Border>
 
         <!-- Busy overlay -->
-        <Border Background="#80000000"
+        <Border Grid.Row="0" Grid.RowSpan="4"
+                Background="#80F7FCFA"
                 Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}">
-            <TextBlock Text="Loading..."
-                       Foreground="White"
-                       FontSize="18"
-                       FontWeight="Bold"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center"/>
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                <TextBlock Text="&#xE877;" FontFamily="Segoe MDL2 Assets"
+                           FontSize="28" Foreground="#15803D"
+                           HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                <TextBlock Text="Loading…" FontSize="14" Foreground="#4B6358"
+                           HorizontalAlignment="Center"/>
+            </StackPanel>
         </Border>
     </Grid>
 </UserControl>

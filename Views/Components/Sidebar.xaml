@@ -45,13 +45,13 @@
                                 BorderBrush="#A3FF6B" BorderThickness="2.5"
                                 Margin="0,0,12,0" Background="Transparent">
                             <Border CornerRadius="17" ClipToBounds="True">
-                                <Image Source="pack://application:,,,/assets/SihyuPOS-Logo.jpg"
+                                <Image Source="pack://application:,,,/assets/SihyuPOS-Logo.png"
                                        Stretch="UniformToFill"
                                        RenderOptions.BitmapScalingMode="HighQuality"/>
                             </Border>
                         </Border>
 
-                        <TextBlock Text="SihyuPOS"
+                        <TextBlock Text="SariQuick"
                                    FontSize="19" FontWeight="Bold"
                                    Foreground="#FFFFFF"
                                    VerticalAlignment="Center"/>

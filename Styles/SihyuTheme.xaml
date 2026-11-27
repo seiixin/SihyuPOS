@@ -365,7 +365,6 @@
                                           IsHitTestVisible="False"
                                           Content="{TemplateBinding SelectionBoxItem}"
                                           ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
-                                          ContentStringFormat="{}{0}"
                                           ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"/>
 
                         <Popup x:Name="PART_Popup"
@@ -406,7 +405,7 @@
                         <ControlTemplate TargetType="ComboBoxItem">
                             <Border x:Name="Bd" Background="{TemplateBinding Background}"
                                     Padding="{TemplateBinding Padding}">
-                                <ContentPresenter ContentStringFormat="{}{0}"/>
+                                <ContentPresenter/>
                             </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsHighlighted" Value="True">

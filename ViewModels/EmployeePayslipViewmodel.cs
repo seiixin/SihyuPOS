@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using SihyuPOSPayroll.Helpers;
 using SihyuPOSPayroll.Models;
 using SihyuPOSPayroll.Services;
 
@@ -21,7 +22,7 @@ namespace SihyuPOSPayroll.ViewModels
         public ObservableCollection<PayslipRequestModel> MyRequests { get; private set; } = new();
 
         // ===== State =====
-        private int _employeeId = 1; // set from login/session
+        private int _employeeId = 0;
         public int EmployeeId
         {
             get => _employeeId;
@@ -78,6 +79,33 @@ namespace SihyuPOSPayroll.ViewModels
         {
             SubmitRequestCommand = new RelayCommand(async _ => await SubmitPayslipRequestAsync(), _ => !IsBusy);
             RefreshCommand = new RelayCommand(async _ => await RefreshAsync(), _ => !IsBusy);
+
+            // Resolve the linked employee ID from the current session user
+            ResolveEmployeeIdFromSession();
+        }
+
+        private void ResolveEmployeeIdFromSession()
+        {
+            try
+            {
+                var empService = new EmployeeService();
+                var resolvedId = empService.GetEmployeeIdByUserId(Helpers.Session.CurrentUserId);
+                if (resolvedId.HasValue && resolvedId.Value > 0)
+                {
+                    EmployeeId = resolvedId.Value;
+                    EmployeeFullName = Helpers.Session.CurrentUser?.Employee?.FullName
+                                       ?? Helpers.Session.CurrentUser?.Email
+                                       ?? "Employee";
+                }
+                else
+                {
+                    StatusMessage = "âš  No employee profile linked to your account. Contact admin.";
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"âš  Could not resolve employee: {ex.Message}";
+            }
         }
 
         // ============================
@@ -95,7 +123,7 @@ namespace SihyuPOSPayroll.ViewModels
             try
             {
                 IsBusy = true;
-                StatusMessage = "Refreshing…";
+                StatusMessage = "Refreshingï¿½";
 
                 // Fetch in background so UI stays responsive
                 var payslipsTask = Task.Run(() => _service.GetEmployeePayslips(EmployeeId), ct);
@@ -183,7 +211,7 @@ namespace SihyuPOSPayroll.ViewModels
             try
             {
                 IsBusy = true;
-                StatusMessage = "Submitting request…";
+                StatusMessage = "Submitting requestï¿½";
 
                 // Prevent duplicate Pending for same employee (and same payroll if specified)
                 var hasPendingDuplicate = MyRequests.Any(r =>
@@ -200,10 +228,11 @@ namespace SihyuPOSPayroll.ViewModels
                 var req = new PayslipRequestModel
                 {
                     EmployeeId = EmployeeId,
-                    FullName = string.IsNullOrWhiteSpace(EmployeeFullName) ? "Employee" : EmployeeFullName.Trim(),
-                    PayrollId = SelectedPayrollId, // allowed to be 0 if unknown
-                    Reason = string.IsNullOrWhiteSpace(RequestReason) ? null : RequestReason.Trim(),
-                    Status = "Pending",
+                    FullName   = string.IsNullOrWhiteSpace(EmployeeFullName) ? "Employee" : EmployeeFullName.Trim(),
+                    // PayrollId 0 means "unknown" â€” store as NULL so the FK constraint isn't violated
+                    PayrollId   = SelectedPayrollId > 0 ? SelectedPayrollId : 0,
+                    Reason      = string.IsNullOrWhiteSpace(RequestReason) ? null : RequestReason.Trim(),
+                    Status      = "Pending",
                     RequestDate = DateTime.Now
                 };
 

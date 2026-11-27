@@ -529,7 +529,12 @@ namespace SihyuPOSPayroll.ViewModels
                 case "payslip requests":
                 case "payslip_requests":
                 case "paysliprequests":
-                    CurrentView = new Payslip();
+                    // Employees get their own self-service payslip request view.
+                    // Admins get the full admin PayslipRequests management view.
+                    if (Helpers.Session.IsAdmin || string.Equals(_role, "ADMIN", StringComparison.OrdinalIgnoreCase))
+                        CurrentView = new Payslip();
+                    else
+                        CurrentView = new Views.Employee.Payslip.PayslipView();
                     break;
 
                 case "tables":

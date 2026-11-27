@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 using Microsoft.Data.Sqlite;
 using SihyuPOSPayroll.Data;
 using SihyuPOSPayroll.Models;
@@ -242,7 +242,7 @@ namespace SihyuPOSPayroll.Services
                     VALUES
                         (@empId, @payrollId, @fullName, @requestDate, @status, @reason);");
                 cmd.Parameters.AddWithValue("@empId",       request.EmployeeId);
-                cmd.Parameters.AddWithValue("@payrollId",   request.PayrollId);
+                cmd.Parameters.AddWithValue("@payrollId",   request.PayrollId > 0 ? (object)request.PayrollId : DBNull.Value);
                 cmd.Parameters.AddWithValue("@fullName",    request.FullName ?? string.Empty);
                 cmd.Parameters.AddWithValue("@requestDate", (request.RequestDate == default ? DateTime.Now : request.RequestDate).ToString("yyyy-MM-dd HH:mm:ss"));
                 cmd.Parameters.AddWithValue("@status",      string.IsNullOrWhiteSpace(request.Status) ? "Pending" : request.Status);
@@ -351,7 +351,7 @@ namespace SihyuPOSPayroll.Services
                     WHERE Id = @id;");
                 cmd.Parameters.AddWithValue("@id",          request.Id);
                 cmd.Parameters.AddWithValue("@empId",       request.EmployeeId);
-                cmd.Parameters.AddWithValue("@payrollId",   request.PayrollId);
+                cmd.Parameters.AddWithValue("@payrollId",   request.PayrollId > 0 ? (object)request.PayrollId : DBNull.Value);
                 cmd.Parameters.AddWithValue("@fullName",    request.FullName ?? string.Empty);
                 cmd.Parameters.AddWithValue("@requestDate", (request.RequestDate == default ? DateTime.Now : request.RequestDate).ToString("yyyy-MM-dd HH:mm:ss"));
                 cmd.Parameters.AddWithValue("@status",      string.IsNullOrWhiteSpace(request.Status) ? "Pending" : request.Status);

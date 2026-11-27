@@ -23,7 +23,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Resource Include="assets\SihyuPOS-Logo.jpg" />
+		<Resource Include="assets\SihyuPOS-Logo.png" />
+		<Resource Include="assets\SariQuick-Banner.jfif" />
 	</ItemGroup>
 
 	<ItemGroup>

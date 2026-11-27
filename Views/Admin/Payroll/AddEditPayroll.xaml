@@ -22,7 +22,6 @@
                 <TextBlock Text="Employee:" FontWeight="Bold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4"/>
                 <ComboBox x:Name="EmployeeComboBox"
                           Margin="0,0,0,16"
-                          DisplayMemberPath="FullName"
                           SelectedValuePath="Id"
                           ItemsSource="{Binding Employees}">
                     <ComboBox.ItemTemplate>

@@ -25,15 +25,20 @@ namespace SihyuPOSPayroll.Views.Layouts
         /// </summary>
         private void ToggleSidebar_Click(object sender, RoutedEventArgs e)
         {
-            // Toggle the visibility state
             isSidebarVisible = !isSidebarVisible;
 
-            // Ensure SidebarControl and SidebarColumn exist before attempting changes
             if (SidebarControl != null && SidebarColumn != null)
             {
                 SidebarControl.Visibility = isSidebarVisible ? Visibility.Visible : Visibility.Collapsed;
                 SidebarColumn.Width = isSidebarVisible ? new GridLength(250) : new GridLength(0);
             }
+
+            // Flip the arrow icon: ← when open, → when collapsed
+            if (ToggleIcon != null)
+                ToggleIcon.Text = isSidebarVisible ? "\uE76B" : "\uE76C";
+
+            if (SidebarToggleBtn != null)
+                SidebarToggleBtn.ToolTip = isSidebarVisible ? "Collapse sidebar" : "Expand sidebar";
         }
     }
 }

@@ -88,7 +88,7 @@
                                      Padding="34,10,10,10"
                                      KeyDown="BarcodeBox_KeyDown"
                                      TextChanged="BarcodeBox_TextChanged"/>
-                            <TextBlock Text="Scan or type barcode…"
+                            <TextBlock Text="Scan or type barcode, press Enter…"
                                        Foreground="#4B6358"
                                        Margin="36,0,0,0"
                                        VerticalAlignment="Center"
@@ -167,7 +167,7 @@
                                      Foreground="#111827"
                                      Padding="34,10,10,10"
                                      TextChanged="SearchBox_TextChanged"/>
-                            <TextBlock Text="Search products…"
+                            <TextBlock Text="Search product name or category…"
                                        Foreground="#4B6358"
                                        Margin="36,0,0,0"
                                        VerticalAlignment="Center"
